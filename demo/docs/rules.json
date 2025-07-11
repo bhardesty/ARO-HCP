@@ -1,0 +1,96 @@
+{
+  "if": {
+    "anyOf": [
+      {
+        "allOf": [
+          {
+            "value": "[resourceGroup().name]",
+            "equals": "[parameters('resourceGroupName')]"
+          }
+        ]
+      },
+      {
+        "allOf": [
+          {
+            "field": "name",
+            "equals": "[parameters('resourceGroupName')]"
+          },
+{
+	     "field": "type",
+	     "equals": "Microsoft.Resources/subscriptions/resourceGroups"
+}
+        ]
+      }
+    ]
+  },
+  "then": {
+    "details": {
+      "operations": [
+        {
+          "condition": "[not(equals(parameters('tag0')['tag'][0], ''))]",
+          "field": "[concat('tags[', parameters('tag0')['tag'][0], ']')]",
+          "operation": "addOrReplace",
+          "value": "[parameters('tag0')['tag'][1]]"
+        },
+        {
+          "condition": "[not(equals(parameters('tag1')['tag'][0], ''))]",
+          "field": "[concat('tags[', parameters('tag1')['tag'][0], ']')]",
+          "operation": "addOrReplace",
+          "value": "[parameters('tag1')['tag'][1]]"
+        },
+        {
+          "condition": "[not(equals(parameters('tag2')['tag'][0], ''))]",
+          "field": "[concat('tags[', parameters('tag2')['tag'][0], ']')]",
+          "operation": "addOrReplace",
+          "value": "[parameters('tag2')['tag'][1]]"
+        },
+        {
+          "condition": "[not(equals(parameters('tag3')['tag'][0], ''))]",
+          "field": "[concat('tags[', parameters('tag3')['tag'][0], ']')]",
+          "operation": "addOrReplace",
+          "value": "[parameters('tag3')['tag'][1]]"
+        },
+        {
+          "condition": "[not(equals(parameters('tag4')['tag'][0], ''))]",
+          "field": "[concat('tags[', parameters('tag4')['tag'][0], ']')]",
+          "operation": "addOrReplace",
+          "value": "[parameters('tag4')['tag'][1]]"
+        },
+        {
+          "condition": "[not(equals(parameters('tag5')['tag'][0], ''))]",
+          "field": "[concat('tags[', parameters('tag5')['tag'][0], ']')]",
+          "operation": "addOrReplace",
+          "value": "[parameters('tag5')['tag'][1]]"
+        },
+        {
+          "condition": "[not(equals(parameters('tag6')['tag'][0], ''))]",
+          "field": "[concat('tags[', parameters('tag6')['tag'][0], ']')]",
+          "operation": "addOrReplace",
+          "value": "[parameters('tag6')['tag'][1]]"
+        },
+        {
+          "condition": "[not(equals(parameters('tag7')['tag'][0], ''))]",
+          "field": "[concat('tags[', parameters('tag7')['tag'][0], ']')]",
+          "operation": "addOrReplace",
+          "value": "[parameters('tag7')['tag'][1]]"
+        },
+        {
+          "condition": "[not(equals(parameters('tag8')['tag'][0], ''))]",
+          "field": "[concat('tags[', parameters('tag8')['tag'][0], ']')]",
+          "operation": "addOrReplace",
+          "value": "[parameters('tag8')['tag'][1]]"
+        },
+        {
+          "condition": "[not(equals(parameters('tag9')['tag'][0], ''))]",
+          "field": "[concat('tags[', parameters('tag9')['tag'][0], ']')]",
+          "operation": "addOrReplace",
+          "value": "[parameters('tag9')['tag'][1]]"
+        }
+      ],
+      "roleDefinitionIds": [
+        "/providers/Microsoft.Authorization/roleDefinitions/4a9ae827-6dc8-4573-8ac7-8239d42aa03f"
+      ]
+    },
+    "effect": "modify"
+  }
+}

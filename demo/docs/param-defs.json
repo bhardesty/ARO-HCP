@@ -1,0 +1,259 @@
+{
+  "tag0": {
+    "type": "Object",
+    "metadata": {
+      "displayName": "tag0"
+    },
+    "defaultValue": {
+      "tag": [
+        "",
+        ""
+      ]
+    },
+    "schema": {
+      "type": "object",
+      "properties": {
+        "tag": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 2,
+          "minItems": 2
+        }
+      }
+    }
+  },
+  "tag1": {
+    "type": "Object",
+    "metadata": {
+      "displayName": "tag1"
+    },
+    "defaultValue": {
+      "tag": [
+        "",
+        ""
+      ]
+    },
+    "schema": {
+      "type": "object",
+      "properties": {
+        "tag": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 2,
+          "minItems": 2
+        }
+      }
+    }
+  },
+  "tag2": {
+    "type": "Object",
+    "metadata": {
+      "displayName": "tag2"
+    },
+    "defaultValue": {
+      "tag": [
+        "",
+        ""
+      ]
+    },
+    "schema": {
+      "type": "object",
+      "properties": {
+        "tag": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 2,
+          "minItems": 2
+        }
+      }
+    }
+  },
+  "tag3": {
+    "type": "Object",
+    "metadata": {
+      "displayName": "tag3"
+    },
+    "defaultValue": {
+      "tag": [
+        "",
+        ""
+      ]
+    },
+    "schema": {
+      "type": "object",
+      "properties": {
+        "tag": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 2,
+          "minItems": 2
+        }
+      }
+    }
+  },
+  "tag4": {
+    "type": "Object",
+    "metadata": {
+      "displayName": "tag4"
+    },
+    "defaultValue": {
+      "tag": [
+        "",
+        ""
+      ]
+    },
+    "schema": {
+      "type": "object",
+      "properties": {
+        "tag": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 2,
+          "minItems": 2
+        }
+      }
+    }
+  },
+  "tag5": {
+    "type": "Object",
+    "metadata": {
+      "displayName": "tag5"
+    },
+    "defaultValue": {
+      "tag": [
+        "",
+        ""
+      ]
+    },
+    "schema": {
+      "type": "object",
+      "properties": {
+        "tag": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 2,
+          "minItems": 2
+        }
+      }
+    }
+  },
+  "tag6": {
+    "type": "Object",
+    "metadata": {
+      "displayName": "tag6"
+    },
+    "defaultValue": {
+      "tag": [
+        "",
+        ""
+      ]
+    },
+    "schema": {
+      "type": "object",
+      "properties": {
+        "tag": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 2,
+          "minItems": 2
+        }
+      }
+    }
+  },
+  "tag7": {
+    "type": "Object",
+    "metadata": {
+      "displayName": "tag7"
+    },
+    "defaultValue": {
+      "tag": [
+        "",
+        ""
+      ]
+    },
+    "schema": {
+      "type": "object",
+      "properties": {
+        "tag": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 2,
+          "minItems": 2
+        }
+      }
+    }
+  },
+  "tag8": {
+    "type": "Object",
+    "metadata": {
+      "displayName": "tag8"
+    },
+    "defaultValue": {
+      "tag": [
+        "",
+        ""
+      ]
+    },
+    "schema": {
+      "type": "object",
+      "properties": {
+        "tag": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 2,
+          "minItems": 2
+        }
+      }
+    }
+  },
+  "tag9": {
+    "type": "Object",
+    "metadata": {
+      "displayName": "tag9"
+    },
+    "defaultValue": {
+      "tag": [
+        "",
+        ""
+      ]
+    },
+    "schema": {
+      "type": "object",
+      "properties": {
+        "tag": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 2,
+          "minItems": 2
+        }
+      }
+    }
+  },
+  "resourceGroupName": {
+    "type": "String",
+    "metadata": {
+      "displayName": "Resource Group Name",
+      "description": "The name of the resource group whose resources you'd like to require the tag on"
+    }
+  }
+}

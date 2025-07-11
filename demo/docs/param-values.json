@@ -1,0 +1,13 @@
+{
+  "tag0": {
+    "value": {
+      "tag": [
+        "tag=key",
+        "tag-value"
+      ]
+    }
+  },
+  "resourceGroupName": {
+    "value": "bhardest-rg-03"
+  }
+}
