@@ -8,6 +8,20 @@ az group create \
   --subscription "${SUBSCRIPTION}" \
   --location "${LOCATION}"
 
+az policy definition create -n $POLICY_DEFINITION \
+  --mode All \
+  --rules rules.json \
+  --params param-defs.json
+
+az policy assignment create -n $POLICY_ASSIGNMENT \
+  --policy $POLICY_DEFINITION \
+  --scope "/subscriptions/${SUBSCRIPTION_ID}" \
+  --location $LOCATION \
+  --mi-system-assigned \
+  --role "Tag Contributor" \
+  --identity-scope "/subscriptions/${SUBSCRIPTION_ID}" \
+  --params param-values.json
+
 az deployment group create \
   --name 'aro-hcp' \
   --subscription "${SUBSCRIPTION}" \
