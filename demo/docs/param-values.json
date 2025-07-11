@@ -2,7 +2,7 @@
   "tag0": {
     "value": {
       "tag": [
-        "tag=key",
+        "tag-key",
         "tag-value"
       ]
     }
