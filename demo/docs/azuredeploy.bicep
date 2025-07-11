@@ -141,12 +141,12 @@ resource hcp 'Microsoft.RedHatOpenShift/hcpOpenShiftClusters@2024-06-10-preview'
     }
     console: {}
     api: {
-      visibility: 'public'
+      visibility: 'Public'
     }
     platform: {
       managedResourceGroup: managedResourceGroupName
       subnetId: customerVnet.properties.subnets[0].id
-      outboundType: 'loadBalancer'
+      outboundType: 'LoadBalancer'
       networkSecurityGroupId: customerNsg.id
       operatorsAuthentication: {
         userAssignedIdentities: {
@@ -198,8 +198,10 @@ resource nodepool 'Microsoft.RedHatOpenShift/hcpOpenShiftClusters/nodePools@2024
     platform: {
       subnetId: hcp.properties.platform.subnetId
       vmSize: 'Standard_D8s_v3'
-      diskSizeGiB: 64
-      diskStorageAccountType: 'StandardSSD_LRS'
+      osDisk: {
+        sizeGiB: 64
+        diskStorageAccountType: 'StandardSSD_LRS'
+      }
     }
     replicas: 2
   }
