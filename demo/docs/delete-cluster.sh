@@ -1,20 +1,4 @@
 #!/bin/bash
-# This script deletes and ARO HCP cluster.
-
-source .env
-
-az rest \
-  --method DELETE \
-  --uri "/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$CUSTOMER_RG_NAME/providers/Microsoft.RedHatOpenShift/hcpOpenShiftClusters/$CLUSTER_NAME?api-version=2024-06-10-preview"
-
-az rest \
-  --method GET \
-  --uri "/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$CUSTOMER_RG_NAME/providers/Microsoft.RedHatOpenShift/hcpOpenShiftClusters/$CLUSTER_NAME?api-version=2024-06-10-preview"
-
-
-
-
-#!/bin/bash
 # This script deletes an ARO HCP cluster and waits for its complete deletion.
 
 source .env

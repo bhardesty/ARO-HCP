@@ -1,0 +1,21 @@
+{
+  "properties": {
+    "issuer": {
+      "url": "<issuer-url>",
+      "audiences": [
+        "<audience-1>"
+      ],
+      "ca": "ca-bundle.crt"
+    },
+    "claim": {
+      "mappings": {
+        "username": {
+          "claim": "<authorized-username>"
+        },
+        "groups": {
+          "claim": "groups"
+        }
+      }
+    }
+  }
+}

@@ -127,30 +127,9 @@ resource hcp 'Microsoft.RedHatOpenShift/hcpOpenShiftClusters@2024-06-10-preview'
   name: clusterName
   location: resourceGroup().location
   properties: {
-    version: {
-      id: 'openshift-v4.19.0'
-      channelGroup: 'stable'
-    }
-    dns: {}
-    network: {
-      networkType: 'OVNKubernetes'
-      podCidr: '10.128.0.0/14'
-      serviceCidr: '172.30.0.0/16'
-      machineCidr: '10.0.0.0/16'
-      hostPrefix: 23
-    }
-    console: {}
-    api: {
-      visibility: 'Public'
-      authorizedCidrs: [
-        '192.168.1.0/24'
-        '10.0.0.0/16'
-      ]
-    }
     platform: {
       managedResourceGroup: managedResourceGroupName
       subnetId: customerVnet.properties.subnets[0].id
-      outboundType: 'LoadBalancer'
       networkSecurityGroupId: customerNsg.id
       operatorsAuthentication: {
         userAssignedIdentities: {
@@ -174,7 +153,6 @@ resource hcp 'Microsoft.RedHatOpenShift/hcpOpenShiftClusters@2024-06-10-preview'
       }
     }
   }
-
   identity: {
     type: 'UserAssigned'
     userAssignedIdentities: {
@@ -196,29 +174,11 @@ resource nodepool 'Microsoft.RedHatOpenShift/hcpOpenShiftClusters/nodePools@2024
   name: nodePoolName
   location: resourceGroup().location
   properties: {
-    version: {
-      id: 'openshift-v4.18.4'
-      channelGroup: 'stable'
-    }
     platform: {
       subnetId: hcp.properties.platform.subnetId
       vmSize: 'Standard_D8s_v3'
-      osDisk: {
-        sizeGiB: 64
-        diskStorageAccountType: 'StandardSSD_LRS'
-      }
+
     }
-    replicas: 2
-    labels: [
-      {
-        key: 'key1'
-        value: 'value1'
-      }
-      {
-        key: 'key2'
-        value: 'value2'
-      }
-    ]
   }
 }
 
