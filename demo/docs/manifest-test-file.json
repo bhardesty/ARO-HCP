@@ -1,0 +1,16 @@
+{
+  "idToken": [
+    {
+      "name": "email",
+      "source": null,
+      "essential": false,
+      "additionalProperties": []
+    },
+    {
+      "name": "upn",
+      "source": null,
+      "essential": false,
+      "additionalProperties": []
+    }
+  ]
+}
