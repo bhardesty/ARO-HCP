@@ -60,6 +60,33 @@ resource customerVnet 'Microsoft.Network/virtualNetworks@2023-05-01' = {
   }
 }
 
+//
+// E X I S T I N G   R E S O U R C E S
+//
+
+resource vnet 'Microsoft.Network/virtualNetworks@2022-07-01' existing = {
+  name: vnetName
+}
+
+resource subnet 'Microsoft.Network/virtualNetworks/subnets@2022-07-01' existing = {
+  name: subnetName
+  parent: vnet
+}
+
+resource nsg 'Microsoft.Network/networkSecurityGroups@2022-07-01' existing = {
+  name: nsgName
+}
+
+resource keyVault 'Microsoft.KeyVault/vaults@2024-12-01-preview' existing = {
+  name: keyVaultName
+}
+
+resource etcdEncryptionKey 'Microsoft.KeyVault/vaults/keys@2024-12-01-preview' existing = {
+  parent: keyVault
+  name: etcdEncryptionKeyName
+}
+
+
 // Control plane identities
 resource clusterApiAzureMi 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
   name: '${clusterName}-cp-cluster-api-azure-${randomSuffix}'
@@ -128,7 +155,7 @@ resource hcp 'Microsoft.RedHatOpenShift/hcpOpenShiftClusters@2024-06-10-preview'
   location: resourceGroup().location
   properties: {
     version: {
-      id: 'openshift-v4.19.0'
+      id: '4.19.0'
       channelGroup: 'stable'
     }
     dns: {}
@@ -140,12 +167,16 @@ resource hcp 'Microsoft.RedHatOpenShift/hcpOpenShiftClusters@2024-06-10-preview'
       hostPrefix: 23
     }
     console: {}
+    etcd: {
+      dataEncryption: {
+        keyManagementMode: 'PlatformManaged'
+      }
+    }
     api: {
       visibility: 'Public'
-      authorizedCidrs: [
-        '192.168.1.0/24'
-        '10.0.0.0/16'
-      ]
+    }
+    clusterImageRegistry: {
+      state: 'Enabled'
     }
     platform: {
       managedResourceGroup: managedResourceGroupName

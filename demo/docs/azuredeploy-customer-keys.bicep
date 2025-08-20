@@ -16,7 +16,10 @@ param managedResourceGroupName string
 @description('The name of the node pool')
 param nodePoolName string
 
+var etcdEncryptionKeyName = 'etcd-data-kms-encryption-key'
 var randomSuffix = toLower(uniqueString(clusterName))
+var randomKeyVaultSuffix = toLower(uniqueString(resourceGroup().id))
+var customerKeyVaultName string = 'cust-kv-${randomKeyVaultSuffix}'
 var addressPrefix = '10.0.0.0/16'
 var subnetPrefix = '10.0.0.0/24'
 
@@ -59,6 +62,29 @@ resource subnet 'Microsoft.Network/virtualNetworks/subnets@2022-07-01' existing 
   parent: customerVnet
 }
 
+resource customerKeyVault 'Microsoft.KeyVault/vaults@2024-12-01-preview' = {
+  name: customerKeyVaultName
+  location: resourceGroup().location
+  properties: {
+    enableRbacAuthorization: true
+    enableSoftDelete: false
+    tenantId: subscription().tenantId
+    sku: {
+      family: 'A'
+      name: 'standard'
+    }
+  }
+}
+
+resource etcdEncryptionKey 'Microsoft.KeyVault/vaults/keys@2024-12-01-preview' = {
+  parent: customerKeyVault
+  name: 'etcd-data-kms-encryption-key'
+  properties: {
+    kty: 'RSA'
+    keySize: 2048
+  }
+}
+
 //
 // C O N T R O L   P L A N E   I D E N T I T I E S
 //
@@ -97,6 +123,41 @@ resource hcpClusterApiProviderRoleSubnetAssignment 'Microsoft.Authorization/role
 resource serviceManagedIdentityReaderOnClusterApiAzureMi 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(resourceGroup().id, serviceManagedIdentity.id, readerRoleId, clusterApiAzureMi.id)
   scope: clusterApiAzureMi
+  properties: {
+    principalId: serviceManagedIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: readerRoleId
+  }
+}
+
+//
+// K M S   M I
+//
+
+resource kmsMi 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
+  name: '${clusterName}-cp-kms-${randomSuffix}'
+  location: resourceGroup().location
+}
+
+// Key Vault Crypto User
+var keyVaultCryptoUserRoleId = subscriptionResourceId(
+  'Microsoft.Authorization/roleDefinitions',
+  '12338af0-0e69-4776-bea7-57ae8d297424'
+)
+
+resource keyVaultCryptoUserToKeyVaultRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(resourceGroup().id, kmsMi.id, keyVaultCryptoUserRoleId, customerKeyVault.id)
+  scope: customerKeyVault
+  properties: {
+    principalId: kmsMi.properties.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: keyVaultCryptoUserRoleId
+  }
+}
+
+resource serviceManagedIdentityReaderOnKmsMi 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(resourceGroup().id, serviceManagedIdentity.id, readerRoleId, kmsMi.id)
+  scope: kmsMi
   properties: {
     principalId: serviceManagedIdentity.properties.principalId
     principalType: 'ServicePrincipal'
@@ -498,10 +559,20 @@ resource hcp 'Microsoft.RedHatOpenShift/hcpOpenShiftClusters@2024-06-10-preview'
       machineCidr: '10.0.0.0/16'
       hostPrefix: 23
     }
-    console: {}
+    console: {} 
     etcd: {
       dataEncryption: {
-        keyManagementMode: 'PlatformManaged'
+        keyManagementMode: 'CustomerManaged'
+        customerManaged: {
+          encryptionType: 'kms'
+          kms: {
+             activeKey: {
+              vaultName: customerKeyVaultName
+              name: etcdEncryptionKeyName
+              version: last(split(etcdEncryptionKey.properties.keyUriWithVersion, '/'))
+             }
+          }
+        }
       }
     }
     api: {
@@ -527,6 +598,7 @@ resource hcp 'Microsoft.RedHatOpenShift/hcpOpenShiftClusters@2024-06-10-preview'
             'file-csi-driver': fileCsiDriverMi.id
             'image-registry': imageRegistryMi.id
             'cloud-network-config': cloudNetworkConfigMi.id
+            'kms': kmsMi.id
           }
           dataPlaneOperators: {
             'disk-csi-driver': dpDiskCsiDriverMi.id
@@ -550,10 +622,12 @@ resource hcp 'Microsoft.RedHatOpenShift/hcpOpenShiftClusters@2024-06-10-preview'
       '${fileCsiDriverMi.id}': {}
       '${imageRegistryMi.id}': {}
       '${cloudNetworkConfigMi.id}': {}
+      '${kmsMi.id}': {}
     }
   }
   dependsOn: [
     hcpClusterApiProviderRoleSubnetAssignment
+    keyVaultCryptoUserToKeyVaultRoleAssignment
     hcpControlPlaneOperatorVnetRoleAssignment
     hcpControlPlaneOperatorNsgRoleAssignment
     cloudControllerManagerRoleSubnetAssignment
@@ -579,6 +653,7 @@ resource hcp 'Microsoft.RedHatOpenShift/hcpOpenShiftClusters@2024-06-10-preview'
     serviceManagedIdentityReaderOnImageRegistryMi
     serviceManagedIdentityReaderOnCloudNetworkMi
     serviceManagedIdentityReaderOnClusterApiAzureMi
+    serviceManagedIdentityReaderOnKmsMi
   ]
 }
 

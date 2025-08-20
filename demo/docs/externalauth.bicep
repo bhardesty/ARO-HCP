@@ -20,8 +20,20 @@ resource externalauth 'Microsoft.RedHatOpenShift/hcpOpenShiftClusters/externalAu
   properties: {
     issuer: {
       url: issuerURL
-      audiences: clientID
+      audiences: [
+        clientID
+      ]
     } 
+    clients: [
+      {
+        component: {
+          name: 'console'
+          authClientNamespace: 'openshift-console'
+        }
+        clientId: clientID
+        type: 'Confidential'
+      }
+    ]
     claim: {
       mappings: {
         username: {
@@ -31,14 +43,6 @@ resource externalauth 'Microsoft.RedHatOpenShift/hcpOpenShiftClusters/externalAu
           claim: 'groups'
         }
       }
-    }
-    clients: {
-      component: {
-        name: 'console'
-        authClientNamespace: 'openshift-console'
-      }
-      clientId: clientID
-      type: 'Confidential'
     }
   }
 }
