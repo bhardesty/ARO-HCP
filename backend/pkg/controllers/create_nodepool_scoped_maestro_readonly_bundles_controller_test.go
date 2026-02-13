@@ -208,7 +208,6 @@ func TestCreateNodePoolScopedMaestroReadonlyBundlesSyncer_syncMaestroBundle(t *t
 			name: "existing reference but no ID - sets new ID and preserves name",
 			initialSPNP: &api.ServiceProviderNodePool{
 				CosmosMetadata: arm.CosmosMetadata{ResourceID: spnpResourceID},
-				ResourceID:     *spnpResourceID,
 				Status: api.ServiceProviderNodePoolStatus{
 					MaestroReadonlyBundles: api.MaestroBundleReferenceList{
 						{
@@ -242,7 +241,6 @@ func TestCreateNodePoolScopedMaestroReadonlyBundlesSyncer_syncMaestroBundle(t *t
 			name: "complete bundle reference - ID unchanged",
 			initialSPNP: &api.ServiceProviderNodePool{
 				CosmosMetadata: arm.CosmosMetadata{ResourceID: spnpResourceID},
-				ResourceID:     *spnpResourceID,
 				Status: api.ServiceProviderNodePoolStatus{
 					MaestroReadonlyBundles: api.MaestroBundleReferenceList{
 						{
@@ -275,7 +273,6 @@ func TestCreateNodePoolScopedMaestroReadonlyBundlesSyncer_syncMaestroBundle(t *t
 			name: "multiple refs - only synced ref is updated, other refs unchanged",
 			initialSPNP: &api.ServiceProviderNodePool{
 				CosmosMetadata: arm.CosmosMetadata{ResourceID: spnpResourceID},
-				ResourceID:     *spnpResourceID,
 				Status: api.ServiceProviderNodePoolStatus{
 					MaestroReadonlyBundles: api.MaestroBundleReferenceList{
 						{
@@ -319,7 +316,6 @@ func TestCreateNodePoolScopedMaestroReadonlyBundlesSyncer_syncMaestroBundle(t *t
 			name: "maestro get or create error - returns last persisted SPNP",
 			initialSPNP: &api.ServiceProviderNodePool{
 				CosmosMetadata: arm.CosmosMetadata{ResourceID: spnpResourceID},
-				ResourceID:     *spnpResourceID,
 				Status: api.ServiceProviderNodePoolStatus{
 					MaestroReadonlyBundles: api.MaestroBundleReferenceList{
 						{
@@ -351,7 +347,6 @@ func TestCreateNodePoolScopedMaestroReadonlyBundlesSyncer_syncMaestroBundle(t *t
 			name: "no bundle reference initially - creates ref with deterministic UUID name and new ID",
 			initialSPNP: &api.ServiceProviderNodePool{
 				CosmosMetadata: arm.CosmosMetadata{ResourceID: spnpResourceID},
-				ResourceID:     *spnpResourceID,
 				Status: api.ServiceProviderNodePoolStatus{
 					MaestroReadonlyBundles: api.MaestroBundleReferenceList{},
 				},
@@ -389,7 +384,6 @@ func TestCreateNodePoolScopedMaestroReadonlyBundlesSyncer_syncMaestroBundle(t *t
 			name: "no bundle ref initially - bundle name persisted then getOrCreate fails - returns SPNP with name set, no ID",
 			initialSPNP: &api.ServiceProviderNodePool{
 				CosmosMetadata: arm.CosmosMetadata{ResourceID: spnpResourceID},
-				ResourceID:     *spnpResourceID,
 				Status: api.ServiceProviderNodePoolStatus{
 					MaestroReadonlyBundles: api.MaestroBundleReferenceList{},
 				},
@@ -538,7 +532,6 @@ func TestCreateNodePoolScopedMaestroReadonlyBundlesSyncer_SyncOnce_EmptyClusterS
 	spnpResourceID := api.Must(azcorearm.ParseResourceID("/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.RedHatOpenShift/hcpOpenShiftClusters/test-cluster/nodePools/test-nodepool/serviceProviderNodePools/default"))
 	spnp := &api.ServiceProviderNodePool{
 		CosmosMetadata: arm.CosmosMetadata{ResourceID: spnpResourceID},
-		ResourceID:     *spnpResourceID,
 		Status: api.ServiceProviderNodePoolStatus{
 			MaestroReadonlyBundles: api.MaestroBundleReferenceList{},
 		},
@@ -645,7 +638,6 @@ func TestCreateNodePoolScopedMaestroReadonlyBundlesSyncer_SyncOnce_AllBundlesAlr
 	spnpResourceID := api.Must(azcorearm.ParseResourceID("/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.RedHatOpenShift/hcpOpenShiftClusters/test-cluster/nodePools/test-nodepool/serviceProviderNodePools/default"))
 	spnp := &api.ServiceProviderNodePool{
 		CosmosMetadata: arm.CosmosMetadata{ResourceID: spnpResourceID},
-		ResourceID:     *spnpResourceID,
 		Status: api.ServiceProviderNodePoolStatus{
 			MaestroReadonlyBundles: api.MaestroBundleReferenceList{
 				{
@@ -710,7 +702,6 @@ func TestCreateNodePoolScopedMaestroReadonlyBundlesSyncer_SyncOnce_SyncLoopExecu
 	spnpResourceID := api.Must(azcorearm.ParseResourceID("/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.RedHatOpenShift/hcpOpenShiftClusters/test-cluster/nodePools/test-nodepool/serviceProviderNodePools/default"))
 	spnp := &api.ServiceProviderNodePool{
 		CosmosMetadata: arm.CosmosMetadata{ResourceID: spnpResourceID},
-		ResourceID:     *spnpResourceID,
 		Status: api.ServiceProviderNodePoolStatus{
 			MaestroReadonlyBundles: api.MaestroBundleReferenceList{},
 		},
@@ -811,7 +802,6 @@ func TestCreateNodePoolScopedMaestroReadonlyBundlesSyncer_SyncOnce_ProcessesPart
 	spnpResourceID := api.Must(azcorearm.ParseResourceID("/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.RedHatOpenShift/hcpOpenShiftClusters/test-cluster/nodePools/test-nodepool/serviceProviderNodePools/default"))
 	spnp := &api.ServiceProviderNodePool{
 		CosmosMetadata: arm.CosmosMetadata{ResourceID: spnpResourceID},
-		ResourceID:     *spnpResourceID,
 		Status: api.ServiceProviderNodePoolStatus{
 			MaestroReadonlyBundles: api.MaestroBundleReferenceList{
 				{

@@ -243,7 +243,6 @@ func TestMockResourcesDBClient_CRUD_Operation(t *testing.T) {
 		CosmosMetadata: api.CosmosMetadata{
 			ResourceID: resourceID,
 		},
-		ResourceID:         resourceID,
 		OperationID:        operationID,
 		ExternalID:         externalID,
 		Request:            api.OperationRequestCreate,
@@ -574,7 +573,6 @@ func TestMockResourcesDBClient_ServiceProviderCluster_ETagConditionalReplace(t *
 		CosmosMetadata: api.CosmosMetadata{
 			ResourceID: serviceProviderClusterResourceID,
 		},
-		ResourceID: *serviceProviderClusterResourceID,
 	}
 
 	spClusterCRUD := mock.ServiceProviderClusters(subscriptionID, resourceGroupName, clusterName)

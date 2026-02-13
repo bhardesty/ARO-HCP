@@ -396,7 +396,6 @@ func newTestServiceProviderCluster(subscriptionID, resourceGroupName, clusterNam
 		CosmosMetadata: arm.CosmosMetadata{
 			ResourceID: resourceID,
 		},
-		ResourceID: *resourceID,
 	}
 }
 

@@ -273,7 +273,6 @@ func TestAdmitClusterOnUpdate(t *testing.T) {
 		}
 		return &api.ServiceProviderNodePool{
 			CosmosMetadata: api.CosmosMetadata{ResourceID: spResourceID},
-			ResourceID:     *spResourceID,
 			Status: api.ServiceProviderNodePoolStatus{
 				NodePoolVersion: api.ServiceProviderNodePoolStatusVersion{ActiveVersions: active},
 			},
@@ -527,7 +526,6 @@ func TestAdmitClusterOnUpdate(t *testing.T) {
 
 			serviceProviderCluster := &api.ServiceProviderCluster{
 				CosmosMetadata: api.CosmosMetadata{ResourceID: serviceProviderResourceID},
-				ResourceID:     *serviceProviderResourceID,
 				Status:         tt.serviceProviderClusterStatus,
 			}
 

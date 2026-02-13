@@ -171,7 +171,6 @@ func newMetricsTestOperation(t *testing.T, subscriptionID, name string, external
 		CosmosMetadata: api.CosmosMetadata{
 			ResourceID: resourceID,
 		},
-		ResourceID:         resourceID,
 		OperationID:        operationID,
 		ExternalID:         externalID,
 		Request:            request,
