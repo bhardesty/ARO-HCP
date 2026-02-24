@@ -42,7 +42,7 @@ func InternalToCosmosCluster(internalObj *api.HCPOpenShiftCluster) (*HCPCluster,
 			CosmosMetadata: api.CosmosMetadata{
 				ResourceID: internalObj.ID,
 			},
-			ResourceDocument: &ResourceDocument{
+			IntermediateResourceDoc: &ResourceDocument{
 				ResourceID:        internalObj.ID,
 				InternalID:        ptr.Deref(internalObj.ServiceProviderProperties.ClusterServiceID, api.InternalID{}),
 				ActiveOperationID: internalObj.ServiceProviderProperties.ActiveOperationID,
@@ -56,7 +56,6 @@ func InternalToCosmosCluster(internalObj *api.HCPOpenShiftCluster) (*HCPCluster,
 			},
 		},
 	}
-	cosmosObj.IntermediateResourceDoc = cosmosObj.ResourceDocument
 
 	// some pieces of data in the internalCluster conflict with ResourceDocument fields.  We may evolve over time, but for
 	// now avoid persisting those.
@@ -71,12 +70,6 @@ func InternalToCosmosCluster(internalObj *api.HCPOpenShiftCluster) (*HCPCluster,
 	// on the reading side, we handle the pointer as expected.
 	cosmosObj.InternalState.InternalAPI.ServiceProviderProperties.ClusterServiceID = &api.InternalID{}
 	cosmosObj.InternalState.InternalAPI.ServiceProviderProperties.ActiveOperationID = ""
-
-	// This is not the place for validation, but during such a transition we need to ensure we fail quickly and certainly
-	// This flow will eventually be called when we replace the write path and we must always have a value.
-	if len(cosmosObj.InternalID.String()) == 0 {
-		panic("Developer Error: InternalID is required")
-	}
 
 	return cosmosObj, nil
 }
@@ -124,10 +117,7 @@ func CosmosToInternalCluster(cosmosObj *HCPCluster) (*api.HCPOpenShiftCluster, e
 	if cosmosObj == nil {
 		return nil, nil
 	}
-	resourceDoc := cosmosObj.ResourceDocument
-	if resourceDoc == nil {
-		resourceDoc = cosmosObj.IntermediateResourceDoc
-	}
+	resourceDoc := cosmosObj.IntermediateResourceDoc
 	if resourceDoc == nil {
 		return nil, fmt.Errorf("resource document cannot be nil")
 	}

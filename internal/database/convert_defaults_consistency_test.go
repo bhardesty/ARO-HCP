@@ -362,7 +362,7 @@ func TestPreExistingDataCluster(t *testing.T) {
 			ResourceID:   resourceID,
 		},
 		HCPClusterProperties: HCPClusterProperties{
-			ResourceDocument: &ResourceDocument{
+			IntermediateResourceDoc: &ResourceDocument{
 				ResourceID:        resourceID,
 				InternalID:        api.Must(api.NewInternalID("/api/aro_hcp/v1alpha1/clusters/test-cluster")),
 				ProvisioningState: arm.ProvisioningStateSucceeded,
@@ -420,7 +420,7 @@ func TestKMSVisibilityDefaultsToPublic(t *testing.T) {
 			ResourceID:   resourceID,
 		},
 		HCPClusterProperties: HCPClusterProperties{
-			ResourceDocument: &ResourceDocument{
+			IntermediateResourceDoc: &ResourceDocument{
 				ResourceID:        resourceID,
 				InternalID:        api.Must(api.NewInternalID("/api/aro_hcp/v1alpha1/clusters/test-cluster")),
 				ProvisioningState: arm.ProvisioningStateSucceeded,
@@ -485,7 +485,7 @@ func TestPreExistingDataNodePool(t *testing.T) {
 			ResourceID:   resourceID,
 		},
 		NodePoolProperties: NodePoolProperties{
-			ResourceDocument: &ResourceDocument{
+			IntermediateResourceDoc: &ResourceDocument{
 				ResourceID:        resourceID,
 				InternalID:        api.Must(api.NewInternalID("/api/aro_hcp/v1alpha1/clusters/test-cluster/node_pools/test-np")),
 				ProvisioningState: arm.ProvisioningStateSucceeded,
@@ -649,7 +649,7 @@ func TestPreExistingDataExternalAuth(t *testing.T) {
 			ResourceID:   resourceID,
 		},
 		ExternalAuthProperties: ExternalAuthProperties{
-			ResourceDocument: &ResourceDocument{
+			IntermediateResourceDoc: &ResourceDocument{
 				ResourceID:        resourceID,
 				InternalID:        api.Must(api.NewInternalID("/api/aro_hcp/v1alpha1/clusters/test-cluster/external_auth_config/external_auths/default")),
 				ProvisioningState: arm.ProvisioningStateSucceeded,
