@@ -30,7 +30,6 @@ import (
 	azcorearm "github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos"
 
-	arohcpv1alpha1 "github.com/openshift-online/ocm-sdk-go/arohcp/v1alpha1"
 	ocmerrors "github.com/openshift-online/ocm-sdk-go/errors"
 
 	"github.com/Azure/ARO-HCP/internal/admission"
@@ -99,21 +98,12 @@ func (f *Frontend) ArmResourceListClusters(writer http.ResponseWriter, request *
 		return utils.TrackError(err)
 	}
 	for _, internalCluster := range internalClusterIterator.Items(ctx) {
-<<<<<<< HEAD
-		if internalCluster.ServiceProviderProperties.ClusterServiceID == nil {
-			// TODO this will be removed during our switch to read only from cosmos.
-			// we can still merge now since the value will never be nil until both the read path is fixed and this PR makes it to prod.
-			continue
-		}
-		clustersByClusterServiceID[internalCluster.ServiceProviderProperties.ClusterServiceID.ID()] = internalCluster
-=======
 		resultingExternalCluster := versionedInterface.NewHCPOpenShiftCluster(internalCluster)
 		jsonBytes, err := arm.MarshalJSON(resultingExternalCluster)
 		if err != nil {
 			return utils.TrackError(err)
 		}
 		pagedResponse.AddValue(jsonBytes)
->>>>>>> bc80f6968 (refactor to use only cosmos for cluster reads)
 	}
 	err = internalClusterIterator.GetError()
 	if err != nil {
@@ -607,7 +597,6 @@ func (f *Frontend) updateHCPClusterInCosmos(ctx context.Context, writer http.Res
 		tenantID = *subscription.Properties.TenantId
 	}
 
-	var resultingClusterServiceCluster *arohcpv1alpha1.Cluster
 	if oldInternalCluster.ServiceProviderProperties.ClusterServiceID != nil {
 		oldClusterServiceCluster, err := f.clusterServiceClient.GetCluster(ctx, *oldInternalCluster.ServiceProviderProperties.ClusterServiceID)
 		if err != nil {
@@ -619,19 +608,11 @@ func (f *Frontend) updateHCPClusterInCosmos(ctx context.Context, writer http.Res
 		}
 
 		logger.Info(fmt.Sprintf("updating resource %s", oldInternalCluster.ID))
-		resultingClusterServiceAutoscaler, err := f.clusterServiceClient.UpdateClusterAutoscaler(ctx, *oldInternalCluster.ServiceProviderProperties.ClusterServiceID, newClusterServiceAutoscalerBuilder)
+		_, err = f.clusterServiceClient.UpdateClusterAutoscaler(ctx, *oldInternalCluster.ServiceProviderProperties.ClusterServiceID, newClusterServiceAutoscalerBuilder)
 		if err != nil {
 			return utils.TrackError(err)
 		}
-		resultingClusterServiceCluster, err = f.clusterServiceClient.UpdateCluster(ctx, *oldInternalCluster.ServiceProviderProperties.ClusterServiceID, newClusterServiceClusterBuilder)
-		if err != nil {
-			return utils.TrackError(err)
-		}
-		// Merge the autoscaler model into the cluster model.
-		resultingClusterServiceCluster, err = arohcpv1alpha1.NewCluster().
-			Copy(resultingClusterServiceCluster).
-			Autoscaler(arohcpv1alpha1.NewClusterAutoscaler().Copy(resultingClusterServiceAutoscaler)).
-			Build()
+		_, err = f.clusterServiceClient.UpdateCluster(ctx, *oldInternalCluster.ServiceProviderProperties.ClusterServiceID, newClusterServiceClusterBuilder)
 		if err != nil {
 			return utils.TrackError(err)
 		}
