@@ -91,6 +91,9 @@ Welcome to the **ARO HCP** documentation. This guide provides an overview of the
   - Walkthrough of an HCP cluster creation process through all the service layers of ARO HCP
 - [Opstool Cluster Guide](ops/opstool-cluster-guide.md)
   - Standalone cluster architecture, rollout model, shared resource wiring, and workload patterns for `opstool`
+- [Resource Creation Diagram](resource-creation.md)
+  - Detailed diagram of the resource creation flow (frontend, backend, Cluster Service, Maestro)
+  - Covers HCPOpenShiftCluster, NodePool, and ExternalAuth resource types
 - [Postgres Breakglass](ops/postgres-breakglass.md)
   - How to access the Postgres database
 - [Tenant Quota Collector](../tooling/tenant-quota/README.md)
