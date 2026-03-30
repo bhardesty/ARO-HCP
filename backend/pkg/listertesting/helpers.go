@@ -46,3 +46,12 @@ func serviceProviderClusterMatchesCluster(resourceID *azcorearm.ResourceID, clus
 	}
 	return strings.EqualFold(resourceID.Parent.Name, clusterName)
 }
+
+// managementClusterContentMatchesCluster checks if a management cluster content's resource ID belongs to the given cluster.
+// Management cluster contents are child resources of clusters, so we check the parent resource name.
+func managementClusterContentMatchesCluster(resourceID *azcorearm.ResourceID, clusterName string) bool {
+	if resourceID == nil || resourceID.Parent == nil {
+		return false
+	}
+	return strings.EqualFold(resourceID.Parent.Name, clusterName)
+}

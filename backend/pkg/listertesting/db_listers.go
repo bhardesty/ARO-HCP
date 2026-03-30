@@ -263,6 +263,10 @@ func (l *DBManagementClusterContentLister) List(ctx context.Context) ([]*api.Man
 	return collectFromIterator(ctx, iter)
 }
 
+func (l *DBManagementClusterContentLister) GetForCluster(ctx context.Context, subscriptionID, resourceGroupName, clusterName, managementClusterContentName string) (*api.ManagementClusterContent, error) {
+	return l.DBClient.HCPClusters(subscriptionID, resourceGroupName).ManagementClusterContents(clusterName).Get(ctx, managementClusterContentName)
+}
+
 func (l *DBManagementClusterContentLister) ListForCluster(ctx context.Context, subscriptionID, resourceGroupName, clusterName string) ([]*api.ManagementClusterContent, error) {
 	prefix := api.ToClusterResourceIDString(subscriptionID, resourceGroupName, clusterName)
 	return l.listMCCWithPrefix(ctx, prefix)
