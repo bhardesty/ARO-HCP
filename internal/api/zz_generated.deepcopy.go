@@ -1042,7 +1042,7 @@ func (in *ManagementClusterContentStatus) DeepCopyInto(out *ManagementClusterCon
 	*out = *in
 	if in.Conditions != nil {
 		in, out := &in.Conditions, &out.Conditions
-		*out = make([]Condition, len(*in))
+		*out = make([]v1.Condition, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}

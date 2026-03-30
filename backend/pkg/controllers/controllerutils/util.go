@@ -23,6 +23,8 @@ import (
 	"github.com/go-logr/logr"
 
 	"k8s.io/apimachinery/pkg/api/equality"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilsclock "k8s.io/utils/clock"
 
 	azcorearm "github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
@@ -297,6 +299,30 @@ func SetCondition(conditions *[]api.Condition, toSet api.Condition) {
 	newCondition := existingCondition.DeepCopy()
 	if newCondition.Status != toSet.Status {
 		newCondition.LastTransitionTime = clock.Now()
+	}
+	newCondition.Status = toSet.Status
+	newCondition.Reason = toSet.Reason
+	newCondition.Message = toSet.Message
+
+	for i := range *conditions {
+		if (*conditions)[i].Type == toSet.Type {
+			(*conditions)[i] = *newCondition
+			return
+		}
+	}
+}
+
+func SetMetaV1Condition(conditions *[]metav1.Condition, toSet metav1.Condition) {
+	existingCondition := meta.FindStatusCondition(*conditions, toSet.Type)
+	if existingCondition == nil {
+		toSet.LastTransitionTime = metav1.Time{Time: clock.Now()}
+		*conditions = append(*conditions, toSet)
+		return
+	}
+
+	newCondition := existingCondition.DeepCopy()
+	if newCondition.Status != toSet.Status {
+		newCondition.LastTransitionTime = metav1.Time{Time: clock.Now()}
 	}
 	newCondition.Status = toSet.Status
 	newCondition.Reason = toSet.Reason
