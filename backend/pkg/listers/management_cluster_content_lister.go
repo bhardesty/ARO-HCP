@@ -25,7 +25,7 @@ import (
 // ManagementClusterContentLister lists ManagementClusterContent from the shared informer indexer.
 type ManagementClusterContentLister interface {
 	List(ctx context.Context) ([]*api.ManagementClusterContent, error)
-	Get(ctx context.Context, subscriptionID, resourceGroupName, clusterName, managementClusterContentName string) (*api.ManagementClusterContent, error)
+	GetForCluster(ctx context.Context, subscriptionID, resourceGroupName, clusterName, managementClusterContentName string) (*api.ManagementClusterContent, error)
 	ListForCluster(ctx context.Context, subscriptionID, resourceGroupName, clusterName string) ([]*api.ManagementClusterContent, error)
 	ListForNodePool(ctx context.Context, subscriptionName, resourceGroupName, clusterName, nodePoolName string) ([]*api.ManagementClusterContent, error)
 }
@@ -42,7 +42,7 @@ func NewManagementClusterContentLister(indexer cache.Indexer) ManagementClusterC
 	}
 }
 
-func (l *managementClusterContentLister) Get(ctx context.Context, subscriptionID, resourceGroupName, clusterName, managementClusterContentName string) (*api.ManagementClusterContent, error) {
+func (l *managementClusterContentLister) GetForCluster(ctx context.Context, subscriptionID, resourceGroupName, clusterName, managementClusterContentName string) (*api.ManagementClusterContent, error) {
 	key := api.ToManagementClusterContentResourceIDString(subscriptionID, resourceGroupName, clusterName, managementClusterContentName)
 	return getByKey[api.ManagementClusterContent](l.indexer, key)
 }

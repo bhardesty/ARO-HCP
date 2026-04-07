@@ -172,7 +172,7 @@ type errorManagementClusterContentLister struct {
 func (l *errorManagementClusterContentLister) List(_ context.Context) ([]*api.ManagementClusterContent, error) {
 	return nil, l.err
 }
-func (l *errorManagementClusterContentLister) Get(_ context.Context, _, _, _, _ string) (*api.ManagementClusterContent, error) {
+func (l *errorManagementClusterContentLister) GetForCluster(_ context.Context, _, _, _, _ string) (*api.ManagementClusterContent, error) {
 	return nil, l.err
 }
 func (l *errorManagementClusterContentLister) ListForCluster(_ context.Context, _, _, _ string) ([]*api.ManagementClusterContent, error) {

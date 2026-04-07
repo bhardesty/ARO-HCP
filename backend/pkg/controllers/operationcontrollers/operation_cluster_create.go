@@ -247,7 +247,7 @@ var minVersionsWithValidSuccessCondition = map[string]semver.Version{
 func (c *operationClusterCreate) hostedClusterOperationStatus(ctx context.Context, operation *api.Operation) (*operationState, error) {
 	logger := utils.LoggerFromContext(ctx)
 
-	hostedClusterContent, err := c.clusterManagementClusterContentLister.Get(ctx, operation.ExternalID.SubscriptionID, operation.ExternalID.ResourceGroupName, operation.ExternalID.Name, string(api.MaestroBundleInternalNameReadonlyHypershiftHostedCluster))
+	hostedClusterContent, err := c.clusterManagementClusterContentLister.GetForCluster(ctx, operation.ExternalID.SubscriptionID, operation.ExternalID.ResourceGroupName, operation.ExternalID.Name, string(api.MaestroBundleInternalNameReadonlyHypershiftHostedCluster))
 	if database.IsNotFoundError(err) {
 		return newOperationState(arm.ProvisioningStateProvisioning, ""), nil
 	}

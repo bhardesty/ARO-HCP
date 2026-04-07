@@ -264,7 +264,7 @@ func (l *SliceManagementClusterContentLister) List(ctx context.Context) ([]*api.
 	return l.Contents, nil
 }
 
-func (l *SliceManagementClusterContentLister) Get(ctx context.Context, subscriptionID, resourceGroupName, clusterName, managementClusterContentName string) (*api.ManagementClusterContent, error) {
+func (l *SliceManagementClusterContentLister) GetForCluster(ctx context.Context, subscriptionID, resourceGroupName, clusterName, managementClusterContentName string) (*api.ManagementClusterContent, error) {
 	for _, c := range l.Contents {
 		resourceID := c.GetResourceID()
 		if resourceID == nil {
