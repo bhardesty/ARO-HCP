@@ -200,9 +200,10 @@ func (c *Checker) repoExists(ctx context.Context, repository string) (bool, erro
 	switch resp.StatusCode {
 	case http.StatusOK:
 		return true, nil
-	case http.StatusNotFound, http.StatusUnauthorized, http.StatusForbidden:
-		// 401/403 from Quay means the repo doesn't exist (or is private and inaccessible)
+	case http.StatusNotFound:
 		return false, nil
+	case http.StatusUnauthorized, http.StatusForbidden:
+		return false, fmt.Errorf("repository %s is inaccessible via Quay API: status %d", repository, resp.StatusCode)
 	default:
 		return false, fmt.Errorf("unexpected status %d from Quay API for repo %s", resp.StatusCode, repository)
 	}
@@ -224,7 +225,7 @@ func (c *Checker) getLatestVersionTag(ctx context.Context, repository, tagPatter
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", "", fmt.Errorf("Quay API returned status %d for %s", resp.StatusCode, repository)
+		return "", "", fmt.Errorf("quay API returned status %d for %s", resp.StatusCode, repository)
 	}
 
 	var tagsResp quayTagsResponse
@@ -336,13 +337,13 @@ func FormatResults(results []Result) string {
 		sb.WriteString(fmt.Sprintf("  Next:    %s (version %s)\n", r.NextRepo, r.NextVersion))
 
 		if r.NextRepoExists {
-			sb.WriteString(fmt.Sprintf("  Status:  ✅ Next version repo EXISTS on Quay\n"))
+			sb.WriteString("  Status:  ✅ Next version repo EXISTS on Quay\n")
 			if r.LatestTag != "" {
 				sb.WriteString(fmt.Sprintf("  Latest:  %s (%s)\n", r.LatestTag, r.LatestTagDate))
 			}
 			upgradesFound = true
 		} else {
-			sb.WriteString(fmt.Sprintf("  Status:  ⏳ Next version repo does not exist yet\n"))
+			sb.WriteString("  Status:  ⏳ Next version repo does not exist yet\n")
 		}
 		sb.WriteString("\n")
 	}

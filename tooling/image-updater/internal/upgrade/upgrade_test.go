@@ -223,10 +223,10 @@ func TestCheckerCheckAll(t *testing.T) {
 
 	// ACM 2.17 repo exists with tags
 	mux.HandleFunc("/api/v1/repository/redhat-user-workloads/crt-redhat-acm-tenant/acm-operator-bundle-acm-217", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(quayRepoResponse{Name: "acm-operator-bundle-acm-217"})
+		_ = json.NewEncoder(w).Encode(quayRepoResponse{Name: "acm-operator-bundle-acm-217"})
 	})
 	mux.HandleFunc("/api/v1/repository/redhat-user-workloads/crt-redhat-acm-tenant/acm-operator-bundle-acm-217/tag/", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(quayTagsResponse{
+		_ = json.NewEncoder(w).Encode(quayTagsResponse{
 			Tags: []quayTag{
 				{Name: "v2.17.0-155", LastModified: "Wed, 15 Apr 2026 04:02:24 -0000"},
 				{Name: "v2.17.0-154", LastModified: "Tue, 14 Apr 2026 21:24:54 -0000"},
@@ -556,7 +556,7 @@ func TestApplyUpgrades(t *testing.T) {
 
 		updaterConfig := filepath.Join(tmpDir, "updater.yaml")
 		content := "some content"
-		os.WriteFile(updaterConfig, []byte(content), 0644)
+		_ = os.WriteFile(updaterConfig, []byte(content), 0644)
 
 		results := []Result{
 			{UpgradeAvailable: false},

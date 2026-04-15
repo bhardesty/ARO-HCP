@@ -54,7 +54,7 @@ Exit codes:
 	cmd.Flags().StringVar(&configPath, "config", "", "Path to image-updater configuration file")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Only report upgrades without modifying config files")
 	if err := cmd.MarkFlagRequired("config"); err != nil {
-		return nil
+		panic(fmt.Sprintf("failed to mark flag %q as required: %v", "config", err))
 	}
 
 	return cmd
