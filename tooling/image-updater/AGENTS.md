@@ -135,7 +135,7 @@ cd tooling/image-updater
 make upgrade-repository-version
 ```
 
-After running `upgrade-repos`, follow the same post-bump steps as ACM
+After running `upgrade-repository-version`, follow the same post-bump steps as ACM
 component updates:
 
 ```bash
