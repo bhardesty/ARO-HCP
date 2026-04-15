@@ -118,6 +118,41 @@ To preview changes without writing:
 ./image-updater update --config config.yaml --components hypershift --dry-run --output-format markdown
 ```
 
+### ACM/MCE Repository Version Upgrade
+
+ACM and MCE create new Quay repos for each major version (e.g.
+`acm-operator-bundle-acm-216` → `acm-operator-bundle-acm-217`). The
+`repository-version-upgrade` subcommand detects when a next-version repo
+appears on Quay and updates the config files.
+
+```bash
+cd tooling/image-updater
+
+# Dry run — report only, no file changes
+./image-updater repository-version-upgrade --config config.yaml --dry-run
+
+# Update repo versions in both config files
+make upgrade-repository-version
+```
+
+After running `upgrade-repos`, follow the same post-bump steps as ACM
+component updates:
+
+```bash
+make -C config materialize
+make -C acm helm-charts
+make update-helm-fixtures
+make yamlfmt
+```
+
+**How it works**: The tool reads `acm-operator` and `acm-mce` entries from
+`config.yaml`, extracts the version suffix from the repo name (e.g. `216` →
+version `2.16`), increments the minor version (`2.17`), builds the next repo
+name (`acm-operator-bundle-acm-217`), and checks Quay for its existence.
+
+**Important**: A new repo existing does NOT mean it is GA. Always confirm GA
+status in `#acm-release` before merging any upgrade PR.
+
 ### Troubleshooting
 
 - Some images require Azure auth (`useAuth: true`). Make sure `az` is logged in.

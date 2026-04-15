@@ -1,4 +1,4 @@
-.PHONY: build update clean test test-verbose test-coverage help
+.PHONY: build update upgrade-repository-version clean test test-verbose test-coverage help
 
 export AZURE_TOKEN_CREDENTIALS ?= dev
 
@@ -24,6 +24,9 @@ build:
 update: build
 	@./$(BINARY_NAME) update --config $(CONFIG_FILE) $(COMPONENT_FLAGS) $(GROUP_FLAGS) $(EXCLUDE_FLAGS) $(VERBOSITY_FLAGS) $(OUTPUT_FLAGS)
 
+upgrade-repository-version: build
+	@./$(BINARY_NAME) repository-version-upgrade --config $(CONFIG_FILE) $(VERBOSITY_FLAGS)
+
 test:
 	@go test ./...
 
@@ -40,6 +43,7 @@ help:
 	@echo "Available targets:"
 	@echo "  build              - Build the image-updater binary"
 	@echo "  update             - Build and run the updater"
+	@echo "  upgrade-repository-version - Upgrade ACM/MCE repo versions in config files"
 	@echo "  test               - Run tests"
 	@echo "  test-verbose       - Run tests with verbose output"
 	@echo "  test-coverage      - Run tests with coverage"

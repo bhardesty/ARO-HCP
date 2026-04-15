@@ -40,6 +40,7 @@ A tool that automatically fetches the latest container image digests from regist
 - [Reliability Features](#reliability-features)
   - [Automatic Retry](#automatic-retry)
   - [Context Cancellation](#context-cancellation)
+- [ACM/MCE Repository Version Upgrade](#acmmce-repository-version-upgrade)
 
 ## Quick Start
 
@@ -639,3 +640,45 @@ Retries on:
 - Supports Ctrl+C for graceful shutdown
 - Timeout enforcement
 - Proper resource cleanup
+
+## ACM/MCE Repository Version Upgrade
+
+ACM and MCE publish new Quay repositories for each major version (e.g. `acm-operator-bundle-acm-216` for ACM 2.16, `acm-operator-bundle-acm-217` for ACM 2.17). The `repository-version-upgrade` subcommand detects when a next-version repo appears and updates the config files.
+
+### How It Works
+
+1. Reads `acm-operator` and `acm-mce` entries from the image-updater config
+2. Extracts the version suffix from the repo name (e.g. `216` → version `2.16`)
+3. Increments the minor version (`2.16` → `2.17`)
+4. Builds the next repo name (`acm-operator-bundle-acm-217`)
+5. Checks Quay.io API for the repo's existence
+6. If found, updates both config files with the new repo name
+
+### Usage
+
+```bash
+# Dry run — report only, no file changes
+./image-updater repository-version-upgrade --config config.yaml --dry-run
+
+# Update config files with new repo names
+make upgrade-repository-version
+
+# Or directly:
+./image-updater repository-version-upgrade --config config.yaml
+```
+
+### Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| 0 | Success (upgrades applied, or no upgrades found) |
+| 1 | Error occurred |
+
+### Flags
+
+| Flag | Type | Default | Description |
+|------|------|---------|-------------|
+| `--config` | string | - | Path to image-updater config file (required) |
+| `--dry-run` | bool | false | Only report upgrades without modifying files |
+
+> **Important**: A new repo existing does NOT mean it is GA. Always confirm GA status in `#acm-release` before merging any upgrade PR.
