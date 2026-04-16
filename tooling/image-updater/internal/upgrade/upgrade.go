@@ -197,16 +197,13 @@ func (c *Checker) repoExists(ctx context.Context, repository string) (bool, erro
 	}
 	defer resp.Body.Close()
 
-	switch resp.StatusCode {
-	case http.StatusOK:
+	if resp.StatusCode == http.StatusOK {
 		return true, nil
-	case http.StatusNotFound:
-		return false, nil
-	case http.StatusUnauthorized, http.StatusForbidden:
-		return false, fmt.Errorf("repository %s is inaccessible via Quay API: status %d", repository, resp.StatusCode)
-	default:
-		return false, fmt.Errorf("unexpected status %d from Quay API for repo %s", resp.StatusCode, repository)
 	}
+
+	logger, _ := logr.FromContext(ctx)
+	logger.V(1).Info("repo not found or inaccessible", "repository", repository, "status", resp.StatusCode)
+	return false, nil
 }
 
 // getLatestVersionTag fetches the most recent tag matching the given pattern from a Quay repo.
