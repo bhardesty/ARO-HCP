@@ -17,6 +17,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 
@@ -34,13 +35,12 @@ func NewUpdateCommand() *cobra.Command {
 		Long: `Update reads the configuration file and updates image references in target
 configuration files.
 
-By default (or with --tags/-t), it fetches the latest image digests from
-source registries and updates target files with new digests.
+By default, it fetches the latest image digests from source registries
+and updates target files with new digests.
 
 With --repositories/-r, it checks for next-version repositories on Quay
 for components that have repoVersionUpgrade configured, and updates the
 repository references in both the image-updater config and target files.
-The --tags and --repositories flags are mutually exclusive.
 
 Use --dry-run to see what changes would be made without actually updating files.
 
@@ -81,6 +81,11 @@ func runUpdate(cmd *cobra.Command, opts *options.RawUpdateOptions) error {
 }
 
 func runUpdateRepositories(ctx context.Context, opts *options.RawUpdateOptions) error {
+	// These flags are only meaningful for the default tags/digests mode
+	if opts.Components != "" || opts.Groups != "" || opts.ExcludeComponents != "" {
+		return fmt.Errorf("--components, --groups, and --exclude-components cannot be used with --repositories")
+	}
+
 	cfg, err := config.Load(opts.ConfigPath)
 	if err != nil {
 		return fmt.Errorf("failed to load config: %w", err)
@@ -92,7 +97,18 @@ func runUpdateRepositories(ctx context.Context, opts *options.RawUpdateOptions) 
 		return fmt.Errorf("repository version check failed: %w", err)
 	}
 
-	fmt.Print(upgrade.FormatResults(results))
+	output, err := upgrade.FormatResults(results, opts.OutputFormat)
+	if err != nil {
+		return fmt.Errorf("failed to format results: %w", err)
+	}
+
+	if opts.OutputFile != "" {
+		if err := os.WriteFile(opts.OutputFile, []byte(output), 0600); err != nil {
+			return fmt.Errorf("failed to write output file %s: %w", opts.OutputFile, err)
+		}
+	} else {
+		fmt.Print(output)
+	}
 
 	if !upgrade.HasUpgrades(results) {
 		return nil

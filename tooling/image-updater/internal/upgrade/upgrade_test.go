@@ -413,12 +413,15 @@ func TestFormatResults(t *testing.T) {
 				UpgradeAvailable: true,
 			},
 		}
-		output := FormatResults(results)
-		if !strings.Contains(output, "ACTION REQUIRED") {
-			t.Error("expected output to contain ACTION REQUIRED")
+		output, err := FormatResults(results, "table")
+		if err != nil {
+			t.Fatalf("FormatResults() error: %v", err)
 		}
-		if !strings.Contains(output, "v2.17.0-155") {
-			t.Error("expected output to contain latest tag")
+		if !strings.Contains(output, "acm-operator") {
+			t.Error("expected output to contain component name")
+		}
+		if !strings.Contains(output, "Available") {
+			t.Error("expected output to contain Available status")
 		}
 	})
 
@@ -431,17 +434,20 @@ func TestFormatResults(t *testing.T) {
 				NextRepoExists: false,
 			},
 		}
-		output := FormatResults(results)
-		if !strings.Contains(output, "does not exist yet") {
-			t.Error("expected output to indicate repo does not exist")
+		output, err := FormatResults(results, "table")
+		if err != nil {
+			t.Fatalf("FormatResults() error: %v", err)
 		}
-		if strings.Contains(output, "ACTION REQUIRED") {
-			t.Error("did not expect ACTION REQUIRED when no upgrades available")
+		if !strings.Contains(output, "Not available") {
+			t.Error("expected output to indicate repo not available")
 		}
 	})
 
 	t.Run("empty results", func(t *testing.T) {
-		output := FormatResults(nil)
+		output, err := FormatResults(nil, "table")
+		if err != nil {
+			t.Fatalf("FormatResults() error: %v", err)
+		}
 		if !strings.Contains(output, "No components with repoVersionUpgrade") {
 			t.Error("expected output to indicate no components found")
 		}

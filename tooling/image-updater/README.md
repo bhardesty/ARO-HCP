@@ -564,13 +564,12 @@ Write results to file in different formats:
 |------|------|---------|-------------|
 | `--config` | string | - | Path to configuration file (required) |
 | `--dry-run` | bool | false | Preview changes without modifying files |
-| `-t, --tags` | bool | false | Update image tags/digests (default mode when neither flag is specified) |
-| `-r, --repositories` | bool | false | Check and update repository version upgrades (mutually exclusive with `--tags`) |
+| `-r, --repositories` | bool | false | Check and update repository version upgrades; when not set, image tags/digests are updated by default |
 | `--components` | string | - | Comma-separated list of components to update |
 | `--groups` | string | - | Comma-separated list of groups to update (can be combined with `--components`) |
 | `--exclude-components` | string | - | Comma-separated list of components to exclude (applied after `--components`/`--groups`) |
 | `--output-file` | string | - | Write results to file instead of stdout |
-| `--output-format` | string | table | Output format: `table`, `markdown`, or `json` |
+| `--output-format` | string | table | Output format: `table`, `markdown`, `json` |
 | `-v, --verbosity` | int | 0 | Log verbosity: 0=clean, 1=summary, 2+=debug |
 
 ### Verbosity Levels

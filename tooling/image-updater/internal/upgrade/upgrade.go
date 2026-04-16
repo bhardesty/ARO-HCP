@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	"github.com/jedib0t/go-pretty/v6/table"
 
 	"github.com/Azure/ARO-HCP/tooling/image-updater/internal/config"
 )
@@ -197,8 +198,16 @@ func (c *Checker) repoExists(ctx context.Context, repository string) (bool, erro
 	}
 
 	logger, _ := logr.FromContext(ctx)
-	logger.V(1).Info("repo not found or inaccessible", "repository", repository, "status", resp.StatusCode)
-	return false, nil
+
+	// Quay returns 401 (not 404) for non-existent repos in the Konflux
+	// redhat-user-workloads namespace, so treat both as "not found".
+	if resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusUnauthorized {
+		logger.V(1).Info("repo not found", "repository", repository, "status", resp.StatusCode)
+		return false, nil
+	}
+
+	logger.V(1).Info("repo existence check failed", "repository", repository, "status", resp.StatusCode)
+	return false, fmt.Errorf("quay API returned unexpected status %d for %s", resp.StatusCode, repository)
 }
 
 // getLatestVersionTag fetches the most recent tag matching the given pattern from a Quay repo.
@@ -314,39 +323,59 @@ func buildNextRepo(currentRepo, prefix, nextVersion string) string {
 	return currentRepo[:idx+len(prefix)] + newSuffix
 }
 
-// FormatResults formats the check-upgrade results as a human-readable report.
-func FormatResults(results []Result) string {
+// FormatResults formats the check-upgrade results.
+// Supported formats: "table" (default, ASCII table), "markdown", "json".
+func FormatResults(results []Result, format string) (string, error) {
 	if len(results) == 0 {
-		return "No components with repoVersionUpgrade configured.\n"
+		return "No components with repoVersionUpgrade configured.\n", nil
 	}
 
-	var sb strings.Builder
-	upgradesFound := false
+	switch format {
+	case "json":
+		return formatResultsJSON(results)
+	case "markdown":
+		return formatResultsMarkdown(results), nil
+	case "table", "":
+		return formatResultsTable(results), nil
+	default:
+		return "", fmt.Errorf("unsupported output format %q: must be one of: table, markdown, json", format)
+	}
+}
+
+func formatResultsMarkdown(results []Result) string {
+	t := newResultsTable(results)
+	return t.RenderMarkdown()
+}
+
+func formatResultsTable(results []Result) string {
+	t := newResultsTable(results)
+	t.SetStyle(table.StyleLight)
+	t.Style().Options.SeparateRows = false
+	t.Style().Options.DrawBorder = true
+	return t.Render()
+}
+
+func newResultsTable(results []Result) table.Writer {
+	t := table.NewWriter()
+	t.AppendHeader(table.Row{"Component", "Current Version", "Next Version", "Status"})
 
 	for _, r := range results {
-		sb.WriteString(fmt.Sprintf("Component: %s\n", r.ComponentName))
-		sb.WriteString(fmt.Sprintf("  Current: %s (version %s)\n", r.CurrentRepo, r.CurrentVersion))
-		sb.WriteString(fmt.Sprintf("  Next:    %s (version %s)\n", r.NextRepo, r.NextVersion))
-
+		status := "⏳ Not available"
 		if r.NextRepoExists {
-			sb.WriteString("  Status:  ✅ Next version repo EXISTS on Quay\n")
-			if r.LatestTag != "" {
-				sb.WriteString(fmt.Sprintf("  Latest:  %s (%s)\n", r.LatestTag, r.LatestTagDate))
-			}
-			upgradesFound = true
-		} else {
-			sb.WriteString("  Status:  ⏳ Next version repo does not exist yet\n")
+			status = "✅ Available"
 		}
-		sb.WriteString("\n")
+		t.AppendRow(table.Row{r.ComponentName, r.CurrentVersion, r.NextVersion, status})
 	}
 
-	if upgradesFound {
-		sb.WriteString("ACTION REQUIRED: New version repos detected. Review before upgrading.\n")
-	} else {
-		sb.WriteString("No new version repos detected.\n")
-	}
+	return t
+}
 
-	return sb.String()
+func formatResultsJSON(results []Result) (string, error) {
+	data, err := json.MarshalIndent(results, "", "  ")
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal results to JSON: %w", err)
+	}
+	return string(data), nil
 }
 
 // HasUpgrades returns true if any result indicates an available upgrade.
