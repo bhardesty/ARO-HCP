@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -420,7 +421,13 @@ type repoReplacement struct {
 }
 
 // applyReplacements performs string replacements in a file, preserving all formatting.
+// It uses a temp-file + rename approach for atomic writes and preserves the original file mode.
 func applyReplacements(filePath string, replacements []repoReplacement) error {
+	info, err := os.Stat(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to stat file: %w", err)
+	}
+
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to read file: %w", err)
@@ -440,8 +447,32 @@ func applyReplacements(filePath string, replacements []repoReplacement) error {
 		return nil
 	}
 
-	if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
-		return fmt.Errorf("failed to write file: %w", err)
+	dir := filepath.Dir(filePath)
+	base := filepath.Base(filePath)
+
+	tmpFile, err := os.CreateTemp(dir, base+".*")
+	if err != nil {
+		return fmt.Errorf("failed to create temp file: %w", err)
+	}
+	defer os.Remove(tmpFile.Name())
+	defer tmpFile.Close()
+
+	if _, err := tmpFile.WriteString(content); err != nil {
+		return fmt.Errorf("failed to write temp file: %w", err)
+	}
+
+	if err := tmpFile.Sync(); err != nil {
+		return fmt.Errorf("failed to sync temp file: %w", err)
+	}
+
+	if err := tmpFile.Chmod(info.Mode()); err != nil {
+		return fmt.Errorf("failed to set file mode: %w", err)
+	}
+
+	tmpFile.Close()
+
+	if err := os.Rename(tmpFile.Name(), filePath); err != nil {
+		return fmt.Errorf("failed to rename temp file: %w", err)
 	}
 
 	return nil
