@@ -985,6 +985,9 @@ defaults:
   serviceKeyVault:
     name: "arohcp{{ .ctx.environment }}-svc-{{ .ctx.regionShort }}" # [globally-unique]
     rg: "{{ .ctx.region }}-shared-resources"
+    subscription:
+      key: "hcp-{{ .ctx.environment }}-svc-{{ .ctx.region }}"
+      displayName: "Azure Red Hat OpenShift HCP - {{ .ev2.regionFriendlyName }} - SVC"
     region: "{{ .ctx.region }}"
     softDelete: false
     private: false
@@ -1133,6 +1136,9 @@ clouds:
       serviceKeyVault:
         name: 'aro-hcp-dev-svc-kv'
         rg: 'global'
+        subscription:
+          key: ARO Hosted Control Planes (EA Subscription 1)
+          displayName: ARO Hosted Control Planes (EA Subscription 1)
         region: 'westus3'
         softDelete: true
       # MSI Credentials Refresher
