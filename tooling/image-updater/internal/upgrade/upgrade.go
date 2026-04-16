@@ -30,13 +30,6 @@ import (
 	"github.com/Azure/ARO-HCP/tooling/image-updater/internal/config"
 )
 
-// acmComponentPrefixes maps config component names to the repo prefix used
-// to identify ACM-related images whose repositories embed a version suffix.
-var acmComponentPrefixes = map[string]string{
-	"acm-operator": "acm-operator-bundle-acm-",
-	"acm-mce":      "mce-operator-bundle-mce-",
-}
-
 // repoVersionSuffix matches a trailing version suffix like "216", "211", or "29"
 // in repository names such as "acm-operator-bundle-acm-216".
 // Group 1 captures the major version (single digit), group 2 captures the minor version (1+ digits).
@@ -89,7 +82,7 @@ func NewChecker(cfg *config.Config) *Checker {
 	}
 }
 
-// CheckAll checks all ACM/MCE components for available upgrades.
+// CheckAll checks all components with repoVersionUpgrade configured for available upgrades.
 func (c *Checker) CheckAll(ctx context.Context) ([]Result, error) {
 	logger, err := logr.FromContext(ctx)
 	if err != nil {
@@ -98,12 +91,13 @@ func (c *Checker) CheckAll(ctx context.Context) ([]Result, error) {
 
 	var results []Result
 
-	for componentName, prefix := range acmComponentPrefixes {
-		imageConfig, exists := c.config.Images[componentName]
-		if !exists {
-			logger.V(1).Info("component not found in config, skipping", "component", componentName)
+	for componentName, imageConfig := range c.config.Images {
+		if imageConfig.Source.RepoVersionUpgrade == nil {
 			continue
 		}
+
+		prefix := imageConfig.Source.RepoVersionUpgrade.RepoPrefix
+		logger.V(1).Info("checking component for repo version upgrade", "component", componentName, "prefix", prefix)
 
 		result, err := c.checkComponent(ctx, componentName, prefix, imageConfig)
 		if err != nil {
@@ -322,7 +316,7 @@ func buildNextRepo(currentRepo, prefix, nextVersion string) string {
 // FormatResults formats the check-upgrade results as a human-readable report.
 func FormatResults(results []Result) string {
 	if len(results) == 0 {
-		return "No ACM/MCE components found in configuration.\n"
+		return "No components with repoVersionUpgrade configured.\n"
 	}
 
 	var sb strings.Builder
@@ -346,10 +340,9 @@ func FormatResults(results []Result) string {
 	}
 
 	if upgradesFound {
-		sb.WriteString("ACTION REQUIRED: New ACM/MCE version repos detected. ")
-		sb.WriteString("Confirm GA status in #acm-release before upgrading.\n")
+		sb.WriteString("ACTION REQUIRED: New version repos detected. Review before upgrading.\n")
 	} else {
-		sb.WriteString("No new ACM/MCE version repos detected.\n")
+		sb.WriteString("No new version repos detected.\n")
 	}
 
 	return sb.String()
@@ -398,11 +391,10 @@ func ApplyUpgrades(results []Result, updaterConfigPath string, cfg *config.Confi
 		return fmt.Errorf("failed to update image-updater config %s: %w", updaterConfigPath, err)
 	}
 
-	// Collect unique target file paths from ACM component configs
+	// Collect unique target file paths from components with repo version upgrades
 	targetFiles := make(map[string]bool)
-	for componentName := range acmComponentPrefixes {
-		imageConfig, exists := cfg.Images[componentName]
-		if !exists {
+	for _, imageConfig := range cfg.Images {
+		if imageConfig.Source.RepoVersionUpgrade == nil {
 			continue
 		}
 		for _, t := range imageConfig.Targets {

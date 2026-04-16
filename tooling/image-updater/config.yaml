@@ -110,6 +110,8 @@ images:
     source:
       image: quay.io/redhat-user-workloads/crt-redhat-acm-tenant/acm-operator-bundle-acm-216
       tagPattern: "^v\\d+\\.\\d+\\.\\d+-\\d+$"
+      repoVersionUpgrade:
+        repoPrefix: "acm-operator-bundle-acm-"
     targets:
     - jsonPath: defaults.acm.operator.bundle.digest
       filePath: ../../config/config.yaml
@@ -118,6 +120,8 @@ images:
     source:
       image: quay.io/redhat-user-workloads/crt-redhat-acm-tenant/mce-operator-bundle-mce-211
       tagPattern: "^v\\d+\\.\\d+\\.\\d+-\\d+$"
+      repoVersionUpgrade:
+        repoPrefix: "mce-operator-bundle-mce-"
     targets:
     - jsonPath: defaults.acm.mce.bundle.digest
       filePath: ../../config/config.yaml

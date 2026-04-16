@@ -40,7 +40,7 @@ A tool that automatically fetches the latest container image digests from regist
 - [Reliability Features](#reliability-features)
   - [Automatic Retry](#automatic-retry)
   - [Context Cancellation](#context-cancellation)
-- [ACM/MCE Repository Version Upgrade](#acmmce-repository-version-upgrade)
+- [Repository Version Upgrade](#repository-version-upgrade)
 
 ## Quick Start
 
@@ -564,6 +564,8 @@ Write results to file in different formats:
 |------|------|---------|-------------|
 | `--config` | string | - | Path to configuration file (required) |
 | `--dry-run` | bool | false | Preview changes without modifying files |
+| `-t, --tags` | bool | false | Update image tags/digests (default mode when neither flag is specified) |
+| `-r, --repositories` | bool | false | Check and update repository version upgrades (mutually exclusive with `--tags`) |
 | `--components` | string | - | Comma-separated list of components to update |
 | `--groups` | string | - | Comma-separated list of groups to update (can be combined with `--components`) |
 | `--exclude-components` | string | - | Comma-separated list of components to exclude (applied after `--components`/`--groups`) |
@@ -610,6 +612,7 @@ Use `-v=2` for debugging auth issues, tag filtering, or network failures.
 | `useAuth` | bool | No | `false` | Require authentication (needed for private registries) |
 | `keyVault.url` | string | No | - | Azure Key Vault URL |
 | `keyVault.secretName` | string | No | - | Pull secret name in Key Vault |
+| `repoVersionUpgrade.repoPrefix` | string | No | - | Repo name prefix before version suffix; enables `--repositories` mode for this component |
 
 ### Target Fields
 
@@ -641,44 +644,47 @@ Retries on:
 - Timeout enforcement
 - Proper resource cleanup
 
-## ACM/MCE Repository Version Upgrade
+## Repository Version Upgrade
 
-ACM and MCE publish new Quay repositories for each major version (e.g. `acm-operator-bundle-acm-216` for ACM 2.16, `acm-operator-bundle-acm-217` for ACM 2.17). The `repository-version-upgrade` subcommand detects when a next-version repo appears and updates the config files.
+Some components publish new Quay repositories for each y-stream (minor) version (e.g. `acm-operator-bundle-acm-216` for ACM 2.16, `acm-operator-bundle-acm-217` for ACM 2.17). The `update --repositories` mode detects when a next y-stream repo appears and updates the config files. Components opt in via the `repoVersionUpgrade` field in their config entry.
 
 ### How It Works
 
-1. Reads `acm-operator` and `acm-mce` entries from the image-updater config
+1. Iterates over images with `source.repoVersionUpgrade.repoPrefix` configured
 2. Extracts the version suffix from the repo name (e.g. `216` → version `2.16`)
-3. Increments the minor version (`2.16` → `2.17`)
+3. Increments the y-stream (minor) version (`2.16` → `2.17`)
 4. Builds the next repo name (`acm-operator-bundle-acm-217`)
 5. Checks Quay.io API for the repo's existence
 6. If found, updates both config files with the new repo name
+
+### Configuration
+
+Add `repoVersionUpgrade` to an image's source to enable repository version detection:
+
+```yaml
+acm-operator:
+  group: hypershift-stack
+  source:
+    image: quay.io/redhat-user-workloads/crt-redhat-acm-tenant/acm-operator-bundle-acm-216
+    tagPattern: "^v\\d+\\.\\d+\\.\\d+-\\d+$"
+    repoVersionUpgrade:
+      repoPrefix: "acm-operator-bundle-acm-"
+  targets:
+  - jsonPath: defaults.acm.operator.bundle.digest
+    filePath: ../../config/config.yaml
+```
 
 ### Usage
 
 ```bash
 # Dry run — report only, no file changes
-./image-updater repository-version-upgrade --config config.yaml --dry-run
+./image-updater update --config config.yaml --repositories --dry-run
 
 # Update config files with new repo names
-make upgrade-repository-version
+make update-repositories
 
 # Or directly:
-./image-updater repository-version-upgrade --config config.yaml
+./image-updater update --config config.yaml --repositories
 ```
 
-### Exit Codes
-
-| Code | Meaning |
-|------|---------|
-| 0 | Success (upgrades applied, or no upgrades found) |
-| 1 | Error occurred |
-
-### Flags
-
-| Flag | Type | Default | Description |
-|------|------|---------|-------------|
-| `--config` | string | - | Path to image-updater config file (required) |
-| `--dry-run` | bool | false | Only report upgrades without modifying files |
-
-> **Important**: A new repo existing does NOT mean it is GA. Always confirm GA status in `#acm-release` before merging any upgrade PR.
+> **Important**: A new repo existing does NOT mean it is GA. Always confirm GA status in the relevant release channel before merging any upgrade PR.

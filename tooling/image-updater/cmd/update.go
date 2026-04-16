@@ -15,9 +15,14 @@
 package cmd
 
 import (
+	"context"
+	"fmt"
+
 	"github.com/spf13/cobra"
 
+	"github.com/Azure/ARO-HCP/tooling/image-updater/internal/config"
 	"github.com/Azure/ARO-HCP/tooling/image-updater/internal/options"
+	"github.com/Azure/ARO-HCP/tooling/image-updater/internal/upgrade"
 )
 
 func NewUpdateCommand() *cobra.Command {
@@ -25,10 +30,17 @@ func NewUpdateCommand() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "update",
-		Short: "Update image digests from their source registries",
-		Long: `Update reads the configuration file and fetches the latest image digests
-from their source registries, then updates the target configuration files
-with the new digests.
+		Short: "Update image tags/digests or repository versions",
+		Long: `Update reads the configuration file and updates image references in target
+configuration files.
+
+By default (or with --tags/-t), it fetches the latest image digests from
+source registries and updates target files with new digests.
+
+With --repositories/-r, it checks for next-version repositories on Quay
+for components that have repoVersionUpgrade configured, and updates the
+repository references in both the image-updater config and target files.
+The --tags and --repositories flags are mutually exclusive.
 
 Use --dry-run to see what changes would be made without actually updating files.
 
@@ -50,6 +62,11 @@ Use --verbosity (or -v) to control logging verbosity:
 func runUpdate(cmd *cobra.Command, opts *options.RawUpdateOptions) error {
 	ctx := cmd.Context()
 
+	if opts.UpdateRepositories {
+		return runUpdateRepositories(ctx, opts)
+	}
+
+	// Default: update tags/digests
 	validated, err := opts.Validate(ctx)
 	if err != nil {
 		return err
@@ -61,4 +78,32 @@ func runUpdate(cmd *cobra.Command, opts *options.RawUpdateOptions) error {
 	}
 
 	return completed.UpdateImages(ctx)
+}
+
+func runUpdateRepositories(ctx context.Context, opts *options.RawUpdateOptions) error {
+	cfg, err := config.Load(opts.ConfigPath)
+	if err != nil {
+		return fmt.Errorf("failed to load config: %w", err)
+	}
+
+	checker := upgrade.NewChecker(cfg)
+	results, err := checker.CheckAll(ctx)
+	if err != nil {
+		return fmt.Errorf("repository version check failed: %w", err)
+	}
+
+	fmt.Print(upgrade.FormatResults(results))
+
+	if !upgrade.HasUpgrades(results) {
+		return nil
+	}
+
+	if !opts.DryRun {
+		if err := upgrade.ApplyUpgrades(results, opts.ConfigPath, cfg); err != nil {
+			return fmt.Errorf("failed to apply upgrades: %w", err)
+		}
+		fmt.Println("Config files updated successfully.")
+	}
+
+	return nil
 }

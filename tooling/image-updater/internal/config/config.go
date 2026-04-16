@@ -45,15 +45,22 @@ type ImageConfig struct {
 
 // Source defines where to fetch the latest image digest (or version string) from
 type Source struct {
-	Image               string          `yaml:"image"`
-	GitHubLatestRelease string          `yaml:"githubLatestRelease,omitempty"` // If set, fetch latest release tag from GitHub (e.g. "istio/istio"); used for version-only targets, ignores Image for fetch
-	Tag                 string          `yaml:"tag,omitempty"`                 // Exact tag to use (mutually exclusive with TagPattern)
-	TagPattern          string          `yaml:"tagPattern,omitempty"`          // Regex pattern to filter tags (mutually exclusive with Tag)
-	VersionLabel        string          `yaml:"versionLabel,omitempty"`        // Container label to fetch for human-friendly version (defaults to "org.opencontainers.image.revision" when tag is used, empty when tagPattern is used)
-	Architecture        string          `yaml:"architecture,omitempty"`        // Specific architecture to use (e.g., "amd64", "arm64"). Mutually exclusive with MultiArch.
-	MultiArch           bool            `yaml:"multiArch,omitempty"`           // If true, fetch the multi-arch manifest list digest instead of a specific architecture
-	UseAuth             *bool           `yaml:"useAuth,omitempty"`             // true = use auth, nil/false = anonymous (default)
-	KeyVault            *KeyVaultConfig `yaml:"keyVault,omitempty"`            // Optional: Azure Key Vault config for fetching pull secrets
+	Image               string              `yaml:"image"`
+	GitHubLatestRelease string              `yaml:"githubLatestRelease,omitempty"` // If set, fetch latest release tag from GitHub (e.g. "istio/istio"); used for version-only targets, ignores Image for fetch
+	Tag                 string              `yaml:"tag,omitempty"`                 // Exact tag to use (mutually exclusive with TagPattern)
+	TagPattern          string              `yaml:"tagPattern,omitempty"`          // Regex pattern to filter tags (mutually exclusive with Tag)
+	VersionLabel        string              `yaml:"versionLabel,omitempty"`        // Container label to fetch for human-friendly version (defaults to "org.opencontainers.image.revision" when tag is used, empty when tagPattern is used)
+	Architecture        string              `yaml:"architecture,omitempty"`        // Specific architecture to use (e.g., "amd64", "arm64"). Mutually exclusive with MultiArch.
+	MultiArch           bool                `yaml:"multiArch,omitempty"`           // If true, fetch the multi-arch manifest list digest instead of a specific architecture
+	UseAuth             *bool               `yaml:"useAuth,omitempty"`             // true = use auth, nil/false = anonymous (default)
+	KeyVault            *KeyVaultConfig     `yaml:"keyVault,omitempty"`            // Optional: Azure Key Vault config for fetching pull secrets
+	RepoVersionUpgrade  *RepoVersionUpgrade `yaml:"repoVersionUpgrade,omitempty"`  // Optional: enables repository version upgrade checks for this component
+}
+
+// RepoVersionUpgrade configures repository version upgrade detection for a component.
+// When set, the update --repositories mode will check Quay for next-version repos.
+type RepoVersionUpgrade struct {
+	RepoPrefix string `yaml:"repoPrefix"` // The repo name prefix before the version suffix (e.g. "acm-operator-bundle-acm-")
 }
 
 // KeyVaultConfig holds Azure Key Vault configuration for fetching pull secrets

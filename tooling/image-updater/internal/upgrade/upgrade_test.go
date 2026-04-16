@@ -249,6 +249,9 @@ func TestCheckerCheckAll(t *testing.T) {
 				Source: config.Source{
 					Image:      "quay.io/redhat-user-workloads/crt-redhat-acm-tenant/acm-operator-bundle-acm-216",
 					TagPattern: `^v\d+\.\d+\.\d+-\d+$`,
+					RepoVersionUpgrade: &config.RepoVersionUpgrade{
+						RepoPrefix: "acm-operator-bundle-acm-",
+					},
 				},
 				Targets: []config.Target{
 					{JsonPath: "defaults.acm.operator.bundle.digest", FilePath: "../../config/config.yaml"},
@@ -259,6 +262,9 @@ func TestCheckerCheckAll(t *testing.T) {
 				Source: config.Source{
 					Image:      "quay.io/redhat-user-workloads/crt-redhat-acm-tenant/mce-operator-bundle-mce-211",
 					TagPattern: `^v\d+\.\d+\.\d+-\d+$`,
+					RepoVersionUpgrade: &config.RepoVersionUpgrade{
+						RepoPrefix: "mce-operator-bundle-mce-",
+					},
 				},
 				Targets: []config.Target{
 					{JsonPath: "defaults.acm.mce.bundle.digest", FilePath: "../../config/config.yaml"},
@@ -342,7 +348,7 @@ func TestCheckerCheckAllNoACMComponents(t *testing.T) {
 	}
 
 	if len(results) != 0 {
-		t.Errorf("CheckAll() returned %d results, want 0 (no ACM components)", len(results))
+		t.Errorf("CheckAll() returned %d results, want 0 (no components with repoVersionUpgrade)", len(results))
 	}
 }
 
@@ -436,7 +442,7 @@ func TestFormatResults(t *testing.T) {
 
 	t.Run("empty results", func(t *testing.T) {
 		output := FormatResults(nil)
-		if !strings.Contains(output, "No ACM/MCE components") {
+		if !strings.Contains(output, "No components with repoVersionUpgrade") {
 			t.Error("expected output to indicate no components found")
 		}
 	})
@@ -507,11 +513,21 @@ func TestApplyUpgrades(t *testing.T) {
 		cfg := &config.Config{
 			Images: map[string]config.ImageConfig{
 				"acm-operator": {
+					Source: config.Source{
+						RepoVersionUpgrade: &config.RepoVersionUpgrade{
+							RepoPrefix: "acm-operator-bundle-acm-",
+						},
+					},
 					Targets: []config.Target{
 						{JsonPath: "defaults.acm.operator.bundle.digest", FilePath: targetConfig},
 					},
 				},
 				"acm-mce": {
+					Source: config.Source{
+						RepoVersionUpgrade: &config.RepoVersionUpgrade{
+							RepoPrefix: "mce-operator-bundle-mce-",
+						},
+					},
 					Targets: []config.Target{
 						{JsonPath: "defaults.acm.mce.bundle.digest", FilePath: targetConfig},
 					},

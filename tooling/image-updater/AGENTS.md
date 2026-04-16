@@ -118,24 +118,25 @@ To preview changes without writing:
 ./image-updater update --config config.yaml --components hypershift --dry-run --output-format markdown
 ```
 
-### ACM/MCE Repository Version Upgrade
+### Repository Version Upgrade
 
-ACM and MCE create new Quay repos for each major version (e.g.
-`acm-operator-bundle-acm-216` → `acm-operator-bundle-acm-217`). The
-`repository-version-upgrade` subcommand detects when a next-version repo
-appears on Quay and updates the config files.
+Some components create new Quay repos for each y-stream (minor) version (e.g.
+`acm-operator-bundle-acm-216` → `acm-operator-bundle-acm-217` for ACM 2.16 → 2.17). The
+`update --repositories` mode detects when a next y-stream repo appears on
+Quay and updates the config files. Components opt in via the
+`repoVersionUpgrade` field in `config.yaml`.
 
 ```bash
 cd tooling/image-updater
 
 # Dry run — report only, no file changes
-./image-updater repository-version-upgrade --config config.yaml --dry-run
+./image-updater update --config config.yaml --repositories --dry-run
 
 # Update repo versions in both config files
-make upgrade-repository-version
+make update-repositories
 ```
 
-After running `upgrade-repository-version`, follow the same post-bump steps as ACM
+After running `update-repositories`, follow the same post-bump steps as ACM
 component updates:
 
 ```bash
@@ -145,13 +146,13 @@ make update-helm-fixtures
 make yamlfmt
 ```
 
-**How it works**: The tool reads `acm-operator` and `acm-mce` entries from
-`config.yaml`, extracts the version suffix from the repo name (e.g. `216` →
-version `2.16`), increments the minor version (`2.17`), builds the next repo
-name (`acm-operator-bundle-acm-217`), and checks Quay for its existence.
+**How it works**: The tool iterates over images that have
+`source.repoVersionUpgrade.repoPrefix` set, extracts the version suffix from
+the repo name (e.g. `216` → version `2.16`), increments the y-stream version
+(`2.16` → `2.17`), builds the next repo name, and checks Quay for its existence.
 
 **Important**: A new repo existing does NOT mean it is GA. Always confirm GA
-status in `#acm-release` before merging any upgrade PR.
+status in the relevant release channel before merging any upgrade PR.
 
 ### Troubleshooting
 
