@@ -22,7 +22,7 @@ build:
 	@go build -o $(BINARY_NAME) .
 
 update: build
-	@./$(BINARY_NAME) update --config $(CONFIG_FILE) $(COMPONENT_FLAGS) $(GROUP_FLAGS) $(EXCLUDE_FLAGS) $(VERBOSITY_FLAGS) $(OUTPUT_FLAGS)
+	@./$(BINARY_NAME) update --config $(CONFIG_FILE) --tags $(COMPONENT_FLAGS) $(GROUP_FLAGS) $(EXCLUDE_FLAGS) $(VERBOSITY_FLAGS) $(OUTPUT_FLAGS)
 
 update-repositories: build
 	@./$(BINARY_NAME) update --config $(CONFIG_FILE) --repositories $(VERBOSITY_FLAGS) $(OUTPUT_FLAGS)

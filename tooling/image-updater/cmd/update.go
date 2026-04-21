@@ -67,6 +67,10 @@ func runUpdate(cmd *cobra.Command, opts *options.RawUpdateOptions) error {
 	}
 
 	// --tags or default (neither flag set): update tags/digests
+	return runUpdateTags(ctx, opts)
+}
+
+func runUpdateTags(ctx context.Context, opts *options.RawUpdateOptions) error {
 	validated, err := opts.Validate(ctx)
 	if err != nil {
 		return err
