@@ -564,7 +564,7 @@ Write results to file in different formats:
 |------|------|---------|-------------|
 | `--config` | string | - | Path to configuration file (required) |
 | `--dry-run` | bool | false | Preview changes without modifying files |
-| `-t, --tags` | bool | false | Update image tags/digests (default when neither `--tags` nor `--repositories` is set; mutually exclusive with `--repositories`) |
+| `-t, --tags` | bool | false | Update image tags/digests (mutually exclusive with `--repositories`) |
 | `-r, --repositories` | bool | false | Check and update repository version upgrades (mutually exclusive with `--tags`) |
 | `--components` | string | - | Comma-separated list of components to update |
 | `--groups` | string | - | Comma-separated list of groups to update (can be combined with `--components`) |

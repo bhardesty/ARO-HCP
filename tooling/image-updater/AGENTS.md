@@ -127,10 +127,10 @@ Quay and updates the config files. Components opt in via the
 `repoVersionUpgrade` field in `config.yaml`.
 
 The `update` command has two mutually exclusive modes:
-- `--tags`/`-t` (default): Update image tags/digests
-- `--repositories`/`-r`: Check and update repository version upgrades
+- `--tags`/`-t`: Update image tags/digests → routes to `runUpdateTags()`
+- `--repositories`/`-r`: Check and update repository version upgrades → routes to `runUpdateRepositories()`
 
-When neither flag is set, `--tags` behavior is implied.
+When neither flag is set, `--tags` behavior is used.
 
 ```bash
 cd tooling/image-updater
