@@ -37,6 +37,7 @@ type RawUpdateOptions struct {
 	ExcludeComponents  string
 	OutputFile         string
 	OutputFormat       string
+	UpdateTags         bool
 	UpdateRepositories bool
 }
 
@@ -67,7 +68,9 @@ func BindUpdateOptions(opts *RawUpdateOptions, cmd *cobra.Command) error {
 	cmd.Flags().StringVar(&opts.ExcludeComponents, "exclude-components", "", "Exclude specified components from update (comma-separated, e.g., 'arohcpfrontend,arohcpbackend'). Applied after --components/--groups filtering")
 	cmd.Flags().StringVar(&opts.OutputFile, "output-file", "", "Write update results to specified file instead of stdout")
 	cmd.Flags().StringVar(&opts.OutputFormat, "output-format", "table", "Output format: table, markdown, or json (default: table)")
-	cmd.Flags().BoolVarP(&opts.UpdateRepositories, "repositories", "r", false, "Check and update repository version upgrades; when not set, image tags/digests are updated by default")
+	cmd.Flags().BoolVarP(&opts.UpdateTags, "tags", "t", false, "Update image tags/digests (default when neither --tags nor --repositories is set)")
+	cmd.Flags().BoolVarP(&opts.UpdateRepositories, "repositories", "r", false, "Check and update repository version upgrades")
+	cmd.MarkFlagsMutuallyExclusive("tags", "repositories")
 
 	if err := cmd.MarkFlagRequired("config"); err != nil {
 		return err

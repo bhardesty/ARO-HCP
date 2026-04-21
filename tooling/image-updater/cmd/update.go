@@ -66,7 +66,7 @@ func runUpdate(cmd *cobra.Command, opts *options.RawUpdateOptions) error {
 		return runUpdateRepositories(ctx, opts)
 	}
 
-	// Default: update tags/digests
+	// --tags or default (neither flag set): update tags/digests
 	validated, err := opts.Validate(ctx)
 	if err != nil {
 		return err

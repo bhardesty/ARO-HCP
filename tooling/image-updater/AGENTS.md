@@ -126,6 +126,12 @@ Some components create new Quay repos for each y-stream (minor) version (e.g.
 Quay and updates the config files. Components opt in via the
 `repoVersionUpgrade` field in `config.yaml`.
 
+The `update` command has two mutually exclusive modes:
+- `--tags`/`-t` (default): Update image tags/digests
+- `--repositories`/`-r`: Check and update repository version upgrades
+
+When neither flag is set, `--tags` behavior is implied.
+
 ```bash
 cd tooling/image-updater
 
