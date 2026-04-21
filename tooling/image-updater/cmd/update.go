@@ -103,7 +103,7 @@ func runUpdateRepositories(ctx context.Context, opts *options.RawUpdateOptions) 
 	}
 
 	if opts.OutputFile != "" {
-		if err := os.WriteFile(opts.OutputFile, []byte(output), 0600); err != nil {
+		if err := os.WriteFile(opts.OutputFile, []byte(output), 0644); err != nil {
 			return fmt.Errorf("failed to write output file %s: %w", opts.OutputFile, err)
 		}
 	} else {
@@ -118,7 +118,7 @@ func runUpdateRepositories(ctx context.Context, opts *options.RawUpdateOptions) 
 		if err := upgrade.ApplyUpgrades(results, opts.ConfigPath, cfg); err != nil {
 			return fmt.Errorf("failed to apply upgrades: %w", err)
 		}
-		fmt.Println("Config files updated successfully.")
+		fmt.Fprintln(os.Stderr, "Config files updated successfully.")
 	}
 
 	return nil

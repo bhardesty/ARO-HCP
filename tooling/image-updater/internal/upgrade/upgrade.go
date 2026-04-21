@@ -34,7 +34,10 @@ import (
 
 // repoVersionSuffix matches a trailing version suffix like "216", "211", or "29"
 // in repository names such as "acm-operator-bundle-acm-216".
-// Group 1 captures the major version (single digit), group 2 captures the minor version (1+ digits).
+// This format intentionally supports only a single-digit major version: group 1 captures
+// the major version (single digit), and group 2 captures the minor version (1+ digits).
+// Two-digit majors are not supported by this suffix format because, without a delimiter,
+// values like "1016" are ambiguous and cannot be parsed reliably.
 var repoVersionSuffix = regexp.MustCompile(`^(\d)(\d+)$`)
 
 // Result holds the check-upgrade result for a single ACM/MCE component.
@@ -166,7 +169,7 @@ func (c *Checker) checkComponent(ctx context.Context, componentName, prefix stri
 	result.UpgradeAvailable = true
 
 	// Fetch latest version tag from the next repo
-	latestTag, latestDate, err := c.getLatestVersionTag(ctx, nextRepo, imageConfig.Source.TagPattern)
+	latestTag, latestDate, err := c.getLatestVersionTag(ctx, nextRepo, imageConfig.Source.GetEffectiveTagPattern())
 	if err != nil {
 		logger.V(1).Info("failed to fetch latest tag from next repo", "component", componentName, "error", err)
 		// Non-fatal: repo exists but we couldn't list tags
@@ -484,21 +487,25 @@ func applyReplacements(filePath string, replacements []repoReplacement) error {
 		return fmt.Errorf("failed to create temp file: %w", err)
 	}
 	defer os.Remove(tmpFile.Name())
-	defer tmpFile.Close()
 
 	if _, err := tmpFile.WriteString(content); err != nil {
+		tmpFile.Close()
 		return fmt.Errorf("failed to write temp file: %w", err)
 	}
 
 	if err := tmpFile.Sync(); err != nil {
+		tmpFile.Close()
 		return fmt.Errorf("failed to sync temp file: %w", err)
 	}
 
 	if err := tmpFile.Chmod(info.Mode()); err != nil {
+		tmpFile.Close()
 		return fmt.Errorf("failed to set file mode: %w", err)
 	}
 
-	tmpFile.Close()
+	if err := tmpFile.Close(); err != nil {
+		return fmt.Errorf("failed to close temp file: %w", err)
+	}
 
 	if err := os.Rename(tmpFile.Name(), filePath); err != nil {
 		return fmt.Errorf("failed to rename temp file: %w", err)
