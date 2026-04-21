@@ -881,7 +881,7 @@ svc:
     ingressGatewayIPAddressName: aro-hcp-istio-ingress
     istioctlVersion: 1.29.2
     tag: prod-stable
-    targetVersion: asm-1-26
+    targetVersion: asm-1-28
     versions: asm-1-26,asm-1-28
   nsp:
     accessMode: Learning
