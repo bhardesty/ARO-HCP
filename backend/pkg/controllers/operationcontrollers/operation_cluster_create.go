@@ -24,9 +24,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Azure/ARO-HCP/internal/api/arm"
-	"k8s.io/client-go/tools/cache"
 	"github.com/blang/semver/v4"
+	"k8s.io/client-go/tools/cache"
+
+	"github.com/Azure/ARO-HCP/internal/api/arm"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 
@@ -158,6 +159,9 @@ func newOperationState(provisioningState arm.ProvisioningState, message string) 
 	}
 }
 
+// provisioningStatePriority is a logical merge order that decides what the most important state to return is.
+// for instance, if one check is succeeded, one is failed, and one is accepted, then failed is the most
+// reasonable state for the operation.
 var provisioningStatePriority = map[arm.ProvisioningState]int{
 	"":                                  -1, // causes an error
 	arm.ProvisioningStateFailed:         00, // always first if present in list
@@ -191,6 +195,8 @@ func compareOperationState(lhs, rhs *operationState) int {
 }
 
 func (c *operationClusterCreate) determineOperationStatus(ctx context.Context, operation *api.Operation) (*operationState, error) {
+	logger := utils.LoggerFromContext(ctx)
+
 	errs := []error{}
 	operationStates := []*operationState{}
 
@@ -208,6 +214,7 @@ func (c *operationClusterCreate) determineOperationStatus(ctx context.Context, o
 	if err := errors.Join(errs...); err != nil {
 		return nil, err
 	}
+	// cheap and easy backup check for potential accidents in future code.
 	if len(operationStates) == 0 {
 		return nil, errors.New("no operation states")
 	}
@@ -219,6 +226,9 @@ func (c *operationClusterCreate) determineOperationStatus(ctx context.Context, o
 	if len(operationStates[0].provisioningState) == 0 {
 		return nil, errors.New("empty provisioning state")
 	}
+	logger.Info("determined operation status", "operationStates", operationStates)
+
+	// TODO, do a nicer job of combining different states with the same provisioningState
 
 	return operationStates[0], nil
 }
@@ -237,6 +247,8 @@ func (c *operationClusterCreate) clusterOperationStatus(ctx context.Context, ope
 	return newOperationState(arm.ProvisioningStateSucceeded, ""), nil
 }
 
+// minVersionsWithValidSuccessCondition maps from <major>.<micro> to the first z-stream version that includes the fix for
+// control plane validation success.
 var minVersionsWithValidSuccessCondition = map[string]semver.Version{
 	"4.19": api.Must(semver.Parse("4.19.999")),
 	"4.20": api.Must(semver.Parse("4.20.999")),
