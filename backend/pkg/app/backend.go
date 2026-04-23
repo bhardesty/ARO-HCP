@@ -32,7 +32,6 @@ import (
 	k8sutilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
-	"k8s.io/component-base/metrics/legacyregistry"
 	utilsclock "k8s.io/utils/clock"
 
 	azureclient "github.com/Azure/ARO-HCP/backend/pkg/azure/client"
@@ -90,7 +89,10 @@ func (o *BackendOptions) RunBackend(ctx context.Context) error {
 	ctx, cancel := context.WithCancelCause(ctx)
 	defer cancel(fmt.Errorf("function returned"))
 
-	backend := NewBackend(o)
+	backend, err := NewBackend(o)
+	if err != nil {
+		return utils.TrackError(fmt.Errorf("failed to construct backend: %w", err))
+	}
 	runErrCh := make(chan error, 1)
 	go func() {
 		runErrCh <- backend.Run(ctx)
@@ -109,24 +111,32 @@ func (o *BackendOptions) RunBackend(ctx context.Context) error {
 	return nil
 }
 
-func (o *BackendOptions) metricsRegisterer() prometheus.Registerer {
-	if o.MetricsRegisterer != nil {
-		return o.MetricsRegisterer
+func NewBackend(options *BackendOptions) (*Backend, error) {
+	if options == nil {
+		return nil, errors.New("BackendOptions must not be nil")
 	}
-	return legacyregistry.Registerer()
-}
-
-func (o *BackendOptions) metricsGatherer() prometheus.Gatherer {
-	if o.MetricsGatherer != nil {
-		return o.MetricsGatherer
+	if err := options.validate(); err != nil {
+		return nil, err
 	}
-	return legacyregistry.DefaultGatherer
-}
-
-func NewBackend(options *BackendOptions) *Backend {
 	return &Backend{
 		options: options,
+	}, nil
+}
+
+// validate checks BackendOptions for invariants that must hold before Run.
+// Any failure here is a programmer error in the calling code (flag wiring or
+// test setup), not a user-facing condition — we fail fast before any goroutine,
+// tracer, or leader-election resource is allocated.
+func (o *BackendOptions) validate() error {
+	// Registerer and Gatherer must both be explicitly wired by the caller.
+	// The production path sets them in cmd/root.go; tests must inject their
+	// own. A single half-configured field would silently expose metrics from
+	// one registry while populating another, so we refuse to start.
+	if o.MetricsRegisterer == nil || o.MetricsGatherer == nil {
+		return fmt.Errorf("BackendOptions.MetricsRegisterer and BackendOptions.MetricsGatherer must both be set (MetricsRegisterer set=%t, MetricsGatherer set=%t)",
+			o.MetricsRegisterer != nil, o.MetricsGatherer != nil)
 	}
+	return nil
 }
 
 func (b *Backend) Run(ctx context.Context) error {
@@ -176,57 +186,12 @@ func (b *Backend) Run(ctx context.Context) error {
 	errCh := make(chan error, 3)
 	wg := sync.WaitGroup{}
 
-	// Handle requests directly for /healthz endpoint
-	if b.options.HealthzServerListenAddress != "" {
-		backendHealthGauge := promauto.With(b.options.metricsRegisterer()).NewGauge(prometheus.GaugeOpts{Name: "backend_health", Help: "backend_health is 1 when healthy"})
+	healthzServer = b.serveHealthz(ctx, electionChecker, &wg, errCh)
 
-		http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-
-			if err := electionChecker.Check(r); err != nil {
-				logger.Error(err, "Readiness probe failed")
-				http.Error(w, "lease not renewed", http.StatusServiceUnavailable)
-				backendHealthGauge.Set(0.0)
-				return
-			}
-			w.WriteHeader(http.StatusOK)
-			backendHealthGauge.Set(1.0)
-		})
-
-		healthzServer = &http.Server{Addr: b.options.HealthzServerListenAddress}
-
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			logger.Info(fmt.Sprintf("Healthz server listening on %s", b.options.HealthzServerListenAddress))
-			errCh <- healthzServer.ListenAndServe()
-		}()
-	}
-
-	if b.options.MetricsServerListenAddress != "" || b.options.MetricsServerListener != nil {
-		http.Handle("/metrics", promhttp.InstrumentMetricHandler(
-			b.options.metricsRegisterer(),
-			promhttp.HandlerFor(
-				prometheus.Gatherers{b.options.metricsGatherer()},
-				promhttp.HandlerOpts{},
-			),
-		))
-
-		metricsAddr := b.options.MetricsServerListenAddress
-		if b.options.MetricsServerListener != nil {
-			metricsAddr = b.options.MetricsServerListener.Addr().String()
-		}
-		metricsServer = &http.Server{Addr: metricsAddr}
-
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			logger.Info(fmt.Sprintf("metrics server listening on %s", metricsAddr))
-			if b.options.MetricsServerListener != nil {
-				errCh <- metricsServer.Serve(b.options.MetricsServerListener)
-				return
-			}
-			errCh <- metricsServer.ListenAndServe()
-		}()
+	var err error
+	metricsServer, err = b.serveMetrics(ctx, &wg, errCh)
+	if err != nil {
+		return fmt.Errorf("failed to start metrics server: %w", err)
 	}
 
 	wg.Add(1)
@@ -263,6 +228,96 @@ func (b *Backend) Run(ctx context.Context) error {
 	return errors.Join(errs...)
 }
 
+// serveHealthz starts the /healthz HTTP server on its own ServeMux, in a dedicated
+// goroutine, if the option is configured. It returns the *http.Server so the caller
+// can shut it down. Returns nil when HealthzServerListenAddress is empty.
+func (b *Backend) serveHealthz(ctx context.Context, electionChecker *leaderelection.HealthzAdaptor, wg *sync.WaitGroup, errCh chan<- error) *http.Server {
+	if b.options.HealthzServerListenAddress == "" {
+		return nil
+	}
+	logger := utils.LoggerFromContext(ctx)
+
+	backendHealthGauge := promauto.With(b.options.MetricsRegisterer).NewGauge(prometheus.GaugeOpts{Name: "backend_health", Help: "backend_health is 1 when healthy"})
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		if err := electionChecker.Check(r); err != nil {
+			logger.Error(err, "Readiness probe failed")
+			http.Error(w, "lease not renewed", http.StatusServiceUnavailable)
+			backendHealthGauge.Set(0.0)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		backendHealthGauge.Set(1.0)
+	})
+
+	server := &http.Server{Addr: b.options.HealthzServerListenAddress, Handler: mux}
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		logger.Info(fmt.Sprintf("Healthz server listening on %s", b.options.HealthzServerListenAddress))
+		errCh <- server.ListenAndServe()
+	}()
+
+	return server
+}
+
+// serveMetrics starts the /metrics HTTP server on its own ServeMux, in a dedicated
+// goroutine, if the option is configured. When MetricsServerListener is not
+// pre-supplied, a net.Listener is created from MetricsServerListenAddress here
+// so the socket only exists while Run is executing (avoiding leaked listeners
+// if Run is never called). It returns the *http.Server so the caller can shut
+// it down. Returns (nil, nil) when neither listener nor address is configured.
+func (b *Backend) serveMetrics(ctx context.Context, wg *sync.WaitGroup, errCh chan<- error) (_ *http.Server, retErr error) {
+	listener := b.options.MetricsServerListener
+	ownListener := false
+	if listener == nil {
+		if b.options.MetricsServerListenAddress == "" {
+			return nil, nil
+		}
+		l, err := net.Listen("tcp", b.options.MetricsServerListenAddress)
+		if err != nil {
+			return nil, fmt.Errorf("failed to listen on %s: %w", b.options.MetricsServerListenAddress, err)
+		}
+		listener = l
+		ownListener = true
+	}
+	// If we created the listener and something below fails before we hand
+	// it off to the serving goroutine, close it here so the socket does
+	// not leak.
+	handedOff := false
+	defer func() {
+		if ownListener && !handedOff && retErr != nil {
+			_ = listener.Close()
+		}
+	}()
+
+	logger := utils.LoggerFromContext(ctx)
+
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", promhttp.InstrumentMetricHandler(
+		b.options.MetricsRegisterer,
+		promhttp.HandlerFor(
+			prometheus.Gatherers{b.options.MetricsGatherer},
+			promhttp.HandlerOpts{},
+		),
+	))
+
+	addr := listener.Addr().String()
+	server := &http.Server{Addr: addr, Handler: mux}
+
+	wg.Add(1)
+	handedOff = true
+	go func() {
+		defer wg.Done()
+		logger.Info(fmt.Sprintf("metrics server listening on %s", addr))
+		errCh <- server.Serve(listener)
+	}()
+
+	return server, nil
+}
+
 // shutdownHTTPServer shuts down an HTTP server, logging its outcome and returning
 // an error if the shutdown failed. If the provided server is nil, no action is taken.
 // name is a descriptive name for the server, used in the logging.
@@ -291,22 +346,26 @@ func (b *Backend) runBackendControllersUnderLeaderElection(ctx context.Context, 
 	_, subscriptionLister := backendInformers.Subscriptions()
 	activeOperationInformer, activeOperationLister := backendInformers.ActiveOperations()
 
+	operationPhaseHandler := metricscontrollers.NewOperationPhaseMetricsHandler(b.options.MetricsRegisterer)
 	operationPhaseMetricsController := metricscontrollers.NewController(
-		"OperationPhaseMetrics", backendInformers.AllOperations(), metricscontrollers.NewOperationPhaseMetricsHandler(b.options.metricsRegisterer()))
+		"OperationPhaseMetrics", backendInformers.AllOperations(), operationPhaseHandler)
 
 	clusterInformer, clusterLister := backendInformers.Clusters()
+	clusterHandler := metricscontrollers.NewClusterMetricsHandler(b.options.MetricsRegisterer)
 	clusterMetricsController := metricscontrollers.NewController(
-		"ClusterMetrics", clusterInformer, metricscontrollers.NewClusterMetricsHandler(b.options.metricsRegisterer()))
+		"ClusterMetrics", clusterInformer, clusterHandler)
 
 	_, billingLister := backendInformers.BillingDocs()
 
 	nodePoolInformer, _ := backendInformers.NodePools()
+	nodePoolHandler := metricscontrollers.NewNodePoolMetricsHandler(b.options.MetricsRegisterer)
 	nodePoolMetricsController := metricscontrollers.NewController(
-		"NodePoolMetrics", nodePoolInformer, metricscontrollers.NewNodePoolMetricsHandler(b.options.metricsRegisterer()))
+		"NodePoolMetrics", nodePoolInformer, nodePoolHandler)
 
 	externalAuthInformer, _ := backendInformers.ExternalAuths()
+	externalAuthHandler := metricscontrollers.NewExternalAuthMetricsHandler(b.options.MetricsRegisterer)
 	externalAuthMetricsController := metricscontrollers.NewController(
-		"ExternalAuthMetrics", externalAuthInformer, metricscontrollers.NewExternalAuthMetricsHandler(b.options.metricsRegisterer()))
+		"ExternalAuthMetrics", externalAuthInformer, externalAuthHandler)
 
 	maestroClientBuilder := maestro.NewMaestroClientBuilder()
 

@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/otel"
 	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 
+	"k8s.io/component-base/metrics/legacyregistry"
 	"k8s.io/klog/v2"
 
 	"github.com/Azure/ARO-HCP/backend/pkg/app"
@@ -409,6 +410,8 @@ func (f *BackendRootCmdFlags) ToBackendOptions(ctx context.Context, cmd *cobra.C
 		SMIClientBuilder:                   smiClientBuilder,
 		CheckAccessV2ClientBuilder:         checkAccessV2ClientBuilder,
 		ClusterScopedIdentitiesConfig:      clusterScopedIdentitiesConfig,
+		MetricsRegisterer:                  legacyregistry.Registerer(),
+		MetricsGatherer:                    legacyregistry.DefaultGatherer,
 	}
 
 	return backendOptions, nil
