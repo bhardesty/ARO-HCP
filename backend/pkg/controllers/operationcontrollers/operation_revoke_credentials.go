@@ -33,21 +33,21 @@ import (
 )
 
 type operationRevokeCredentials struct {
-	cosmosClient         database.DBClient
-	clusterServiceClient ocm.ClusterServiceClientSpec
-	notificationClient   *http.Client
+	cosmosClient          database.DBClient
+	clustersServiceClient ocm.ClusterServiceClientSpec
+	notificationClient    *http.Client
 }
 
 func NewOperationRevokeCredentialsController(
 	cosmosClient database.DBClient,
-	clusterServiceClient ocm.ClusterServiceClientSpec,
+	clustersServiceClient ocm.ClusterServiceClientSpec,
 	notificationClient *http.Client,
 	activeOperationInformer cache.SharedIndexInformer,
 ) controllerutils.Controller {
 	syncer := &operationRevokeCredentials{
-		cosmosClient:         cosmosClient,
-		clusterServiceClient: clusterServiceClient,
-		notificationClient:   notificationClient,
+		cosmosClient:          cosmosClient,
+		clustersServiceClient: clustersServiceClient,
+		notificationClient:    notificationClient,
 	}
 
 	controller := NewGenericOperationController(
@@ -89,7 +89,7 @@ func (opsync *operationRevokeCredentials) nextOperationStatus(ctx context.Contex
 	//     error handling policy here may need revising once Cluster Service
 	//     offers more detail to accompany BreakGlassCredentialStatusFailed.
 
-	iterator := opsync.clusterServiceClient.ListBreakGlassCredentials(operation.InternalID, "")
+	iterator := opsync.clustersServiceClient.ListBreakGlassCredentials(operation.InternalID, "")
 
 	for breakGlassCredential := range iterator.Items(ctx) {
 		switch status := breakGlassCredential.Status(); status {
