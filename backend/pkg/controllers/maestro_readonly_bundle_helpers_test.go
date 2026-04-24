@@ -24,10 +24,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
-	"k8s.io/apimachinery/pkg/api/meta"
 	workv1 "open-cluster-management.io/api/work/v1"
 
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -607,7 +607,7 @@ func TestMaestroReadonlyBundleHelpers_readAndPersistMaestroReadonlyBundleContent
 
 		u := &unstructured.Unstructured{}
 		require.NoError(t, json.Unmarshal([]byte(validHCJSON), u))
-		historicLTT := metav1.Time{time.Date(2020, 6, 15, 12, 0, 0, 0, time.UTC)}
+		historicLTT := metav1.Time{Time: time.Date(2020, 6, 15, 12, 0, 0, 0, time.UTC)}
 		existing := &api.ManagementClusterContent{
 			CosmosMetadata: api.CosmosMetadata{ResourceID: existingRID},
 			ResourceID:     *existingRID,
