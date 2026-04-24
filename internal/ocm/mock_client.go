@@ -662,10 +662,10 @@ func (c *MockClusterServiceClientSpecGetVersionCall) DoAndReturn(f func(context.
 }
 
 // ListBreakGlassCredentials mocks base method.
-func (m *MockClusterServiceClientSpec) ListBreakGlassCredentials(clusterInternalID InternalID, searchExpression string) *BreakGlassCredentialListIterator {
+func (m *MockClusterServiceClientSpec) ListBreakGlassCredentials(clusterInternalID InternalID, searchExpression string) BreakGlassCredentialListIterator {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListBreakGlassCredentials", clusterInternalID, searchExpression)
-	ret0, _ := ret[0].(*BreakGlassCredentialListIterator)
+	ret0, _ := ret[0].(BreakGlassCredentialListIterator)
 	return ret0
 }
 
@@ -682,19 +682,19 @@ type MockClusterServiceClientSpecListBreakGlassCredentialsCall struct {
 }
 
 // Return rewrite *gomock.Call.Return
-func (c *MockClusterServiceClientSpecListBreakGlassCredentialsCall) Return(arg0 *BreakGlassCredentialListIterator) *MockClusterServiceClientSpecListBreakGlassCredentialsCall {
+func (c *MockClusterServiceClientSpecListBreakGlassCredentialsCall) Return(arg0 BreakGlassCredentialListIterator) *MockClusterServiceClientSpecListBreakGlassCredentialsCall {
 	c.Call = c.Call.Return(arg0)
 	return c
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockClusterServiceClientSpecListBreakGlassCredentialsCall) Do(f func(InternalID, string) *BreakGlassCredentialListIterator) *MockClusterServiceClientSpecListBreakGlassCredentialsCall {
+func (c *MockClusterServiceClientSpecListBreakGlassCredentialsCall) Do(f func(InternalID, string) BreakGlassCredentialListIterator) *MockClusterServiceClientSpecListBreakGlassCredentialsCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockClusterServiceClientSpecListBreakGlassCredentialsCall) DoAndReturn(f func(InternalID, string) *BreakGlassCredentialListIterator) *MockClusterServiceClientSpecListBreakGlassCredentialsCall {
+func (c *MockClusterServiceClientSpecListBreakGlassCredentialsCall) DoAndReturn(f func(InternalID, string) BreakGlassCredentialListIterator) *MockClusterServiceClientSpecListBreakGlassCredentialsCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }

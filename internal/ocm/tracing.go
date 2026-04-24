@@ -338,7 +338,7 @@ func (csc *clusterServiceClientWithTracing) DeleteBreakGlassCredentials(ctx cont
 	return err
 }
 
-func (csc *clusterServiceClientWithTracing) ListBreakGlassCredentials(clusterInternalID InternalID, searchExpression string) *BreakGlassCredentialListIterator {
+func (csc *clusterServiceClientWithTracing) ListBreakGlassCredentials(clusterInternalID InternalID, searchExpression string) BreakGlassCredentialListIterator {
 	return csc.csc.ListBreakGlassCredentials(clusterInternalID, searchExpression)
 }
 

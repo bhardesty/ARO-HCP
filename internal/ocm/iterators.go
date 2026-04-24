@@ -44,6 +44,11 @@ type ExternalAuthListIterator interface {
 	GetError() error
 }
 
+type BreakGlassCredentialListIterator interface {
+	Items(ctx context.Context) iter.Seq[*cmv1.BreakGlassCredential]
+	GetError() error
+}
+
 type ControlPlaneUpgradePolicyListIterator interface {
 	Items(ctx context.Context) iter.Seq[*arohcpv1alpha1.ControlPlaneUpgradePolicy]
 	GetError() error
@@ -60,49 +65,56 @@ type NodePoolUpgradePolicyListIterator interface {
 }
 
 type simpleListIterator[T any] struct {
-	clusters []*T
-	err      error
+	objs []*T
+	err  error
 }
 
 func NewSimpleClusterListIterator(objs []*arohcpv1alpha1.Cluster, err error) ClusterListIterator {
 	return &simpleListIterator[arohcpv1alpha1.Cluster]{
-		clusters: objs,
-		err:      err,
+		objs: objs,
+		err:  err,
 	}
 }
 
 func NewSimpleNodePoolListIterator(objs []*arohcpv1alpha1.NodePool, err error) NodePoolListIterator {
 	return &simpleListIterator[arohcpv1alpha1.NodePool]{
-		clusters: objs,
-		err:      err,
+		objs: objs,
+		err:  err,
 	}
 }
 
 func NewSimpleExternalAuthListIterator(objs []*arohcpv1alpha1.ExternalAuth, err error) ExternalAuthListIterator {
 	return &simpleListIterator[arohcpv1alpha1.ExternalAuth]{
-		clusters: objs,
-		err:      err,
+		objs: objs,
+		err:  err,
+	}
+}
+
+func NewSimpleBreakGlassCredentialsListIterator(objs []*cmv1.BreakGlassCredential, err error) BreakGlassCredentialListIterator {
+	return &simpleListIterator[cmv1.BreakGlassCredential]{
+		objs: objs,
+		err:  err,
 	}
 }
 
 func NewSimpleControlPlaneUpgradePolicyListIterator(objs []*arohcpv1alpha1.ControlPlaneUpgradePolicy, err error) ControlPlaneUpgradePolicyListIterator {
 	return &simpleListIterator[arohcpv1alpha1.ControlPlaneUpgradePolicy]{
-		clusters: objs,
-		err:      err,
+		objs: objs,
+		err:  err,
 	}
 }
 
 func NewSimpleProvisionShardListIterator(objs []*arohcpv1alpha1.ProvisionShard, err error) ProvisionShardListIterator {
 	return &simpleListIterator[arohcpv1alpha1.ProvisionShard]{
-		clusters: objs,
-		err:      err,
+		objs: objs,
+		err:  err,
 	}
 }
 
 func NewSimpleNodePoolUpgradePolicyListIterator(objs []*arohcpv1alpha1.NodePoolUpgradePolicy, err error) NodePoolUpgradePolicyListIterator {
 	return &simpleListIterator[arohcpv1alpha1.NodePoolUpgradePolicy]{
-		clusters: objs,
-		err:      err,
+		objs: objs,
+		err:  err,
 	}
 }
 
@@ -110,7 +122,7 @@ func NewSimpleNodePoolUpgradePolicyListIterator(objs []*arohcpv1alpha1.NodePoolU
 // If an error occurs during paging, iteration stops and the error is recorded.
 func (iter *simpleListIterator[T]) Items(ctx context.Context) iter.Seq[*T] {
 	return func(yield func(*T) bool) {
-		for _, cluster := range iter.clusters {
+		for _, cluster := range iter.objs {
 			if !yield(cluster) {
 				return
 			}
@@ -305,14 +317,14 @@ func (iter externalAuthListIterator) GetError() error {
 	return iter.err
 }
 
-type BreakGlassCredentialListIterator struct {
+type breakGlassCredentialListIterator struct {
 	request *cmv1.BreakGlassCredentialsListRequest
 	err     error
 }
 
 // Items returns a push iterator that can be used directly in for/range loops.
 // If an error occurs during paging, iteration stops and the error is recorded.
-func (iter *BreakGlassCredentialListIterator) Items(ctx context.Context) iter.Seq[*cmv1.BreakGlassCredential] {
+func (iter *breakGlassCredentialListIterator) Items(ctx context.Context) iter.Seq[*cmv1.BreakGlassCredential] {
 	return func(yield func(*cmv1.BreakGlassCredential) bool) {
 		// Request can be nil to allow for mocking.
 		if iter.request != nil {
@@ -355,7 +367,7 @@ func (iter *BreakGlassCredentialListIterator) Items(ctx context.Context) iter.Se
 
 // GetError returns any error that occurred during iteration. Call this after the
 // for/range loop that calls Items() to check if iteration completed successfully.
-func (iter BreakGlassCredentialListIterator) GetError() error {
+func (iter breakGlassCredentialListIterator) GetError() error {
 	return iter.err
 }
 
