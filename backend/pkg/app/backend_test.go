@@ -23,7 +23,8 @@ import (
 )
 
 func TestNewBackend_NilOptionsReturnsError(t *testing.T) {
-	b, err := NewBackend(nil)
+	var options *BackendOptions
+	b, err := options.NewBackend()
 	require.Error(t, err)
 	assert.Nil(t, b)
 }
@@ -43,10 +44,10 @@ func TestNewBackend_MetricsRegistryPairing(t *testing.T) {
 		{name: "gatherer only", gatherer: registry, wantErr: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			b, err := NewBackend(&BackendOptions{
+			b, err := (&BackendOptions{
 				MetricsRegisterer: tc.registerer,
 				MetricsGatherer:   tc.gatherer,
-			})
+			}).NewBackend()
 			if tc.wantErr {
 				require.Error(t, err)
 				assert.Nil(t, b)

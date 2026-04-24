@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"sync"
 	"time"
 
 	_ "k8s.io/component-base/metrics/prometheus/clientgo"
@@ -83,13 +82,28 @@ type BackendOptions struct {
 	ClusterScopedIdentitiesConfig      *internalazure.ClusterScopedIdentitiesConfig
 }
 
+const backendShutdownTimeout = 31 * time.Second
+
+type backendHealthzServer struct {
+	listenAddress     string
+	metricsRegisterer prometheus.Registerer
+	electionChecker   *leaderelection.HealthzAdaptor
+}
+
+type backendMetricsServer struct {
+	listenAddress     string
+	listener          net.Listener // optional pre-created listener for tests
+	metricsRegisterer prometheus.Registerer
+	metricsGatherer   prometheus.Gatherer
+}
+
 func (o *BackendOptions) RunBackend(ctx context.Context) error {
 	logger := utils.LoggerFromContext(ctx)
 
 	ctx, cancel := context.WithCancelCause(ctx)
 	defer cancel(fmt.Errorf("function returned"))
 
-	backend, err := NewBackend(o)
+	backend, err := o.NewBackend()
 	if err != nil {
 		return utils.TrackError(fmt.Errorf("failed to construct backend: %w", err))
 	}
@@ -111,15 +125,15 @@ func (o *BackendOptions) RunBackend(ctx context.Context) error {
 	return nil
 }
 
-func NewBackend(options *BackendOptions) (*Backend, error) {
-	if options == nil {
-		return nil, errors.New("BackendOptions must not be nil")
+func (o *BackendOptions) NewBackend() (*Backend, error) {
+	if o == nil {
+		return nil, errors.New("backend options must not be nil")
 	}
-	if err := options.validate(); err != nil {
+	if err := o.validate(); err != nil {
 		return nil, err
 	}
 	return &Backend{
-		options: options,
+		options: o,
 	}, nil
 }
 
@@ -133,7 +147,7 @@ func (o *BackendOptions) validate() error {
 	// own. A single half-configured field would silently expose metrics from
 	// one registry while populating another, so we refuse to start.
 	if o.MetricsRegisterer == nil || o.MetricsGatherer == nil {
-		return fmt.Errorf("BackendOptions.MetricsRegisterer and BackendOptions.MetricsGatherer must both be set (MetricsRegisterer set=%t, MetricsGatherer set=%t)",
+		return fmt.Errorf("metrics registerer and gatherer must both be set (registerer set=%t, gatherer set=%t)",
 			o.MetricsRegisterer != nil, o.MetricsGatherer != nil)
 	}
 	return nil
@@ -149,20 +163,13 @@ func (b *Backend) Run(ctx context.Context) error {
 		b.options.AppVersion,
 		b.options.AzureLocation))
 
-	var healthzServer *http.Server
-	var metricsServer *http.Server
-
 	ctx, cancel := context.WithCancelCause(ctx)
 	defer func() {
 		cancel(fmt.Errorf("run returned"))
 
-		// always attempt a graceful shutdown, a double ctrl+c exits the process
-		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 31*time.Second)
-		defer shutdownCancel()
-		_ = b.shutdownHTTPServer(shutdownCtx, metricsServer, "metrics server")
-		_ = b.shutdownHTTPServer(shutdownCtx, healthzServer, "healthz server")
-
 		logger.Info("shutting down tracer provider")
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), backendShutdownTimeout)
+		defer shutdownCancel()
 		err := b.options.TracerProviderShutdownFunc(shutdownCtx)
 		if err != nil {
 			logger.Error(err, "failed to shut down tracer provider")
@@ -178,25 +185,50 @@ func (b *Backend) Run(ctx context.Context) error {
 	// Create HealthzAdaptor for leader election
 	electionChecker := leaderelection.NewLeaderHealthzAdaptor(time.Second * 20)
 
-	// Create channels and wait group for goroutines.
-	// The size of the channel is the maximum number of goroutines that are to be
-	// executed.
-	// The wait group is used to wait for all goroutines to complete. The sync.WaitGroup counter
-	// is incremented for each goroutine that is to be executed according to the configuration.
-	errCh := make(chan error, 3)
-	wg := sync.WaitGroup{}
+	// Launch servers and leader election as independent goroutines.
+	// Each goroutine sends its result on errCh when done. On first
+	// error or context cancellation, cancel propagates to all.
+	goroutines := 1 // leader election always runs
+	if b.options.HealthzServerListenAddress != "" {
+		goroutines++
+	}
+	if b.options.MetricsServerListenAddress != "" || b.options.MetricsServerListener != nil {
+		goroutines++
+	}
+	errCh := make(chan error, goroutines)
 
-	healthzServer = b.serveHealthz(ctx, electionChecker, &wg, errCh)
-
-	var err error
-	metricsServer, err = b.serveMetrics(ctx, &wg, errCh)
-	if err != nil {
-		return fmt.Errorf("failed to start metrics server: %w", err)
+	if b.options.HealthzServerListenAddress != "" {
+		s := &backendHealthzServer{
+			listenAddress:     b.options.HealthzServerListenAddress,
+			metricsRegisterer: b.options.MetricsRegisterer,
+			electionChecker:   electionChecker,
+		}
+		go func() {
+			err := s.Run(ctx)
+			if err != nil {
+				cancel(fmt.Errorf("healthz server exited: %w", err))
+			}
+			errCh <- err
+		}()
 	}
 
-	wg.Add(1)
+	if b.options.MetricsServerListenAddress != "" || b.options.MetricsServerListener != nil {
+		s := &backendMetricsServer{
+			listenAddress:     b.options.MetricsServerListenAddress,
+			listener:          b.options.MetricsServerListener,
+			metricsRegisterer: b.options.MetricsRegisterer,
+			metricsGatherer:   b.options.MetricsGatherer,
+		}
+		go func() {
+			err := s.Run(ctx)
+			if err != nil {
+				cancel(fmt.Errorf("metrics server exited: %w", err))
+			}
+			errCh <- err
+		}()
+	}
+
 	go func() {
-		defer wg.Done()
 		err := b.runBackendControllersUnderLeaderElection(ctx, electionChecker)
 		// When leader election exits (e.g. lost lease), cancel so Run() unblocks and performs shutdown.
 		cancel(fmt.Errorf("backend controllers leader election exited"))
@@ -205,20 +237,10 @@ func (b *Backend) Run(ctx context.Context) error {
 
 	<-ctx.Done()
 
-	// always attempt a graceful shutdown, a double ctrl+c exits the process
-	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 31*time.Second)
-	defer shutdownCancel()
-	_ = b.shutdownHTTPServer(shutdownCtx, metricsServer, "metrics server")
-	_ = b.shutdownHTTPServer(shutdownCtx, healthzServer, "healthz server")
-
-	wg.Wait()
-	close(errCh)
 	errs := []error{}
-	for err := range errCh {
-		if err != nil {
-			logger.Info("go func completed", "message", err.Error())
-		}
-		if !errors.Is(err, http.ErrServerClosed) {
+	for range goroutines {
+		if err := <-errCh; err != nil && !errors.Is(err, http.ErrServerClosed) {
+			logger.Info("goroutine completed", "message", err.Error())
 			errs = append(errs, err)
 		}
 	}
@@ -228,20 +250,19 @@ func (b *Backend) Run(ctx context.Context) error {
 	return errors.Join(errs...)
 }
 
-// serveHealthz starts the /healthz HTTP server on its own ServeMux, in a dedicated
-// goroutine, if the option is configured. It returns the *http.Server so the caller
-// can shut it down. Returns nil when HealthzServerListenAddress is empty.
-func (b *Backend) serveHealthz(ctx context.Context, electionChecker *leaderelection.HealthzAdaptor, wg *sync.WaitGroup, errCh chan<- error) *http.Server {
-	if b.options.HealthzServerListenAddress == "" {
-		return nil
-	}
+func (s *backendHealthzServer) Run(ctx context.Context) error {
 	logger := utils.LoggerFromContext(ctx)
 
-	backendHealthGauge := promauto.With(b.options.MetricsRegisterer).NewGauge(prometheus.GaugeOpts{Name: "backend_health", Help: "backend_health is 1 when healthy"})
+	listener, err := net.Listen("tcp", s.listenAddress)
+	if err != nil {
+		return fmt.Errorf("failed to listen on %s: %w", s.listenAddress, err)
+	}
+
+	backendHealthGauge := promauto.With(s.metricsRegisterer).NewGauge(prometheus.GaugeOpts{Name: "backend_health", Help: "backend_health is 1 when healthy"})
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-		if err := electionChecker.Check(r); err != nil {
+		if err := s.electionChecker.Check(r); err != nil {
 			logger.Error(err, "Readiness probe failed")
 			http.Error(w, "lease not renewed", http.StatusServiceUnavailable)
 			backendHealthGauge.Set(0.0)
@@ -251,77 +272,65 @@ func (b *Backend) serveHealthz(ctx context.Context, electionChecker *leaderelect
 		backendHealthGauge.Set(1.0)
 	})
 
-	server := &http.Server{Addr: b.options.HealthzServerListenAddress, Handler: mux}
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		logger.Info(fmt.Sprintf("Healthz server listening on %s", b.options.HealthzServerListenAddress))
-		errCh <- server.ListenAndServe()
-	}()
-
-	return server
+	addr := listener.Addr().String()
+	server := &http.Server{Addr: addr, Handler: mux}
+	return runHTTPServer(ctx, "healthz server", addr, server, func() error {
+		return server.Serve(listener)
+	})
 }
 
-// serveMetrics starts the /metrics HTTP server on its own ServeMux, in a dedicated
-// goroutine, if the option is configured. When MetricsServerListener is not
-// pre-supplied, a net.Listener is created from MetricsServerListenAddress here
-// so the socket only exists while Run is executing (avoiding leaked listeners
-// if Run is never called). It returns the *http.Server so the caller can shut
-// it down. Returns (nil, nil) when neither listener nor address is configured.
-func (b *Backend) serveMetrics(ctx context.Context, wg *sync.WaitGroup, errCh chan<- error) (_ *http.Server, retErr error) {
-	listener := b.options.MetricsServerListener
-	ownListener := false
+func (s *backendMetricsServer) Run(ctx context.Context) error {
+	listener := s.listener
 	if listener == nil {
-		if b.options.MetricsServerListenAddress == "" {
-			return nil, nil
-		}
-		l, err := net.Listen("tcp", b.options.MetricsServerListenAddress)
+		l, err := net.Listen("tcp", s.listenAddress)
 		if err != nil {
-			return nil, fmt.Errorf("failed to listen on %s: %w", b.options.MetricsServerListenAddress, err)
+			return fmt.Errorf("failed to listen on %s: %w", s.listenAddress, err)
 		}
 		listener = l
-		ownListener = true
 	}
-	// If we created the listener and something below fails before we hand
-	// it off to the serving goroutine, close it here so the socket does
-	// not leak.
-	handedOff := false
-	defer func() {
-		if ownListener && !handedOff && retErr != nil {
-			_ = listener.Close()
-		}
-	}()
-
-	logger := utils.LoggerFromContext(ctx)
 
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.InstrumentMetricHandler(
-		b.options.MetricsRegisterer,
+		s.metricsRegisterer,
 		promhttp.HandlerFor(
-			prometheus.Gatherers{b.options.MetricsGatherer},
+			prometheus.Gatherers{s.metricsGatherer},
 			promhttp.HandlerOpts{},
 		),
 	))
 
 	addr := listener.Addr().String()
 	server := &http.Server{Addr: addr, Handler: mux}
+	return runHTTPServer(ctx, "metrics server", addr, server, func() error {
+		return server.Serve(listener)
+	})
+}
 
-	wg.Add(1)
-	handedOff = true
+func runHTTPServer(ctx context.Context, name string, addr string, server *http.Server, serve func() error) error {
+	done := make(chan struct{})
+	defer close(done)
 	go func() {
-		defer wg.Done()
-		logger.Info(fmt.Sprintf("metrics server listening on %s", addr))
-		errCh <- server.Serve(listener)
+		select {
+		case <-ctx.Done():
+			shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), backendShutdownTimeout)
+			defer shutdownCancel()
+			_ = shutdownHTTPServer(shutdownCtx, server, name)
+		case <-done:
+		}
 	}()
 
-	return server, nil
+	logger := utils.LoggerFromContext(ctx)
+	logger.Info(fmt.Sprintf("%s listening on %s", name, addr))
+	err := serve()
+	if errors.Is(err, http.ErrServerClosed) {
+		return nil
+	}
+	return err
 }
 
 // shutdownHTTPServer shuts down an HTTP server, logging its outcome and returning
 // an error if the shutdown failed. If the provided server is nil, no action is taken.
 // name is a descriptive name for the server, used in the logging.
-func (b *Backend) shutdownHTTPServer(ctx context.Context, server *http.Server, name string) error {
+func shutdownHTTPServer(ctx context.Context, server *http.Server, name string) error {
 	if server == nil {
 		return nil
 	}
