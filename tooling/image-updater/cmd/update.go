@@ -33,9 +33,9 @@ func NewUpdateCommand() *cobra.Command {
 		Use:   "update",
 		Short: "Update image tags/digests or repository versions",
 		Long: `Update reads the configuration file and updates image references in target
-configuration files.
+configuration files. One of --tags or --repositories must be specified.
 
-By default, it fetches the latest image digests from source registries
+With --tags/-t, it fetches the latest image digests from source registries
 and updates target files with new digests.
 
 With --repositories/-r, it checks for next-version repositories on Quay
