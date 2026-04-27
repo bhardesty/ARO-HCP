@@ -35,7 +35,9 @@ var _ ocmsdkgologging.Logger = (*logrToOCMLoggerAdapter)(nil)
 
 // LogrToOCMLogger returns an ocm-sdk-go Logger that delegates to the given logr.Logger.
 func NewLogrToOCMLoggerAdapter(l logr.Logger) ocmsdkgologging.Logger {
-	return &logrToOCMLoggerAdapter{Logger: l}
+	// When creating the logger adapter, skip one frame in the call stack to avoid
+	// the logged lines by the adapter showing the source as the adapter itself.
+	return &logrToOCMLoggerAdapter{Logger: l.WithCallDepth(1)}
 }
 
 func (l *logrToOCMLoggerAdapter) DebugEnabled() bool { return l.V(1).Enabled() }
