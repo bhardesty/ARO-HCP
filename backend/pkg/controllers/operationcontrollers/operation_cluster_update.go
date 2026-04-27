@@ -16,15 +16,22 @@ package operationcontrollers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
+	"github.com/blang/semver/v4"
+
+	apimeta "k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/Azure/ARO-HCP/backend/pkg/controllers/controllerutils"
 	"github.com/Azure/ARO-HCP/internal/api"
+	"github.com/Azure/ARO-HCP/internal/api/arm"
 	"github.com/Azure/ARO-HCP/internal/database"
 	"github.com/Azure/ARO-HCP/internal/ocm"
 	"github.com/Azure/ARO-HCP/internal/utils"
@@ -93,20 +100,107 @@ func (c *operationClusterUpdate) SynchronizeOperation(ctx context.Context, key c
 		return nil
 	}
 
+	operationalState, err := c.determineOperationState(ctx, operation)
+	if err != nil {
+		return utils.TrackError(err)
+	}
+
+	var persistErr *arm.CloudErrorBody
+	if operationalState.provisioningState == arm.ProvisioningStateFailed {
+		persistErr = &arm.CloudErrorBody{
+			Code:    arm.CloudErrorCodeInvalidRequestContent,
+			Message: operationalState.message,
+		}
+	}
+
+	logger.Info("updating status")
+	if err := UpdateOperationStatus(ctx, c.cosmosClient, operation, operationalState.provisioningState, persistErr, postAsyncNotificationFn(c.notificationClient)); err != nil {
+		return utils.TrackError(err)
+	}
+	return nil
+}
+
+func (c *operationClusterUpdate) determineOperationState(ctx context.Context, operation *api.Operation) (*operationState, error) {
+	logger := utils.LoggerFromContext(ctx)
+	errs := []error{}
+	operationStates := []*operationState{}
+
+	if operationState, err := c.desiredVersionResolutionOperationState(ctx, operation); err != nil {
+		errs = append(errs, utils.TrackError(err))
+	} else {
+		operationStates = append(operationStates, operationState)
+	}
+	if operationState, csErr := c.clusterServiceUpdateOperationState(ctx, operation); csErr != nil {
+		errs = append(errs, utils.TrackError(csErr))
+	} else {
+		operationStates = append(operationStates, operationState)
+	}
+
+	if err := errors.Join(errs...); err != nil {
+		return nil, err
+	}
+	if len(operationStates) == 0 {
+		return nil, utils.TrackError(fmt.Errorf("no operation states"))
+	}
+	slices.SortStableFunc(operationStates, compareOperationState)
+	if operationStates[0] == nil {
+		return nil, errors.New("nil operation state")
+	}
+	logger.Info("determined cluster update operation status", "operationStates", operationStates)
+	picked, err := pickWorstOperationState(operationStates)
+	if err != nil {
+		return nil, utils.TrackError(err)
+	}
+	logger.Info("picked cluster update operation status", "provisioningState", picked.provisioningState, "message", picked.message)
+	return picked, nil
+}
+
+func (c *operationClusterUpdate) desiredVersionResolutionOperationState(ctx context.Context, operation *api.Operation) (*operationState, error) {
+	existingCluster, err := c.cosmosClient.HCPClusters(operation.ExternalID.SubscriptionID, operation.ExternalID.ResourceGroupName).Get(ctx, operation.ExternalID.Name)
+	if err != nil {
+		return nil, utils.TrackError(err)
+	}
+	existingServiceProviderCluster, err := c.cosmosClient.ServiceProviderClusters(operation.ExternalID.SubscriptionID, operation.ExternalID.ResourceGroupName, operation.ExternalID.Name).Get(ctx, api.ServiceProviderClusterResourceName)
+	if err != nil {
+		return nil, utils.TrackError(err)
+	}
+	resultingDesiredVersion := existingServiceProviderCluster.Spec.ControlPlaneVersion.DesiredVersion
+	if resultingDesiredVersion == nil {
+		return nil, utils.TrackError(fmt.Errorf("service provider cluster has no desired version"))
+	}
+
+	customerDesiredVersion, err := semver.ParseTolerant(existingCluster.CustomerProperties.Version.ID)
+	if err != nil {
+		return nil, utils.TrackError(err)
+	}
+
+	if customerDesiredVersion.Major == resultingDesiredVersion.Major &&
+		customerDesiredVersion.Minor == resultingDesiredVersion.Minor {
+		return newOperationState(arm.ProvisioningStateSucceeded, ""), nil
+	}
+	existingDegraded := apimeta.FindStatusCondition(existingServiceProviderCluster.Status.Conditions,
+		api.DegradedCondition)
+	if existingDegraded != nil && existingDegraded.Status == metav1.ConditionTrue &&
+		existingDegraded.Reason == api.ServiceProviderClusterConditionReasonVersionUpgradeNotAccepted {
+		return newOperationState(arm.ProvisioningStateFailed, existingDegraded.Message), nil
+	}
+	return nil, utils.TrackError(fmt.Errorf("customer desired version does not match resolved desired version"))
+}
+
+func (c *operationClusterUpdate) clusterServiceUpdateOperationState(ctx context.Context, operation *api.Operation) (*operationState, error) {
+	logger := utils.LoggerFromContext(ctx)
 	clusterStatus, err := c.clusterServiceClient.GetClusterStatus(ctx, operation.InternalID)
 	if err != nil {
-		return utils.TrackError(err)
+		return nil, utils.TrackError(err)
 	}
-
 	newOperationStatus, opError, err := convertClusterStatus(ctx, c.clusterServiceClient, operation, clusterStatus)
 	if err != nil {
-		return utils.TrackError(err)
+		return nil, utils.TrackError(err)
 	}
-
-	err = UpdateOperationStatus(ctx, c.cosmosClient, operation, newOperationStatus, opError, postAsyncNotificationFn(c.notificationClient))
-	if err != nil {
-		return utils.TrackError(err)
+	logger.Info("new status via cluster-service", "newStatus", newOperationStatus, "newOperationError", opError)
+	msg := ""
+	if opError != nil {
+		msg = opError.Message
 	}
-
-	return nil
+	return newOperationState(newOperationStatus, msg), nil
 }

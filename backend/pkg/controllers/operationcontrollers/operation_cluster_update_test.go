@@ -16,15 +16,23 @@ package operationcontrollers
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
+	"github.com/blang/semver/v4"
 	"github.com/go-logr/logr/testr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
+
+	azcorearm "github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
+
 	arohcpv1alpha1 "github.com/openshift-online/ocm-sdk-go/arohcp/v1alpha1"
 
+	"github.com/Azure/ARO-HCP/internal/api"
 	"github.com/Azure/ARO-HCP/internal/api/arm"
 	"github.com/Azure/ARO-HCP/internal/database"
 	"github.com/Azure/ARO-HCP/internal/databasetesting"
@@ -34,21 +42,24 @@ import (
 
 func TestOperationClusterUpdate_SynchronizeOperation(t *testing.T) {
 	tests := []struct {
-		name         string
-		clusterState arohcpv1alpha1.ClusterState
-		expectError  bool
-		verify       func(t *testing.T, ctx context.Context, db *databasetesting.MockDBClient, fixture *clusterTestFixture)
+		name                                   string
+		clusterState                           arohcpv1alpha1.ClusterState
+		expectError                            bool
+		wantErrContains                        string
+		customerVersionID                      string
+		serviceProviderClusterStatusConditions []metav1.Condition
+		verify                                 func(t *testing.T, ctx context.Context, db *databasetesting.MockDBClient, fixture *clusterTestFixture)
 	}{
 		{
-			name:         "cluster ready transitions to succeeded",
-			clusterState: arohcpv1alpha1.ClusterStateReady,
-			expectError:  false,
+			name:              "cluster ready transitions operation to succeeded",
+			clusterState:      arohcpv1alpha1.ClusterStateReady,
+			expectError:       false,
+			customerVersionID: "4.19",
 			verify: func(t *testing.T, ctx context.Context, db *databasetesting.MockDBClient, fixture *clusterTestFixture) {
 				op, err := db.Operations(testSubscriptionID).Get(ctx, testOperationName)
 				require.NoError(t, err)
 				assert.Equal(t, arm.ProvisioningStateSucceeded, op.Status)
 
-				// Verify cluster provisioning state was also updated
 				cluster, err := db.HCPClusters(testSubscriptionID, testResourceGroupName).Get(ctx, testClusterName)
 				require.NoError(t, err)
 				assert.Equal(t, arm.ProvisioningStateSucceeded, cluster.ServiceProviderProperties.ProvisioningState)
@@ -56,15 +67,15 @@ func TestOperationClusterUpdate_SynchronizeOperation(t *testing.T) {
 			},
 		},
 		{
-			name:         "cluster updating transitions to updating",
-			clusterState: arohcpv1alpha1.ClusterStateUpdating,
-			expectError:  false,
+			name:              "cluster updating transitions operation to updating",
+			clusterState:      arohcpv1alpha1.ClusterStateUpdating,
+			expectError:       false,
+			customerVersionID: "4.19",
 			verify: func(t *testing.T, ctx context.Context, db *databasetesting.MockDBClient, fixture *clusterTestFixture) {
 				op, err := db.Operations(testSubscriptionID).Get(ctx, testOperationName)
 				require.NoError(t, err)
 				assert.Equal(t, arm.ProvisioningStateUpdating, op.Status)
 
-				// Verify cluster still has active operation
 				cluster, err := db.HCPClusters(testSubscriptionID, testResourceGroupName).Get(ctx, testClusterName)
 				require.NoError(t, err)
 				assert.Equal(t, arm.ProvisioningStateUpdating, cluster.ServiceProviderProperties.ProvisioningState)
@@ -72,16 +83,16 @@ func TestOperationClusterUpdate_SynchronizeOperation(t *testing.T) {
 			},
 		},
 		{
-			name:         "cluster error transitions to failed",
-			clusterState: arohcpv1alpha1.ClusterStateError,
-			expectError:  false,
+			name:              "cluster error transitions operation to failed",
+			clusterState:      arohcpv1alpha1.ClusterStateError,
+			expectError:       false,
+			customerVersionID: "4.19",
 			verify: func(t *testing.T, ctx context.Context, db *databasetesting.MockDBClient, fixture *clusterTestFixture) {
 				op, err := db.Operations(testSubscriptionID).Get(ctx, testOperationName)
 				require.NoError(t, err)
 				assert.Equal(t, arm.ProvisioningStateFailed, op.Status)
 				assert.NotNil(t, op.Error)
 
-				// Verify cluster also shows failed
 				cluster, err := db.HCPClusters(testSubscriptionID, testResourceGroupName).Get(ctx, testClusterName)
 				require.NoError(t, err)
 				assert.Equal(t, arm.ProvisioningStateFailed, cluster.ServiceProviderProperties.ProvisioningState)
@@ -89,13 +100,58 @@ func TestOperationClusterUpdate_SynchronizeOperation(t *testing.T) {
 			},
 		},
 		{
-			name:         "cluster pending stays accepted",
-			clusterState: arohcpv1alpha1.ClusterStatePending,
-			expectError:  false,
+			name:              "cluster pending keeps operation accepted",
+			clusterState:      arohcpv1alpha1.ClusterStatePending,
+			expectError:       false,
+			customerVersionID: "4.19",
 			verify: func(t *testing.T, ctx context.Context, db *databasetesting.MockDBClient, fixture *clusterTestFixture) {
 				op, err := db.Operations(testSubscriptionID).Get(ctx, testOperationName)
 				require.NoError(t, err)
 				assert.Equal(t, arm.ProvisioningStateAccepted, op.Status)
+			},
+		},
+		{
+			name:              "customer minor mismatch with VersionUpgradeNotAccepted Degraded marks operation failed",
+			clusterState:      arohcpv1alpha1.ClusterStateReady,
+			customerVersionID: "4.20",
+			serviceProviderClusterStatusConditions: []metav1.Condition{
+				{
+					Type:    api.DegradedCondition,
+					Status:  metav1.ConditionTrue,
+					Reason:  api.ServiceProviderClusterConditionReasonVersionUpgradeNotAccepted,
+					Message: "no downgrades allowed",
+				},
+			},
+			verify: func(t *testing.T, ctx context.Context, db *databasetesting.MockDBClient, fixture *clusterTestFixture) {
+				op, err := db.Operations(testSubscriptionID).Get(ctx, testOperationName)
+				require.NoError(t, err)
+				assert.Equal(t, arm.ProvisioningStateFailed, op.Status)
+				require.NotNil(t, op.Error)
+				assert.Equal(t, arm.CloudErrorCodeInvalidRequestContent, op.Error.Code)
+				assert.Contains(t, op.Error.Message, "no downgrades allowed")
+
+				cluster, err := db.HCPClusters(testSubscriptionID, testResourceGroupName).Get(ctx, testClusterName)
+				require.NoError(t, err)
+				assert.Equal(t, arm.ProvisioningStateFailed, cluster.ServiceProviderProperties.ProvisioningState)
+				assert.Empty(t, cluster.ServiceProviderProperties.ActiveOperationID)
+			},
+		},
+		{
+			name:              "customer minor mismatch without VersionUpgradeNotAccepted leaves operation accepted",
+			clusterState:      arohcpv1alpha1.ClusterStateReady,
+			expectError:       true,
+			wantErrContains:   "customer desired version does not match resolved desired version",
+			customerVersionID: "4.20",
+			verify: func(t *testing.T, ctx context.Context, db *databasetesting.MockDBClient, fixture *clusterTestFixture) {
+				op, err := db.Operations(testSubscriptionID).Get(ctx, testOperationName)
+				require.NoError(t, err)
+				assert.Equal(t, arm.ProvisioningStateAccepted, op.Status)
+				assert.Nil(t, op.Error)
+
+				cluster, err := db.HCPClusters(testSubscriptionID, testResourceGroupName).Get(ctx, testClusterName)
+				require.NoError(t, err)
+				assert.Equal(t, testOperationName, cluster.ServiceProviderProperties.ActiveOperationID)
+				assert.Empty(t, cluster.ServiceProviderProperties.ProvisioningState)
 			},
 		},
 	}
@@ -105,13 +161,33 @@ func TestOperationClusterUpdate_SynchronizeOperation(t *testing.T) {
 			ctx := context.Background()
 			ctx = utils.ContextWithLogger(ctx, testr.New(t))
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 
 			fixture := newClusterTestFixture()
 			cluster := fixture.newCluster(nil)
+			cluster.CustomerProperties.Version.ID = tt.customerVersionID
 			operation := fixture.newOperation(database.OperationRequestUpdate)
 
 			mockDB, err := databasetesting.NewMockDBClientWithResources(ctx, []any{cluster, operation})
+			require.NoError(t, err)
+			resourceId := api.Must(azcorearm.ParseResourceID(fmt.Sprintf("%s/%s/%s",
+				fixture.clusterResourceID.String(),
+				api.ServiceProviderClusterResourceTypeName,
+				api.ServiceProviderClusterResourceName,
+			)))
+
+			spc := &api.ServiceProviderCluster{
+				CosmosMetadata: api.CosmosMetadata{ResourceID: resourceId},
+				ResourceID:     *resourceId,
+				Spec: api.ServiceProviderClusterSpec{
+					ControlPlaneVersion: api.ServiceProviderClusterSpecVersion{
+						DesiredVersion: ptr.To(semver.MustParse("4.19.0")),
+					},
+				},
+				Status: api.ServiceProviderClusterStatus{
+					Conditions: tt.serviceProviderClusterStatusConditions,
+				},
+			}
+			_, err = mockDB.ServiceProviderClusters(testSubscriptionID, testResourceGroupName, testClusterName).Create(ctx, spc, nil)
 			require.NoError(t, err)
 
 			mockCSClient := ocm.NewMockClusterServiceClientSpec(ctrl)
@@ -119,7 +195,6 @@ func TestOperationClusterUpdate_SynchronizeOperation(t *testing.T) {
 				State(tt.clusterState).
 				Build()
 			require.NoError(t, err)
-
 			mockCSClient.EXPECT().
 				GetClusterStatus(gomock.Any(), fixture.clusterInternalID).
 				Return(clusterStatus, nil)
@@ -134,6 +209,8 @@ func TestOperationClusterUpdate_SynchronizeOperation(t *testing.T) {
 
 			if tt.expectError {
 				require.Error(t, err)
+				require.NotEmpty(t, tt.wantErrContains, "wantErrContains must be set when expectError is true")
+				assert.Contains(t, err.Error(), tt.wantErrContains)
 			} else {
 				require.NoError(t, err)
 			}
