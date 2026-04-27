@@ -27,7 +27,9 @@ import (
 	"github.com/golang/groupcache/lru"
 	"github.com/google/uuid"
 
+	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/operation"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	azcorearm "github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 
@@ -151,29 +153,53 @@ func (c *controlPlaneDesiredVersionSyncer) SyncOnce(ctx context.Context, key con
 	desiredVersion, err := c.desiredControlPlaneZVersion(ctx, cincinnatiClient, key.GetResourceID(), customerDesiredMinor, channelGroup, activeVersions,
 		operation.HasOption(api.FeatureExperimentalReleaseFeatures))
 	if err != nil {
+		// Persist Degraded for Cincinnati version-not-found or any non-Cincinnati resolution error.
+		// Other Cincinnati errors are treated as transient graph or transport issues.
+		var cincinnatiErr *cincinnati.Error
+		persistDegraded := cincinatti.IsCincinnatiVersionNotFoundError(err) || !errors.As(err, &cincinnatiErr)
+		if persistDegraded {
+			apimeta.SetStatusCondition(&existingServiceProviderCluster.Status.Conditions, metav1.Condition{
+				Type:    api.DegradedCondition,
+				Status:  metav1.ConditionTrue,
+				Reason:  api.ServiceProviderClusterConditionReasonVersionUpgradeNotAccepted,
+				Message: err.Error(),
+			})
+			spcClient := c.cosmosClient.ServiceProviderClusters(key.SubscriptionID, key.ResourceGroupName, key.HCPClusterName)
+			if _, replaceErr := spcClient.Replace(ctx, existingServiceProviderCluster, nil); replaceErr != nil {
+				return utils.TrackError(fmt.Errorf("failed to determine desired control plane version: %w; failed to persist degraded condition: %v", err, replaceErr))
+			}
+		}
 		return utils.TrackError(fmt.Errorf("failed to determine desired control plane version: %w", err))
 	}
 
-	// Check if there's a new desired version to set
-	if desiredVersion == nil {
-		return nil
+	// Resolution succeeded: clear Degraded/VersionUpgradeNotAccepted if present so we persist recovery (degradedCleared).
+	degradedCleared := false
+	if existingDegraded := apimeta.FindStatusCondition(existingServiceProviderCluster.Status.Conditions, api.DegradedCondition); existingDegraded != nil &&
+		existingDegraded.Status == metav1.ConditionTrue &&
+		existingDegraded.Reason == api.ServiceProviderClusterConditionReasonVersionUpgradeNotAccepted {
+		degradedCleared = apimeta.SetStatusCondition(&existingServiceProviderCluster.Status.Conditions, metav1.Condition{
+			Type:   api.DegradedCondition,
+			Status: metav1.ConditionFalse,
+			Reason: api.ServiceProviderClusterConditionReasonNoErrors,
+		})
 	}
-
-	// Check if it's the same as the previously set desired version
-	previousDesiredVersion := existingServiceProviderCluster.Spec.ControlPlaneVersion.DesiredVersion
-	if previousDesiredVersion != nil && desiredVersion.EQ(*previousDesiredVersion) {
-		return nil
-	}
-
-	logger := utils.LoggerFromContext(ctx)
-	logger.Info("Selected desired version", "desiredVersion", desiredVersion, "previousDesiredVersion", previousDesiredVersion)
-	existingServiceProviderCluster.Spec.ControlPlaneVersion.DesiredVersion = desiredVersion
 	serviceProviderClustersCosmosClient := c.cosmosClient.ServiceProviderClusters(key.SubscriptionID, key.ResourceGroupName, key.HCPClusterName)
-	_, err = serviceProviderClustersCosmosClient.Replace(ctx, existingServiceProviderCluster, nil)
-	if err != nil {
+
+	previousDesiredVersion := existingServiceProviderCluster.Spec.ControlPlaneVersion.DesiredVersion
+	desiredVersionUpdated := false
+	if desiredVersion != nil && (previousDesiredVersion == nil || !desiredVersion.EQ(*previousDesiredVersion)) {
+		logger := utils.LoggerFromContext(ctx)
+		logger.Info("Selected desired version", "desiredVersion", desiredVersion, "previousDesiredVersion", previousDesiredVersion)
+		existingServiceProviderCluster.Spec.ControlPlaneVersion.DesiredVersion = desiredVersion
+		desiredVersionUpdated = true
+	}
+
+	if !desiredVersionUpdated && !degradedCleared {
+		return nil
+	}
+	if _, err := serviceProviderClustersCosmosClient.Replace(ctx, existingServiceProviderCluster, nil); err != nil {
 		return utils.TrackError(fmt.Errorf("failed to replace ServiceProviderCluster: %w", err))
 	}
-
 	return nil
 }
 
