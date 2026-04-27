@@ -33,6 +33,7 @@ import (
 	"github.com/Azure/ARO-HCP/backend/pkg/controllers/controllerutils"
 	"github.com/Azure/ARO-HCP/backend/pkg/informers"
 	"github.com/Azure/ARO-HCP/backend/pkg/listers"
+	"github.com/Azure/ARO-HCP/backend/pkg/maestrohelpers"
 	"github.com/Azure/ARO-HCP/internal/api"
 	"github.com/Azure/ARO-HCP/internal/api/arm"
 	"github.com/Azure/ARO-HCP/internal/cincinatti"
@@ -47,9 +48,10 @@ import (
 // from CS and internal and helps selecting a valid desiredVersion within the user's
 // desired
 type nodePoolVersionSyncer struct {
-	cooldownChecker      controllerutils.CooldownChecker
-	cosmosClient         database.DBClient
-	clusterServiceClient ocm.ClusterServiceClientSpec
+	cooldownChecker                       controllerutils.CooldownChecker
+	clusterManagementClusterContentLister listers.ManagementClusterContentLister
+	cosmosClient                          database.DBClient
+	clusterServiceClient                  ocm.ClusterServiceClientSpec
 
 	cincinnatiClientLock      sync.RWMutex
 	clusterToCincinnatiClient *lru.Cache
@@ -66,11 +68,13 @@ func NewNodePoolVersionController(
 	activeOperationLister listers.ActiveOperationLister,
 	informers informers.BackendInformers,
 ) controllerutils.Controller {
+	_, clusterManagementClusterContentLister := informers.ManagementClusterContents()
 	syncer := &nodePoolVersionSyncer{
-		cooldownChecker:           controllerutils.DefaultActiveOperationPrioritizingCooldown(activeOperationLister),
-		cosmosClient:              cosmosClient,
-		clusterServiceClient:      clusterServiceClient,
-		clusterToCincinnatiClient: lru.New(100000),
+		cooldownChecker:                       controllerutils.DefaultActiveOperationPrioritizingCooldown(activeOperationLister),
+		clusterManagementClusterContentLister: clusterManagementClusterContentLister,
+		cosmosClient:                          cosmosClient,
+		clusterServiceClient:                  clusterServiceClient,
+		clusterToCincinnatiClient:             lru.New(100000),
 	}
 
 	controller := controllerutils.NewNodePoolWatchingController(
@@ -107,6 +111,8 @@ func NewNodePoolVersionController(
 // If the desired version is already among the active versions, validation is skipped
 // (the upgrade is already in progress or complete).
 func (c *nodePoolVersionSyncer) SyncOnce(ctx context.Context, key controllerutils.HCPNodePoolKey) error {
+	logger := utils.LoggerFromContext(ctx)
+
 	// Get node pool from Cosmos to get CS internal ID
 	nodePool, err := c.cosmosClient.HCPClusters(key.SubscriptionID, key.ResourceGroupName).
 		NodePools(key.HCPClusterName).Get(ctx, key.HCPNodePoolName)
@@ -144,15 +150,14 @@ func (c *nodePoolVersionSyncer) SyncOnce(ctx context.Context, key controllerutil
 		return nil
 	}
 
-	// Get the cluster from Cluster Service to obtain the cluster UUID for Cincinnati
-	csCluster, err := c.clusterServiceClient.GetCluster(ctx, *cluster.ServiceProviderProperties.ClusterServiceID)
+	// Resolve the cluster UUID from the cached HostedCluster so we can build the Cincinnati client.
+	clusterUUID, found, err := maestrohelpers.GetCachedHostedClusterUUIDForCluster(ctx, c.clusterManagementClusterContentLister, key.SubscriptionID, key.ResourceGroupName, key.HCPClusterName)
 	if err != nil {
-		return utils.TrackError(fmt.Errorf("failed to get cluster from Cluster Service: %w", err))
+		return err
 	}
-
-	clusterUUID, err := uuid.Parse(csCluster.ExternalID())
-	if err != nil {
-		return utils.TrackError(fmt.Errorf("invalid cluster UUID from Cluster Service: %w", err))
+	if !found {
+		// will reappear once the informer relists; without the UUID we cannot build the Cincinnati client
+		return nil
 	}
 
 	clusterKey := controllerutils.HCPClusterKey{
@@ -189,7 +194,6 @@ func (c *nodePoolVersionSyncer) SyncOnce(ctx context.Context, key controllerutil
 	//   	- upgradepolicy.targetVersion: if the policy has started this version is applying to the nodepool
 	//   - In Hypershift
 	//		- .Status.Version: shows the latest applied version https://github.com/openshift/hypershift/blob/main/api/hypershift/v1beta1/nodepool_types.go#L246-L251
-	logger := utils.LoggerFromContext(ctx)
 	if !slices.Equal(oldActiveVersions, existingServiceProviderNodePool.Status.NodePoolVersion.ActiveVersions) {
 		logger.Info("Active versions changed", "oldActiveVersions", oldActiveVersions, "newActiveVersions", existingServiceProviderNodePool.Status.NodePoolVersion.ActiveVersions)
 		existingServiceProviderNodePool, err = serviceProviderCosmosNodePoolClient.Replace(ctx, existingServiceProviderNodePool, nil)
