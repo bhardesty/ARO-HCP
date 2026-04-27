@@ -49,16 +49,16 @@ A tool that automatically fetches the latest container image digests from regist
 make update
 
 # Preview changes without modifying files
-./image-updater update --config config.yaml --dry-run
+./image-updater update --config config.yaml --tags --dry-run
 
 # Update specific components only
-./image-updater update --config config.yaml --components maestro,hypershift
+./image-updater update --config config.yaml --tags --components maestro,hypershift
 
 # Update all images in a group
-./image-updater update --config config.yaml --groups hypershift-stack
+./image-updater update --config config.yaml --tags --groups hypershift-stack
 
 # Save output to file
-./image-updater update --config config.yaml --output-file results.md --output-format markdown
+./image-updater update --config config.yaml --tags --output-file results.md --output-format markdown
 ```
 
 ## Supported Registries
@@ -130,16 +130,16 @@ All registries support anonymous access by default for public images. Private re
 
 ```bash
 # Update all images with latest digests
-./image-updater update --config config.yaml
+./image-updater update --config config.yaml --tags
 
 # Preview changes first
-./image-updater update --config config.yaml --dry-run
+./image-updater update --config config.yaml --tags --dry-run
 
 # Update only specific components
-./image-updater update --config config.yaml --components maestro,hypershift
+./image-updater update --config config.yaml --tags --components maestro,hypershift
 
 # Exclude certain components
-./image-updater update --config config.yaml --exclude-components arohcpfrontend
+./image-updater update --config config.yaml --tags --exclude-components arohcpfrontend
 ```
 
 ### Groups
@@ -148,16 +148,16 @@ Each image belongs to a `group`, allowing you to update logically related images
 
 ```bash
 # Update all images in the hypershift-stack group
-./image-updater update --config config.yaml --groups hypershift-stack
+./image-updater update --config config.yaml --tags --groups hypershift-stack
 
 # Update multiple groups at once
-./image-updater update --config config.yaml --groups hypershift-stack,velero
+./image-updater update --config config.yaml --tags --groups hypershift-stack,velero
 
 # Combine groups with individual components (union)
-./image-updater update --config config.yaml --components maestro --groups hypershift-stack
+./image-updater update --config config.yaml --tags --components maestro --groups hypershift-stack
 
 # Update a group but exclude specific components
-./image-updater update --config config.yaml --groups hypershift-stack --exclude-components maestro-agent-sidecar
+./image-updater update --config config.yaml --tags --groups hypershift-stack --exclude-components maestro-agent-sidecar
 
 # Using Makefile
 make update GROUPS=hypershift-stack,velero
@@ -170,10 +170,10 @@ Example groups include `aro-rp`, `cs`, `aro-deps`, `hypershift-stack`, `prom-sta
 
 ```bash
 # Save results as markdown
-./image-updater update --config config.yaml --output-file results.md --output-format markdown
+./image-updater update --config config.yaml --tags --output-file results.md --output-format markdown
 
 # Save as JSON for automation
-./image-updater update --config config.yaml --output-file results.json --output-format json
+./image-updater update --config config.yaml --tags --output-file results.json --output-format json
 
 # Use Makefile variables
 make update OUTPUT_FILE=results.md OUTPUT_FORMAT=markdown
@@ -183,10 +183,10 @@ make update OUTPUT_FILE=results.md OUTPUT_FORMAT=markdown
 
 ```bash
 # Enable verbose logging (shows retry attempts, API calls)
-./image-updater update --config config.yaml -v=2
+./image-updater update --config config.yaml --tags -v=2
 
 # Combine with dry-run for debugging without changes
-./image-updater update --config config.yaml --dry-run -v=2
+./image-updater update --config config.yaml --tags --dry-run -v=2
 ```
 
 ### Pinning Images and Rolling Back
@@ -547,13 +547,13 @@ Write results to file in different formats:
 
 ```bash
 # Table format (default)
-./image-updater update --config config.yaml --output-file results.txt
+./image-updater update --config config.yaml --tags --output-file results.txt
 
 # Markdown format
-./image-updater update --config config.yaml --output-file results.md --output-format markdown
+./image-updater update --config config.yaml --tags --output-file results.md --output-format markdown
 
 # JSON format
-./image-updater update --config config.yaml --output-file results.json --output-format json
+./image-updater update --config config.yaml --tags --output-file results.json --output-format json
 ```
 
 ## Command Reference

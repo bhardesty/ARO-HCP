@@ -33,7 +33,7 @@ git checkout -b bump-<name> main
 
 ```bash
 cd tooling/image-updater
-./image-updater update --config config.yaml --components <name> --output-format markdown
+./image-updater update --config config.yaml --tags --components <name> --output-format markdown
 ```
 
 Example: `--components hypershift`
@@ -42,7 +42,7 @@ Example: `--components hypershift`
 
 ```bash
 cd tooling/image-updater
-./image-updater update --config config.yaml --output-format markdown
+./image-updater update --config config.yaml --tags --output-format markdown
 ```
 
 ### Bump All Except Some Components
@@ -51,14 +51,14 @@ Use `--exclude-components` to skip specific components:
 
 ```bash
 cd tooling/image-updater
-./image-updater update --config config.yaml --exclude-components arohcpfrontend,arohcpbackend --output-format markdown
+./image-updater update --config config.yaml --tags --exclude-components arohcpfrontend,arohcpbackend --output-format markdown
 ```
 
 ### Bump by Group
 
 ```bash
 cd tooling/image-updater
-./image-updater update --config config.yaml --groups hypershift-stack --output-format markdown
+./image-updater update --config config.yaml --tags --groups hypershift-stack --output-format markdown
 ```
 
 ### Post-Bump Steps
@@ -115,7 +115,7 @@ produces unnecessary changes when nothing has actually been updated.
 To preview changes without writing:
 
 ```bash
-./image-updater update --config config.yaml --components hypershift --dry-run --output-format markdown
+./image-updater update --config config.yaml --tags --components hypershift --dry-run --output-format markdown
 ```
 
 ### Repository Version Upgrade
@@ -130,7 +130,7 @@ The `update` command has two mutually exclusive modes:
 - `--tags`/`-t`: Update image tags/digests → routes to `runUpdateTags()`
 - `--repositories`/`-r`: Check and update repository version upgrades → routes to `runUpdateRepositories()`
 
-When neither flag is set, `--tags` behavior is used.
+One of `--tags` or `--repositories` must be specified; omitting both returns an error.
 
 ```bash
 cd tooling/image-updater

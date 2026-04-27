@@ -62,12 +62,14 @@ Use --verbosity (or -v) to control logging verbosity:
 func runUpdate(cmd *cobra.Command, opts *options.RawUpdateOptions) error {
 	ctx := cmd.Context()
 
+	if opts.UpdateTags {
+		return runUpdateTags(ctx, opts)
+	}
 	if opts.UpdateRepositories {
 		return runUpdateRepositories(ctx, opts)
 	}
 
-	// --tags or default (neither flag set): update tags/digests
-	return runUpdateTags(ctx, opts)
+	return fmt.Errorf("specify --tags or --repositories")
 }
 
 func runUpdateTags(ctx context.Context, opts *options.RawUpdateOptions) error {
