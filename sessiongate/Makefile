@@ -53,14 +53,15 @@ image: Dockerfile $(SESSION_GATE_SOURCES)
 		--build-arg ARO_HCP_COMMIT_TIME=${ARO_HCP_COMMIT_TIME} \
 		--build-arg ARO_HCP_IMAGE_TAG=${SESSION_GATE_IMAGE_TAG} \
 		--tag ${SESSION_GATE_TAGGED_IMAGE}
-	touch $@
 
 build-and-push: image
 	az acr login --name ${ARO_HCP_IMAGE_ACR}
 	$(CONTAINER_ENGINE) push ${SESSION_GATE_TAGGED_IMAGE}
 .PHONY: build-and-push
 
-OVERRIDE_CONFIG_FILE ?= /tmp/sessiongate-override-config-$(date +%s).yaml
+# Unix timestamp for this make run; computed once so multiple targets see the same value.
+MAKE_RUN_TS := $(shell date +%s)
+OVERRIDE_CONFIG_FILE ?= /tmp/sessiongate-override-config-$(MAKE_RUN_TS).yaml
 
 record-override: $(YQ) $(ORAS)
 	@az acr login --name ${ARO_HCP_IMAGE_ACR} --expose-token --output tsv --query accessToken | \
