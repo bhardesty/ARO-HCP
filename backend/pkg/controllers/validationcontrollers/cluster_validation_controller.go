@@ -19,6 +19,9 @@ import (
 	"fmt"
 	"time"
 
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/Azure/ARO-HCP/backend/pkg/controllers/controllerutils"
 	"github.com/Azure/ARO-HCP/backend/pkg/controllers/validationcontrollers/validations"
 	"github.com/Azure/ARO-HCP/backend/pkg/informers"
@@ -95,19 +98,19 @@ func (c *clusterValidationSyncer) SyncOnce(ctx context.Context, key controllerut
 	// drive the behavior of its controller through the outcome of the validation.
 	validationErr := c.validation.Validate(ctx, subscription, existingCluster)
 
-	validationCondition := api.Condition{
+	validationCondition := metav1.Condition{
 		Type: c.validation.Name(),
 	}
 	if validationErr != nil {
-		validationCondition.Status = api.ConditionFalse
+		validationCondition.Status = metav1.ConditionFalse
 		validationCondition.Reason = "Failed"
 		validationCondition.Message = fmt.Sprintf("Validation failed: %s", validationErr.Error())
 	} else {
-		validationCondition.Status = api.ConditionTrue
+		validationCondition.Status = metav1.ConditionTrue
 		validationCondition.Reason = "Succeeded"
 		validationCondition.Message = "Validation succeeded"
 	}
-	controllerutils.SetCondition(&existingServiceProviderCluster.Status.Validations, validationCondition)
+	meta.SetStatusCondition(&existingServiceProviderCluster.Status.Validations, validationCondition)
 
 	serviceProviderClustersCosmosClient := c.cosmosClient.ServiceProviderClusters(key.SubscriptionID, key.ResourceGroupName, key.HCPClusterName)
 	_, err = serviceProviderClustersCosmosClient.Replace(ctx, existingServiceProviderCluster, nil)
@@ -121,7 +124,7 @@ func (c *clusterValidationSyncer) SyncOnce(ctx context.Context, key controllerut
 // shouldProcess returns true when the condition associated to the validation does not exist or when it exists but
 // it failed to run successfully in a previous attempt.
 func (c *clusterValidationSyncer) shouldProcess(serviceProviderCluster *api.ServiceProviderCluster) bool {
-	return !controllerutils.IsConditionTrue(serviceProviderCluster.Status.Validations, c.validation.Name())
+	return !meta.IsStatusConditionTrue(serviceProviderCluster.Status.Validations, c.validation.Name())
 }
 
 func (c *clusterValidationSyncer) CooldownChecker() controllerutils.CooldownChecker {
