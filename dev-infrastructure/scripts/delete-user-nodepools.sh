@@ -30,7 +30,11 @@ for POOL in ${POOLS}; do
   echo ""
   echo "=== Processing pool '${POOL}' ==="
 
-  NODES=$(kubectl get nodes -l "agentpool=${POOL}" -o name 2>/dev/null || true)
+  if ! NODES=$(kubectl get nodes -l "agentpool=${POOL}" -o name 2>&1); then
+    echo "ERROR: Failed to get nodes for pool '${POOL}': ${NODES}"
+    ERRORS=$((ERRORS + 1))
+    continue
+  fi
 
   DRAIN_FAILED=false
   if [ -n "${NODES}" ]; then
