@@ -4,15 +4,15 @@ go 1.25.7
 
 require (
 	github.com/Azure/ARO-HCP/tooling/cleanup-sweeper v0.0.0-20260409032928-501433c68f7d
-	github.com/Azure/ARO-Tools/config v0.0.0-20260426235717-a3cbc0ea0ef1
-	github.com/Azure/ARO-Tools/pipelines v0.0.0-20260426235717-a3cbc0ea0ef1
-	github.com/Azure/ARO-Tools/testutil v0.0.0-20260426235717-a3cbc0ea0ef1
-	github.com/Azure/ARO-Tools/tools/cmdutils v0.0.0-20260426235717-a3cbc0ea0ef1
-	github.com/Azure/ARO-Tools/tools/grafanactl v0.0.0-20260426235717-a3cbc0ea0ef1
-	github.com/Azure/ARO-Tools/tools/helm v0.0.0-20260426235717-a3cbc0ea0ef1
-	github.com/Azure/ARO-Tools/tools/prow-job-executor v0.0.0-20260426235717-a3cbc0ea0ef1
-	github.com/Azure/ARO-Tools/tools/registration v0.0.0-20260426235717-a3cbc0ea0ef1
-	github.com/Azure/ARO-Tools/tools/secret-sync v0.0.0-20260426235717-a3cbc0ea0ef1
+	github.com/Azure/ARO-Tools/config v0.0.0-20260428151533-4096ffac2e16
+	github.com/Azure/ARO-Tools/pipelines v0.0.0-20260428151533-4096ffac2e16
+	github.com/Azure/ARO-Tools/testutil v0.0.0-20260428151533-4096ffac2e16
+	github.com/Azure/ARO-Tools/tools/cmdutils v0.0.0-20260428151533-4096ffac2e16
+	github.com/Azure/ARO-Tools/tools/grafanactl v0.0.0-20260428151533-4096ffac2e16
+	github.com/Azure/ARO-Tools/tools/helm v0.0.0-20260428151533-4096ffac2e16
+	github.com/Azure/ARO-Tools/tools/prow-job-executor v0.0.0-20260428151533-4096ffac2e16
+	github.com/Azure/ARO-Tools/tools/registration v0.0.0-20260428151533-4096ffac2e16
+	github.com/Azure/ARO-Tools/tools/secret-sync v0.0.0-20260428151533-4096ffac2e16
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.21.1
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.13.1
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v3 v3.0.0-beta.2
@@ -49,7 +49,7 @@ require (
 	cloud.google.com/go/monitoring v1.24.3 // indirect
 	cloud.google.com/go/storage v1.56.0 // indirect
 	dario.cat/mergo v1.0.1 // indirect
-	github.com/Azure/ARO-Tools/tools/yamlwrap v0.0.0-20260426235717-a3cbc0ea0ef1 // indirect
+	github.com/Azure/ARO-Tools/tools/yamlwrap v0.0.0-20260428151533-4096ffac2e16 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.12.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dashboard/armdashboard/v2 v2.0.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns v1.2.0 // indirect
@@ -145,7 +145,7 @@ require (
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/gomodule/redigo v1.8.5 // indirect
 	github.com/google/btree v1.1.3 // indirect
-	github.com/google/cel-go v0.27.0 // indirect
+	github.com/google/cel-go v0.28.0 // indirect
 	github.com/google/gnostic-models v0.7.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/pprof v0.0.0-20260115054156-294ebfa9ad83 // indirect
@@ -264,6 +264,7 @@ require (
 	gocloud.dev v0.40.0 // indirect
 	golang.org/x/crypto v0.50.0 // indirect
 	golang.org/x/exp v0.0.0-20250911091902-df9299821621 // indirect
+	golang.org/x/mod v0.34.0 // indirect
 	golang.org/x/net v0.53.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sys v0.43.0 // indirect

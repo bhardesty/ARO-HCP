@@ -8,8 +8,8 @@ require (
 	github.com/Azure/ARO-HCP/test/sdk/v20251223preview/resourcemanager/redhatopenshifthcp/armredhatopenshifthcp v0.0.0-00010101000000-000000000000
 	github.com/Azure/ARO-HCP/tooling/hcpctl v0.0.0-20260113131010-8f869ff652e6
 	github.com/Azure/ARO-HCP/tooling/templatize v0.0.0-00010101000000-000000000000
-	github.com/Azure/ARO-Tools/config v0.0.0-20260426235717-a3cbc0ea0ef1
-	github.com/Azure/ARO-Tools/tools/prow-job-executor v0.0.0-20260426235717-a3cbc0ea0ef1
+	github.com/Azure/ARO-Tools/config v0.0.0-20260428151533-4096ffac2e16
+	github.com/Azure/ARO-Tools/tools/prow-job-executor v0.0.0-20260428151533-4096ffac2e16
 	github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2 v2.0.2
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/alertsmanagement/armalertsmanagement v0.11.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v3 v3.0.0-beta.2
@@ -63,13 +63,13 @@ require (
 	cloud.google.com/go/monitoring v1.24.3 // indirect
 	cloud.google.com/go/storage v1.56.0 // indirect
 	dario.cat/mergo v1.0.1 // indirect
-	github.com/Azure/ARO-Tools/pipelines v0.0.0-20260426235717-a3cbc0ea0ef1 // indirect
-	github.com/Azure/ARO-Tools/tools/cmdutils v0.0.0-20260426235717-a3cbc0ea0ef1 // indirect
-	github.com/Azure/ARO-Tools/tools/grafanactl v0.0.0-20260426235717-a3cbc0ea0ef1 // indirect
-	github.com/Azure/ARO-Tools/tools/helm v0.0.0-20260426235717-a3cbc0ea0ef1 // indirect
-	github.com/Azure/ARO-Tools/tools/registration v0.0.0-20260426235717-a3cbc0ea0ef1 // indirect
-	github.com/Azure/ARO-Tools/tools/secret-sync v0.0.0-20260426235717-a3cbc0ea0ef1 // indirect
-	github.com/Azure/ARO-Tools/tools/yamlwrap v0.0.0-20260426235717-a3cbc0ea0ef1 // indirect
+	github.com/Azure/ARO-Tools/pipelines v0.0.0-20260428151533-4096ffac2e16 // indirect
+	github.com/Azure/ARO-Tools/tools/cmdutils v0.0.0-20260428151533-4096ffac2e16 // indirect
+	github.com/Azure/ARO-Tools/tools/grafanactl v0.0.0-20260428151533-4096ffac2e16 // indirect
+	github.com/Azure/ARO-Tools/tools/helm v0.0.0-20260428151533-4096ffac2e16 // indirect
+	github.com/Azure/ARO-Tools/tools/registration v0.0.0-20260428151533-4096ffac2e16 // indirect
+	github.com/Azure/ARO-Tools/tools/secret-sync v0.0.0-20260428151533-4096ffac2e16 // indirect
+	github.com/Azure/ARO-Tools/tools/yamlwrap v0.0.0-20260428151533-4096ffac2e16 // indirect
 	github.com/Azure/azure-kusto-go/azkustodata v1.2.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice v1.0.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dashboard/armdashboard/v2 v2.0.0 // indirect
@@ -163,7 +163,7 @@ require (
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/gomodule/redigo v1.8.5 // indirect
 	github.com/google/btree v1.1.3 // indirect
-	github.com/google/cel-go v0.27.0 // indirect
+	github.com/google/cel-go v0.28.0 // indirect
 	github.com/google/gnostic-models v0.7.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/pprof v0.0.0-20260115054156-294ebfa9ad83 // indirect
@@ -280,6 +280,7 @@ require (
 	go4.org v0.0.0-20201209231011-d4a079459e60 // indirect
 	gocloud.dev v0.40.0 // indirect
 	golang.org/x/exp v0.0.0-20250911091902-df9299821621 // indirect
+	golang.org/x/mod v0.34.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/term v0.42.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
@@ -346,3 +347,5 @@ replace github.com/onsi/ginkgo/v2 => github.com/openshift/onsi-ginkgo/v2 v2.6.1-
 
 // https://github.com/googleapis/google-cloud-go/issues/11283
 exclude google.golang.org/grpc/stats/opentelemetry v0.0.0-20240907200651-3ffb98b2c93a
+
+exclude github.com/ahmetb/gen-crd-api-reference-docs v0.3.1-0.20260316152250-6bbddc29119c
