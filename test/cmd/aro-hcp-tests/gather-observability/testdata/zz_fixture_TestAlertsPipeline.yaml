@@ -82,7 +82,6 @@ alerts:
   metadata:
     knownIssue: false
     monitoringWorkspace: /subscriptions/00000000-0000-0000-0000-000000000000/resourcegroups/hcp-underlay-test-rg/providers/microsoft.monitor/accounts/test-workspace
-scope: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/hcp-underlay-test-rg
 summary:
   bySeverity:
     Sev3: 1

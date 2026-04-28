@@ -290,7 +290,6 @@ func TestAlertsPipeline(t *testing.T) {
 	}
 
 	output := alertsOutput{
-		Scope:  "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/hcp-underlay-test-rg",
 		Alerts: classified,
 		Summary: alertsSummary{
 			Total:      len(classified),

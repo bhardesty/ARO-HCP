@@ -326,14 +326,20 @@
     .alert-links a:hover {
       text-decoration: underline;
     }
+
+    .badge-workspace {
+      background: #21262d;
+      border: 1px solid #30363d;
+      color: #8b949e;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
   </style>
 </head>
 
 <body>
-
-  <div class="meta">
-    <span>Scope: {{.Scope}}</span>
-  </div>
 
   {{if .HasAlerts}}
   <div class="summary-bar">
@@ -382,6 +388,7 @@
   <div class="alert-card alert-card-known">
     <details class="known-details">
       <summary>
+        <span class="badge badge-workspace">{{$a.Metadata.MonitoringWorkspaceType}}</span>
         <span class="badge {{severityClass $a.Alert.Severity}}">{{$a.Alert.Severity}}</span>
         <span class="{{conditionClass $a.Alert.Condition}}">{{$a.Alert.Condition}}</span>
         <span class="alert-title-inline">{{$a.Alert.Name}}</span>
@@ -417,6 +424,7 @@
   {{else}}
   <div class="alert-card">
     <div class="alert-header">
+      <span class="badge badge-workspace">{{$a.Metadata.MonitoringWorkspaceType}}</span>
       <span class="badge {{severityClass $a.Alert.Severity}}">{{$a.Alert.Severity}}</span>
       <span class="{{conditionClass $a.Alert.Condition}}">{{$a.Alert.Condition}}</span>
       <span class="alert-time">

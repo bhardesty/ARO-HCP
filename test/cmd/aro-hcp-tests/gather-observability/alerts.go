@@ -46,9 +46,10 @@ type alertData struct {
 
 // alertMetadata holds enrichments added by our tooling.
 type alertMetadata struct {
-	KnownIssue          bool   `json:"knownIssue"`
-	KnownIssueReason    string `json:"knownIssueReason,omitempty"`
-	MonitoringWorkspace string `json:"monitoringWorkspace,omitempty"`
+	KnownIssue              bool   `json:"knownIssue"`
+	KnownIssueReason        string `json:"knownIssueReason,omitempty"`
+	MonitoringWorkspace     string `json:"monitoringWorkspace,omitempty"`
+	MonitoringWorkspaceType string `json:"monitoringWorkspaceType,omitempty"`
 }
 
 // alert combines the alert data with our metadata.
@@ -62,6 +63,7 @@ func fetchAlerts(ctx context.Context, cred azcore.TokenCredential, scope string,
 	if err != nil {
 		return nil, fmt.Errorf("logger not found in context: %w", err)
 	}
+	logger = logger.WithValues("scope", scope)
 
 	client, err := armalertsmanagement.NewAlertsClient(scope, cred, nil)
 	if err != nil {
@@ -74,7 +76,7 @@ func fetchAlerts(ctx context.Context, cred azcore.TokenCredential, scope string,
 		start.UTC().Format(time.RFC3339),
 		end.UTC().Format(time.RFC3339),
 	)
-	logger.Info("querying alerts fired within window", "scope", scope, "timeRange", customTimeRange)
+	logger.Info("querying alerts fired within window", "timeRange", customTimeRange)
 
 	includeContext := true
 	pager := client.NewGetAllPager(&armalertsmanagement.AlertsClientGetAllOptions{

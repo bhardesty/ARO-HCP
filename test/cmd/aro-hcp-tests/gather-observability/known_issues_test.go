@@ -103,17 +103,6 @@ func TestParseKnownIssues(t *testing.T) {
 	}
 }
 
-func TestLoadKnownIssuesEmbedded(t *testing.T) {
-	t.Skip("embedded knownIssues.yaml is currently empty")
-	issues, err := parseKnownIssues(defaultKnownIssuesData)
-	if err != nil {
-		t.Fatalf("embedded knownIssues.yaml should parse without error: %v", err)
-	}
-	if len(issues) == 0 {
-		t.Fatal("embedded knownIssues.yaml should contain at least one known issue")
-	}
-}
-
 func TestClassifyAlerts(t *testing.T) {
 	t.Parallel()
 	tests := []struct {

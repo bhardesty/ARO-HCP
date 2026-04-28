@@ -104,7 +104,7 @@ func parseQueriesConfig(data []byte) (*QueriesConfig, error) {
 			if q.Query == "" {
 				return nil, fmt.Errorf("panel %d (%s), query %d (%s): query is required", pi, p.Title, qi, q.Title)
 			}
-			if q.Workspace != "svc" && q.Workspace != "hcp" {
+			if q.Workspace != workspaceSvc && q.Workspace != workspaceHcp {
 				return nil, fmt.Errorf("panel %d (%s), query %d (%s): workspace must be \"svc\" or \"hcp\", got %q", pi, p.Title, qi, q.Title, q.Workspace)
 			}
 			if q.Step == "" {
@@ -187,11 +187,4 @@ func queryRange(ctx context.Context, httpClient *http.Client, cred azcore.TokenC
 		return nil, fmt.Errorf("prometheus query error (%s): %s", promResp.ErrorType, promResp.Error)
 	}
 	return &promResp, nil
-}
-
-func resolveWorkspaceEndpoint(spec QuerySpec, svcEndpoint, hcpEndpoint string) string {
-	if spec.Workspace == "hcp" {
-		return hcpEndpoint
-	}
-	return svcEndpoint
 }
