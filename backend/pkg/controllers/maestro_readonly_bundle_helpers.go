@@ -22,6 +22,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/equality"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -158,8 +159,8 @@ func buildObjectsFromUnstructuredObj(unstructuredObj *unstructured.Unstructured)
 	return objs, nil
 }
 
-func buildDegradedCondition(conditionStatus api.ConditionStatus, conditionReason string, conditionMessage string) api.Condition {
-	return api.Condition{
+func buildDegradedCondition(conditionStatus metav1.ConditionStatus, conditionReason string, conditionMessage string) metav1.Condition {
+	return metav1.Condition{
 		Type:    "Degraded",
 		Status:  conditionStatus,
 		Reason:  conditionReason,
@@ -214,15 +215,15 @@ func calculateManagementClusterContentFromMaestroBundle(
 		return nil, utils.TrackError(fmt.Errorf("failed to get Maestro Bundle: %w", err))
 	}
 	if k8serrors.IsNotFound(err) {
-		degradedCondition := buildDegradedCondition(api.ConditionTrue, "MaestroBundleNotFound", err.Error())
-		controllerutils.SetCondition(&desired.Status.Conditions, degradedCondition)
+		degradedCondition := buildDegradedCondition(metav1.ConditionTrue, "MaestroBundleNotFound", err.Error())
+		meta.SetStatusCondition(&desired.Status.Conditions, degradedCondition)
 		return desired, nil
 	}
 
 	rawBytes, err := getSingleResourceStatusFeedbackRawJSONFromMaestroBundle(existingMaestroBundle)
 	if err != nil {
-		degradedCondition := buildDegradedCondition(api.ConditionTrue, "MaestroBundleStatusFeedbackNotAvailable", err.Error())
-		controllerutils.SetCondition(&desired.Status.Conditions, degradedCondition)
+		degradedCondition := buildDegradedCondition(metav1.ConditionTrue, "MaestroBundleStatusFeedbackNotAvailable", err.Error())
+		meta.SetStatusCondition(&desired.Status.Conditions, degradedCondition)
 		return desired, nil
 	}
 
@@ -246,16 +247,16 @@ func calculateManagementClusterContentFromMaestroBundle(
 	if err != nil {
 		return nil, utils.TrackError(fmt.Errorf("failed to build objects from unstructured object: %w", err))
 	}
-	var degradedCondition api.Condition
+	var degradedCondition metav1.Condition
 	if !kubeContentMaxSizeExceeded {
 		// TODO is ListMeta or TypeMeta required at the metav1.List level?
 		desired.Status.KubeContent = &metav1.List{Items: objs}
-		degradedCondition = buildDegradedCondition(api.ConditionFalse, "NoErrors", "As expected.")
+		degradedCondition = buildDegradedCondition(metav1.ConditionFalse, "NoErrors", "As expected.")
 	} else {
 		kubeContextMaxSizeExceededConditionMessage = fmt.Sprintf("%s serialized size %.2f MiB exceeds Kube content max size %.2f MiB;", kind, float64(len(rawBytes))/(1024*1024), float64(kubeContentMaxSizeBytes)/(1024*1024))
-		degradedCondition = buildDegradedCondition(api.ConditionTrue, "KubeContentMaxSizeExceeded", kubeContextMaxSizeExceededConditionMessage)
+		degradedCondition = buildDegradedCondition(metav1.ConditionTrue, "KubeContentMaxSizeExceeded", kubeContextMaxSizeExceededConditionMessage)
 	}
-	controllerutils.SetCondition(&desired.Status.Conditions, degradedCondition)
+	meta.SetStatusCondition(&desired.Status.Conditions, degradedCondition)
 
 	return desired, nil
 }
@@ -309,11 +310,11 @@ func readAndPersistMaestroReadonlyBundleContent(
 	//   2.3. If it does not, then keep the condition as is
 	// 3. Assign the merged conditions to the desired status.
 	tmpExistingStatus := existing.Status.DeepCopy()
-	mergedConditions := make([]api.Condition, 0, len(desired.Status.Conditions))
+	mergedConditions := make([]metav1.Condition, 0, len(desired.Status.Conditions))
 	for _, desiredCondition := range desired.Status.Conditions {
-		if controllerutils.GetCondition(tmpExistingStatus.Conditions, desiredCondition.Type) != nil {
-			controllerutils.SetCondition(&tmpExistingStatus.Conditions, desiredCondition)
-			merged := controllerutils.GetCondition(tmpExistingStatus.Conditions, desiredCondition.Type)
+		if meta.FindStatusCondition(tmpExistingStatus.Conditions, desiredCondition.Type) != nil {
+			meta.SetStatusCondition(&tmpExistingStatus.Conditions, desiredCondition)
+			merged := meta.FindStatusCondition(tmpExistingStatus.Conditions, desiredCondition.Type)
 			mergedConditions = append(mergedConditions, *merged)
 			continue
 		}

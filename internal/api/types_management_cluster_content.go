@@ -40,7 +40,7 @@ type ManagementClusterContentStatus struct {
 	// A Condition Status of True means that the condition is met, and a Condition Status of False means that the condition is not met.
 	// The Condition Reason and Message are used to provide more details about the condition status.
 	// The Condition LastTransitionTime is used to track the last time the condition transitioned from one status to another.
-	Conditions []Condition `json:"conditions,omitempty"`
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
 	// KubeContent contains a list of K8s resources that represent content of the Management Cluster associated to this
 	// resource ID.

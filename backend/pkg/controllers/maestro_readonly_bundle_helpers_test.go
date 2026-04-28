@@ -27,6 +27,7 @@ import (
 	workv1 "open-cluster-management.io/api/work/v1"
 
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -37,7 +38,6 @@ import (
 
 	hsv1beta1 "github.com/openshift/hypershift/api/hypershift/v1beta1"
 
-	"github.com/Azure/ARO-HCP/backend/pkg/controllers/controllerutils"
 	"github.com/Azure/ARO-HCP/backend/pkg/maestro"
 	"github.com/Azure/ARO-HCP/internal/api"
 	"github.com/Azure/ARO-HCP/internal/api/arm"
@@ -82,14 +82,14 @@ func buildTestMaestroBundleWithStatusFeedback(name, namespace, rawJSON string) *
 }
 
 func TestMaestroReadonlyBundleHelpers_buildDegradedCondition(t *testing.T) {
-	cond := buildDegradedCondition(api.ConditionTrue, "MaestroBundleNotFound", "bundle not found")
+	cond := buildDegradedCondition(metav1.ConditionTrue, "MaestroBundleNotFound", "bundle not found")
 	assert.Equal(t, "Degraded", cond.Type)
-	assert.Equal(t, api.ConditionTrue, cond.Status)
+	assert.Equal(t, metav1.ConditionTrue, cond.Status)
 	assert.Equal(t, "MaestroBundleNotFound", cond.Reason)
 	assert.Equal(t, "bundle not found", cond.Message)
 
-	condFalse := buildDegradedCondition(api.ConditionFalse, "", "")
-	assert.Equal(t, api.ConditionFalse, condFalse.Status)
+	condFalse := buildDegradedCondition(metav1.ConditionFalse, "", "")
+	assert.Equal(t, metav1.ConditionFalse, condFalse.Status)
 	assert.Empty(t, condFalse.Reason)
 	assert.Empty(t, condFalse.Message)
 }
@@ -407,7 +407,7 @@ func TestMaestroReadonlyBundleHelpers_calculateManagementClusterContentFromMaest
 				require.NoError(t, err)
 				require.NotNil(t, got)
 				assert.Equal(t, tt.wantKubeContent, got.Status.KubeContent != nil && len(got.Status.KubeContent.Items) > 0)
-				hasDegradedTrue := controllerutils.IsConditionTrue(got.Status.Conditions, "Degraded")
+				hasDegradedTrue := meta.IsStatusConditionTrue(got.Status.Conditions, "Degraded")
 				assert.Equal(t, tt.wantDegraded, hasDegradedTrue)
 			}
 		})
@@ -607,7 +607,7 @@ func TestMaestroReadonlyBundleHelpers_readAndPersistMaestroReadonlyBundleContent
 
 		u := &unstructured.Unstructured{}
 		require.NoError(t, json.Unmarshal([]byte(validHCJSON), u))
-		historicLTT := time.Date(2020, 6, 15, 12, 0, 0, 0, time.UTC)
+		historicLTT := metav1.Time{Time: time.Date(2020, 6, 15, 12, 0, 0, 0, time.UTC)}
 		existing := &api.ManagementClusterContent{
 			CosmosMetadata: api.CosmosMetadata{ResourceID: existingRID},
 			ResourceID:     *existingRID,
@@ -615,10 +615,10 @@ func TestMaestroReadonlyBundleHelpers_readAndPersistMaestroReadonlyBundleContent
 				KubeContent: &metav1.List{
 					Items: []runtime.RawExtension{{Object: u}},
 				},
-				Conditions: []api.Condition{
+				Conditions: []metav1.Condition{
 					{
 						Type:               "Degraded",
-						Status:             api.ConditionFalse,
+						Status:             metav1.ConditionFalse,
 						Reason:             "NoErrors",
 						Message:            "As expected.",
 						LastTransitionTime: historicLTT,
@@ -634,9 +634,9 @@ func TestMaestroReadonlyBundleHelpers_readAndPersistMaestroReadonlyBundleContent
 
 		got, err := mccCRUD.Get(ctx, string(api.MaestroBundleInternalNameReadonlyHypershiftHostedCluster))
 		require.NoError(t, err)
-		degraded := controllerutils.GetCondition(got.Status.Conditions, "Degraded")
+		degraded := meta.FindStatusCondition(got.Status.Conditions, "Degraded")
 		require.NotNil(t, degraded)
-		assert.True(t, degraded.LastTransitionTime.Equal(historicLTT), "expected LastTransitionTime from Cosmos to be preserved, got %v", degraded.LastTransitionTime)
+		assert.True(t, degraded.LastTransitionTime.Equal(&historicLTT), "expected LastTransitionTime from Cosmos to be preserved, got %v", degraded.LastTransitionTime)
 	})
 
 }

@@ -332,6 +332,7 @@ func (b *Backend) runBackendControllersUnderLeaderElection(ctx context.Context, 
 		b.options.ClustersServiceClient,
 		http.DefaultClient,
 		activeOperationInformer,
+		backendInformers,
 	)
 	operationClusterUpdateController := operationcontrollers.NewOperationClusterUpdateController(
 		b.options.CosmosDBClient,

@@ -253,6 +253,64 @@ func (l *SliceServiceProviderClusterLister) ListForCluster(ctx context.Context, 
 	return result, nil
 }
 
+// SliceManagementClusterContentLister implements listers.ManagementClusterContentLister backed by a slice.
+type SliceManagementClusterContentLister struct {
+	Contents []*api.ManagementClusterContent
+}
+
+var _ listers.ManagementClusterContentLister = &SliceManagementClusterContentLister{}
+
+func (l *SliceManagementClusterContentLister) List(ctx context.Context) ([]*api.ManagementClusterContent, error) {
+	return l.Contents, nil
+}
+
+func (l *SliceManagementClusterContentLister) GetForCluster(ctx context.Context, subscriptionID, resourceGroupName, clusterName, managementClusterContentName string) (*api.ManagementClusterContent, error) {
+	for _, c := range l.Contents {
+		resourceID := c.GetResourceID()
+		if resourceID == nil {
+			continue
+		}
+		if strings.EqualFold(resourceID.SubscriptionID, subscriptionID) &&
+			strings.EqualFold(resourceID.ResourceGroupName, resourceGroupName) &&
+			managementClusterContentMatchesCluster(resourceID, clusterName) &&
+			strings.EqualFold(resourceID.Name, managementClusterContentName) {
+			return c, nil
+		}
+	}
+	return nil, database.NewNotFoundError()
+}
+
+func (l *SliceManagementClusterContentLister) ListForCluster(ctx context.Context, subscriptionID, resourceGroupName, clusterName string) ([]*api.ManagementClusterContent, error) {
+	var result []*api.ManagementClusterContent
+	for _, c := range l.Contents {
+		resourceID := c.GetResourceID()
+		if resourceID == nil {
+			continue
+		}
+		if strings.EqualFold(resourceID.SubscriptionID, subscriptionID) &&
+			strings.EqualFold(resourceID.ResourceGroupName, resourceGroupName) &&
+			managementClusterContentMatchesCluster(resourceID, clusterName) {
+			result = append(result, c)
+		}
+	}
+	return result, nil
+}
+
+func (l *SliceManagementClusterContentLister) ListForNodePool(ctx context.Context, subscriptionName, resourceGroupName, clusterName, nodePoolName string) ([]*api.ManagementClusterContent, error) {
+	prefix := api.ToNodePoolResourceIDString(subscriptionName, resourceGroupName, clusterName, nodePoolName)
+	var result []*api.ManagementClusterContent
+	for _, c := range l.Contents {
+		resourceID := c.GetResourceID()
+		if resourceID == nil {
+			continue
+		}
+		if strings.HasPrefix(strings.ToLower(resourceID.String()), strings.ToLower(prefix)) {
+			result = append(result, c)
+		}
+	}
+	return result, nil
+}
+
 // SliceSubscriptionLister implements listers.SubscriptionLister backed by a slice.
 type SliceSubscriptionLister struct {
 	Subscriptions []*arm.Subscription
