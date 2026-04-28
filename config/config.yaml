@@ -177,12 +177,6 @@ defaults:
           memory: 100Mi
         limits:
           memory: unlimited
-  # Backplane API
-  backplaneAPI:
-    image:
-      registry: quay.io
-      repository: app-sre/backplane-api
-      digest: sha256:01d388d3643c8868a75edecaa8d377c959daa4c8ea26eca3f9c163426c602475 # 0b9d1b3 (2026-03-26 10:47)
   tenantId: ""
   ev2:
     assistedId:

@@ -121,11 +121,6 @@ backend:
   tracing:
     address: ""
     exporter: ""
-backplaneAPI:
-  image:
-    digest: sha256:01d388d3643c8868a75edecaa8d377c959daa4c8ea26eca3f9c163426c602475
-    registry: quay.io
-    repository: app-sre/backplane-api
 billing:
   aub:
     accountName: ""
