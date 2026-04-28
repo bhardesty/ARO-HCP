@@ -123,7 +123,7 @@ type ServiceProviderClusterStatus struct {
 	// A Condition Status of True means that the validation passed successfully, and a Condition Status of False means that the validation failed.
 	// The Condition Reason and Message are used to provide more details about the validation status.
 	// The Condition LastTransitionTime is used to track the last time the validation transitioned from one status to another.
-	Validations []Condition `json:"validations,omitempty"`
+	Validations []metav1.Condition `json:"validations,omitempty"`
 	// MaestroReadonlyBundles contains a list of Maestro readonly bundles references.
 	// These bundles are used to retrieve particular K8s resources from the Management Cluster.
 	// The reference contains a mapping between the logical name we give to the Maestro bundle internally

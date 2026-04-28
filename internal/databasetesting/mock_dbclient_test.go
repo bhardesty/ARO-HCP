@@ -21,6 +21,8 @@ import (
 	"testing"
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	azcorearm "github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 
 	"github.com/Azure/ARO-HCP/internal/api"
@@ -669,11 +671,11 @@ func TestMockDBClient_Controller_ETagConditionalReplace(t *testing.T) {
 		ResourceID: controllerResourceID,
 		ExternalID: clusterResourceID,
 		Status: api.ControllerStatus{
-			Conditions: []api.Condition{
+			Conditions: []metav1.Condition{
 				{
 					Type:               "Degraded",
-					Status:             api.ConditionFalse,
-					LastTransitionTime: time.Now(),
+					Status:             metav1.ConditionFalse,
+					LastTransitionTime: metav1.NewTime(time.Now()),
 					Reason:             "AllHealthy",
 					Message:            "All systems operational",
 				},

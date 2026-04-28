@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"time"
 
+	"k8s.io/apimachinery/pkg/api/meta"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/workqueue"
@@ -86,7 +87,7 @@ func (c *doNothingExample) synchronizeHCPCluster(ctx context.Context, key contro
 	} else {
 		logger.Info("starting work for item",
 			"provisioning_state", cosmosHCPCluster.ServiceProviderProperties.ProvisioningState,
-			"controller_degraded", controllerutils.GetCondition(existingController.Status.Conditions, "Degraded"),
+			"controller_degraded", meta.FindStatusCondition(existingController.Status.Conditions, "Degraded"),
 		)
 	}
 
