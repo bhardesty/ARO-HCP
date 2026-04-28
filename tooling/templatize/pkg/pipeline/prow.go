@@ -34,11 +34,11 @@ func runProwJobStep(step *types.ProwJobStep, ctx context.Context, options *StepR
 
 	ev2cfg, err := ev2config.ResolveConfig(options.Cloud, executionTarget.GetRegion())
 	if err != nil {
-		return fmt.Errorf("cannot resolve config for %s/%s: %v", err, options.Cloud, executionTarget.GetRegion())
+		return fmt.Errorf("cannot resolve config for %s/%s: %w", options.Cloud, executionTarget.GetRegion(), err)
 	}
 	rawKeyVaultDNSSuffix, err := ev2cfg.GetByPath("keyVault.domainNameSuffix")
 	if err != nil {
-		return fmt.Errorf("cannot get Ev2 config value keyVault.domainNameSuffix: %v", err)
+		return fmt.Errorf("cannot get Ev2 config value keyVault.domainNameSuffix: %w", err)
 	}
 	keyVaultDNSSuffix, ok := rawKeyVaultDNSSuffix.(string)
 	if !ok {
