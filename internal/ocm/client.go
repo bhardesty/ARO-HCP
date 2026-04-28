@@ -122,7 +122,7 @@ type ClusterServiceClientSpec interface {
 	// ListBreakGlassCredentials prepares a GET request with the given search expression. Call
 	// Items() on the returned iterator in a for/range loop to execute the request and paginate
 	// over results, then call GetError() to check for an iteration error.
-	ListBreakGlassCredentials(clusterInternalID InternalID, searchExpression string) *BreakGlassCredentialListIterator
+	ListBreakGlassCredentials(clusterInternalID InternalID, searchExpression string) BreakGlassCredentialListIterator
 
 	// GetVersion sends a GET request to fetch cluster version
 	GetVersion(ctx context.Context, versionName string) (*arohcpv1alpha1.Version, error)
@@ -671,16 +671,16 @@ func (csc *clusterServiceClient) DeleteBreakGlassCredentials(ctx context.Context
 	return utils.TrackError(err)
 }
 
-func (csc *clusterServiceClient) ListBreakGlassCredentials(clusterInternalID InternalID, searchExpression string) *BreakGlassCredentialListIterator {
+func (csc *clusterServiceClient) ListBreakGlassCredentials(clusterInternalID InternalID, searchExpression string) BreakGlassCredentialListIterator {
 	client, ok := getClusterClient(clusterInternalID, csc.conn)
 	if !ok {
-		return &BreakGlassCredentialListIterator{err: fmt.Errorf("OCM path is not a cluster: %s", clusterInternalID)}
+		return &breakGlassCredentialListIterator{err: fmt.Errorf("OCM path is not a cluster: %s", clusterInternalID)}
 	}
 	breakGlassCredentialsListRequest := client.BreakGlassCredentials().List()
 	if searchExpression != "" {
 		breakGlassCredentialsListRequest.Search(searchExpression)
 	}
-	return &BreakGlassCredentialListIterator{request: breakGlassCredentialsListRequest}
+	return &breakGlassCredentialListIterator{request: breakGlassCredentialsListRequest}
 }
 
 func (csc *clusterServiceClient) GetVersion(ctx context.Context, versionName string) (*arohcpv1alpha1.Version, error) {

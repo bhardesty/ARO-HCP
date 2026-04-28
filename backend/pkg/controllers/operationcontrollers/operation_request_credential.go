@@ -33,21 +33,21 @@ import (
 )
 
 type operationRequestCredential struct {
-	cosmosClient         database.DBClient
-	clusterServiceClient ocm.ClusterServiceClientSpec
-	notificationClient   *http.Client
+	cosmosClient          database.DBClient
+	clustersServiceClient ocm.ClusterServiceClientSpec
+	notificationClient    *http.Client
 }
 
 func NewOperationRequestCredentialController(
 	cosmosClient database.DBClient,
-	clusterServiceClient ocm.ClusterServiceClientSpec,
+	clustersServiceClient ocm.ClusterServiceClientSpec,
 	notificationClient *http.Client,
 	activeOperationInformer cache.SharedIndexInformer,
 ) controllerutils.Controller {
 	syncer := &operationRequestCredential{
-		cosmosClient:         cosmosClient,
-		clusterServiceClient: clusterServiceClient,
-		notificationClient:   notificationClient,
+		cosmosClient:          cosmosClient,
+		clustersServiceClient: clustersServiceClient,
+		notificationClient:    notificationClient,
 	}
 
 	controller := NewGenericOperationController(
@@ -86,7 +86,7 @@ func (opsync *operationRequestCredential) SynchronizeOperation(ctx context.Conte
 		return nil // no work to do
 	}
 
-	breakGlassCredential, err := opsync.clusterServiceClient.GetBreakGlassCredential(ctx, oldOperation.InternalID)
+	breakGlassCredential, err := opsync.clustersServiceClient.GetBreakGlassCredential(ctx, oldOperation.InternalID)
 	if err != nil {
 		return utils.TrackError(err)
 	}
