@@ -82,19 +82,6 @@ images:
     targets:
     - jsonPath: defaults.backend.image.digest
       filePath: ../../config/config.yaml
-  # backplaneAPI
-  backplaneAPI:
-    group: aro-deps
-    source:
-      image: quay.io/app-sre/backplane-api
-      tagPattern: "^[a-f0-9]{7}$"
-      useAuth: true
-      keyVault:
-        url: "https://arohcpdev-global.vault.azure.net/"
-        secretName: "component-sync-pull-secret"
-    targets:
-    - jsonPath: defaults.backplaneAPI.image.digest
-      filePath: ../../config/config.yaml
   # Kube Events image
   kubeEvents:
     group: obs-agents

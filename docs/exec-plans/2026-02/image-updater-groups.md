@@ -10,7 +10,7 @@ The image updater config (`tooling/image-updater/config.yaml`) has ~30 image ent
 |---|---|
 | `aro-rp` | arohcpfrontend, arohcpbackend, admin-api, sessiongate |
 | `cs` | clusters-service |
-| `aro-deps` | backplaneAPI, imageSync |
+| `aro-deps` | imageSync |
 | `hypershift-stack` | hypershift, maestro, maestro-agent-sidecar, acm-operator, acm-mce |
 | `prom-stack` | prometheus-operator, prometheus, prometheus-config-reloader, kube-state-metrics, kube-webhook-certgen |
 | `obs-agents` | arobit-forwarder, arobit-mdsd, kubeEvents |
