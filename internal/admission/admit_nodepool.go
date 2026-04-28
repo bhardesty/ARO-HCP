@@ -15,18 +15,53 @@
 package admission
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	"github.com/blang/semver/v4"
 
 	"k8s.io/apimachinery/pkg/api/operation"
+	"k8s.io/apimachinery/pkg/api/safe"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/Azure/ARO-HCP/internal/api"
 	"github.com/Azure/ARO-HCP/internal/utils/apihelpers"
 	"github.com/Azure/ARO-HCP/internal/validation"
 )
+
+type NodePoolAdmissionContext struct {
+	Cluster *api.HCPOpenShiftCluster
+}
+
+func MutateNodePool(ctx context.Context, admissionContext *NodePoolAdmissionContext, op operation.Operation, newObj, oldObj *api.HCPOpenShiftClusterNodePool) field.ErrorList {
+	errs := field.ErrorList{}
+
+	//Properties HCPOpenShiftClusterNodePoolProperties `json:"properties"`
+	errs = append(errs, mutateNodePoolProperties(ctx, admissionContext, op, field.NewPath("properties"), &newObj.Properties, safe.Field(oldObj, validation.ToNodePoolProperties))...)
+
+	return errs
+}
+
+func mutateNodePoolProperties(ctx context.Context, admissionContext *NodePoolAdmissionContext, op operation.Operation, fldPath *field.Path, newObj, oldObj *api.HCPOpenShiftClusterNodePoolProperties) field.ErrorList {
+	errs := field.ErrorList{}
+
+	errs = append(errs, mutateNodePoolPlatform(ctx, admissionContext, op, fldPath.Child("platform"), &newObj.Platform, safe.Field(oldObj, validation.ToNodePoolPropertiesPlatform))...)
+
+	return errs
+}
+
+func mutateNodePoolPlatform(ctx context.Context, admissionContext *NodePoolAdmissionContext, op operation.Operation, fldPath *field.Path, newObj, oldObj *api.NodePoolPlatformProfile) field.ErrorList {
+	errs := field.ErrorList{}
+
+	if op.Type == operation.Create {
+		if newObj.SubnetID == nil {
+			newObj.SubnetID = admissionContext.Cluster.CustomerProperties.Platform.DeepCopy().SubnetID
+		}
+	}
+
+	return errs
+}
 
 // AdmitNodePool performs non-static checks of nodepool.  Checks that require more information than is contained inside of
 // of the nodepool instance itself.

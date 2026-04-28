@@ -39,7 +39,7 @@ func ValidateNodePool(ctx context.Context, op operation.Operation, newObj, oldOb
 
 var (
 	toNodePoolTrackedResource = func(oldObj *api.HCPOpenShiftClusterNodePool) *arm.TrackedResource { return &oldObj.TrackedResource }
-	toNodePoolProperties      = func(oldObj *api.HCPOpenShiftClusterNodePool) *api.HCPOpenShiftClusterNodePoolProperties {
+	ToNodePoolProperties      = func(oldObj *api.HCPOpenShiftClusterNodePool) *api.HCPOpenShiftClusterNodePoolProperties {
 		return &oldObj.Properties
 	}
 	toNodePoolServiceProviderProperties = func(oldObj *api.HCPOpenShiftClusterNodePool) *api.HCPOpenShiftClusterNodePoolServiceProviderProperties {
@@ -59,7 +59,7 @@ func validateNodePool(ctx context.Context, op operation.Operation, newObj, oldOb
 	}
 
 	//Properties HCPOpenShiftClusterNodePoolProperties `json:"properties"`
-	errs = append(errs, validateNodePoolProperties(ctx, op, field.NewPath("properties"), &newObj.Properties, safe.Field(oldObj, toNodePoolProperties))...)
+	errs = append(errs, validateNodePoolProperties(ctx, op, field.NewPath("properties"), &newObj.Properties, safe.Field(oldObj, ToNodePoolProperties))...)
 
 	//ServiceProviderProperties HCPOpenShiftClusterNodePoolServiceProviderProperties `json:"serviceProviderProperties,omitempty"`
 	errs = append(errs, validateNodePoolServiceProviderProperties(ctx, op, field.NewPath("serviceProviderProperties"), &newObj.ServiceProviderProperties, safe.Field(oldObj, toNodePoolServiceProviderProperties))...)
@@ -74,7 +74,7 @@ var (
 	toNodePoolPropertiesVersion = func(oldObj *api.HCPOpenShiftClusterNodePoolProperties) *api.NodePoolVersionProfile {
 		return &oldObj.Version
 	}
-	toNodePoolPropertiesPlatform = func(oldObj *api.HCPOpenShiftClusterNodePoolProperties) *api.NodePoolPlatformProfile {
+	ToNodePoolPropertiesPlatform = func(oldObj *api.HCPOpenShiftClusterNodePoolProperties) *api.NodePoolPlatformProfile {
 		return &oldObj.Platform
 	}
 	toNodePoolPropertiesReplicas    = func(oldObj *api.HCPOpenShiftClusterNodePoolProperties) *int32 { return &oldObj.Replicas }
@@ -96,8 +96,8 @@ func validateNodePoolProperties(ctx context.Context, op operation.Operation, fld
 	errs = append(errs, validateNodePoolVersionProfile(ctx, op, fldPath.Child("version"), &newObj.Version, safe.Field(oldObj, toNodePoolPropertiesVersion))...)
 
 	//Platform                NodePoolPlatformProfile `json:"platform,omitempty"`
-	errs = append(errs, immutableByReflect(ctx, op, fldPath.Child("platform"), &newObj.Platform, safe.Field(oldObj, toNodePoolPropertiesPlatform))...)
-	errs = append(errs, validateNodePoolPlatformProfile(ctx, op, fldPath.Child("platform"), &newObj.Platform, safe.Field(oldObj, toNodePoolPropertiesPlatform))...)
+	errs = append(errs, immutableByReflect(ctx, op, fldPath.Child("platform"), &newObj.Platform, safe.Field(oldObj, ToNodePoolPropertiesPlatform))...)
+	errs = append(errs, validateNodePoolPlatformProfile(ctx, op, fldPath.Child("platform"), &newObj.Platform, safe.Field(oldObj, ToNodePoolPropertiesPlatform))...)
 
 	//Replicas                int32                   `json:"replicas,omitempty"`
 	errs = append(errs, validate.Minimum(ctx, op, fldPath.Child("replicas"), &newObj.Replicas, safe.Field(oldObj, toNodePoolPropertiesReplicas), 0)...)

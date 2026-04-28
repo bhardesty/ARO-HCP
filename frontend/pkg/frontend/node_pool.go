@@ -214,6 +214,17 @@ func decodeDesiredNodePoolCreate(ctx context.Context, azureLocation string) (*ap
 	return newInternalNodePool, nil
 }
 
+func (f *Frontend) newNodePoolAdmissionContext(ctx context.Context, nodePoolResourceID *azcorearm.ResourceID) (*admission.NodePoolAdmissionContext, error) {
+	cluster, err := f.getInternalClusterFromStorage(ctx, nodePoolResourceID.Parent)
+	if err != nil {
+		return nil, utils.TrackError(err)
+	}
+
+	return &admission.NodePoolAdmissionContext{
+		Cluster: cluster,
+	}, nil
+}
+
 func (f *Frontend) createNodePool(writer http.ResponseWriter, request *http.Request) error {
 	ctx := request.Context()
 	logger := utils.LoggerFromContext(ctx)
@@ -251,11 +262,19 @@ func (f *Frontend) createNodePool(writer http.ResponseWriter, request *http.Requ
 		return utils.TrackError(fmt.Errorf("cluster %s has no ClusterServiceID", cluster.ID))
 	}
 
-	validationOp := operation.Operation{
+	admissionContext, err := f.newNodePoolAdmissionContext(ctx, resourceID)
+	if err != nil {
+		return utils.TrackError(err)
+	}
+	restOperation := operation.Operation{
 		Type:    operation.Create,
 		Options: validation.AFECsToValidationOptions(subscription.GetRegisteredFeatures()),
 	}
-	validationErrs := validation.ValidateNodePool(ctx, validationOp, newInternalNodePool, nil)
+	if mutationErrs := admission.MutateNodePool(ctx, admissionContext, restOperation, newInternalNodePool, nil); len(mutationErrs) > 0 {
+		return utils.TrackError(arm.CloudErrorFromFieldErrors(mutationErrs))
+	}
+
+	validationErrs := validation.ValidateNodePool(ctx, restOperation, newInternalNodePool, nil)
 	// in addition to static validation, we have validation based on the state of the hcp cluster
 	validationErrs = append(validationErrs, admission.AdmitNodePool(newInternalNodePool, nil, cluster)...)
 	if err := arm.CloudErrorFromFieldErrors(validationErrs); err != nil {
@@ -523,15 +542,22 @@ func (f *Frontend) updateNodePoolInCosmos(ctx context.Context, writer http.Respo
 		return utils.TrackError(err)
 	}
 
-	validationOp := operation.Operation{
+	admissionContext, err := f.newNodePoolAdmissionContext(ctx, oldInternalNodePool.ID)
+	if err != nil {
+		return utils.TrackError(err)
+	}
+	restOperation := operation.Operation{
 		Type:    operation.Update,
 		Options: validation.AFECsToValidationOptions(subscription.GetRegisteredFeatures()),
 	}
+	if mutationErrs := admission.MutateNodePool(ctx, admissionContext, restOperation, newInternalNodePool, nil); len(mutationErrs) > 0 {
+		return utils.TrackError(arm.CloudErrorFromFieldErrors(mutationErrs))
+	}
 
-	validationErrs := validation.ValidateNodePool(ctx, validationOp, newInternalNodePool, oldInternalNodePool)
+	validationErrs := validation.ValidateNodePool(ctx, restOperation, newInternalNodePool, oldInternalNodePool)
 	// in addition to static validation, we have validation based on the state of the hcp cluster
 	// AdmitNodePoolUpdate includes AdmitNodePool checks plus version upgrade validation
-	validationErrs = append(validationErrs, admission.AdmitNodePoolUpdate(newInternalNodePool, oldInternalNodePool, cluster, spNodePool, spCluster, validationOp)...)
+	validationErrs = append(validationErrs, admission.AdmitNodePoolUpdate(newInternalNodePool, oldInternalNodePool, cluster, spNodePool, spCluster, restOperation)...)
 	if err := arm.CloudErrorFromFieldErrors(validationErrs); err != nil {
 		return utils.TrackError(err)
 	}
