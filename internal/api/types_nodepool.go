@@ -88,7 +88,13 @@ type NodePoolPlatformProfile struct {
 	VMSize                 string                `json:"vmSize,omitempty"`
 	EnableEncryptionAtHost bool                  `json:"enableEncryptionAtHost"`
 	OSDisk                 OSDiskProfile         `json:"osDisk"`
-	// AvailabilityZone can be empty, but we don't currently know what it means when it is empty.
+	// AvailabilityZone can be empty.
+	// * If AvailabilityZone is not specified during creation, then the Node Pool is not part of any Availability Zone and the Node Pool's
+	//   virtual machines are included in an Availability Set.
+	// * If AvailabilityZone is specified, then the virtual machines are deployed as standalone instances in the specified Availability Zone.
+	// * It must not be specified for Node Pools whose parent cluster is in an Azure location that does not support Availability Zones
+	// * It is a logical Availability Zone
+	// * It is optional during creation and immutable
 	AvailabilityZone string `json:"availabilityZone,omitempty"`
 }
 

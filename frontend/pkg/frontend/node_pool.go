@@ -83,14 +83,6 @@ func (f *Frontend) ArmResourceListNodePools(writer http.ResponseWriter, request 
 	resourceGroupName := request.PathValue(PathSegmentResourceGroupName)
 	clusterName := request.PathValue(PathSegmentResourceName)
 
-	internalCluster, err := f.dbClient.HCPClusters(subscriptionID, resourceGroupName).Get(ctx, clusterName)
-	if err != nil {
-		return utils.TrackError(err)
-	}
-	if internalCluster.ServiceProviderProperties.ClusterServiceID == nil {
-		return utils.TrackError(fmt.Errorf("cluster %s has no ClusterServiceID", internalCluster.ID))
-	}
-
 	pagedResponse := arm.NewPagedResponse()
 
 	internalNodePoolIterator, err := f.dbClient.HCPClusters(subscriptionID, resourceGroupName).NodePools(clusterName).List(ctx, dbListOptionsFromRequest(request))
