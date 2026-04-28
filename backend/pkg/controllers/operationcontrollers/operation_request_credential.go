@@ -38,6 +38,21 @@ type operationRequestCredential struct {
 	notificationClient    *http.Client
 }
 
+// NewOperationRequestCredentialController returns a new Controller instance that
+// follows an asynchronous admin credential request operation to completion and
+// updates the corresponding operation document in Cosmos DB.
+//
+// Operation documents relevant to this controller will have the following values:
+//
+//	ResourceType: Microsoft.RedHatOpenShift/hcpOpenShiftClusters
+//	     Request: RequestCredential
+//	      Status: any non-terminal value
+//	  InternalID: a Clusters Service HREF value
+//
+// Note that "to completion" does not imply success. An operation is considered
+// complete when its status field reaches what Azure defines as a terminal value;
+// any of "Succeeded", "Failed", or "Canceled". Once the operation status reaches
+// a terminal value, there will be no further updates to the operation document.
 func NewOperationRequestCredentialController(
 	cosmosClient database.DBClient,
 	clustersServiceClient ocm.ClusterServiceClientSpec,

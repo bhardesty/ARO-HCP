@@ -36,6 +36,15 @@ type dispatchRequestCredential struct {
 	clustersServiceClient ocm.ClusterServiceClientSpec
 }
 
+// NewDispatchRequestCredentialController returns a new Controller instance that
+// initiates an asynchronous admin credential request operation in Clusters Service.
+//
+// Operation documents relevant to this controller will have the following values:
+//
+//	ResourceType: Microsoft.RedHatOpenShift/hcpOpenShiftClusters
+//	     Request: RequestCredential
+//	      Status: Accepted
+//	  InternalID: an empty value
 func NewDispatchRequestCredentialController(
 	clock utilsclock.PassiveClock,
 	cosmosClient database.DBClient,
