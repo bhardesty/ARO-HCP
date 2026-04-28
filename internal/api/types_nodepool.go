@@ -83,11 +83,13 @@ type NodePoolVersionProfile struct {
 // NodePoolPlatformProfile represents a worker node pool configuration.
 // Visibility for the entire struct is "read create".
 type NodePoolPlatformProfile struct {
+	// Subnet can be nil and when it is nil, that means "use the cluster subnet field"
 	SubnetID               *azcorearm.ResourceID `json:"subnetId,omitempty"`
 	VMSize                 string                `json:"vmSize,omitempty"`
 	EnableEncryptionAtHost bool                  `json:"enableEncryptionAtHost"`
 	OSDisk                 OSDiskProfile         `json:"osDisk"`
-	AvailabilityZone       string                `json:"availabilityZone,omitempty"`
+	// AvailabilityZone can be empty, but we don't currently know what it means when it is empty.
+	AvailabilityZone string `json:"availabilityZone,omitempty"`
 }
 
 // OSDiskProfile represents a OS Disk configuration.
