@@ -29,6 +29,8 @@ param requestedAccessTokenVersion int = 2
 @description('Key credentials for the application (e.g. certificate-based auth)')
 param keyCredentials array = []
 
+var validatedOwnerIds = !empty(ownerIds) ? ownerIds : fail('EntraId App ownerIds must not be empty')
+
 resource entraApp 'Microsoft.Graph/applications@beta' = {
   displayName: applicationName
   isFallbackPublicClient: isFallbackPublicClient
@@ -41,7 +43,7 @@ resource entraApp 'Microsoft.Graph/applications@beta' = {
   }
   trustedSubjectNameAndIssuers: trustedSubjectNameAndIssuers
   owners: {
-    relationships: [for ownerId in csvToArray(ownerIds): ownerId]
+    relationships: [for ownerId in csvToArray(validatedOwnerIds): ownerId]
   }
   keyCredentials: keyCredentials
 }
@@ -49,7 +51,7 @@ resource entraApp 'Microsoft.Graph/applications@beta' = {
 resource servicePrincipal 'Microsoft.Graph/servicePrincipals@beta' = if (manageSp) {
   appId: entraApp.appId
   owners: {
-    relationships: [for ownerId in csvToArray(ownerIds): ownerId]
+    relationships: [for ownerId in csvToArray(validatedOwnerIds): ownerId]
   }
 }
 

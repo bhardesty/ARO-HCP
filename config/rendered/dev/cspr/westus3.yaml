@@ -296,7 +296,6 @@ geneva:
     application:
       manage: true
       name: arohcp-ga-dev
-      ownerIds: ""
       useSNI: false
     certificate:
       issuer: Self

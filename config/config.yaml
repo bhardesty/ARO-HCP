@@ -242,7 +242,6 @@ defaults:
       genevaActionsPrincipalId: ""
       application:
         name: "arohcp-ga-{{ .ctx.environment }}" # [tenant unique]
-        ownerIds: ""
         useSNI: true
         manage: true
       publish:

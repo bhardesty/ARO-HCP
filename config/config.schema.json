@@ -39,9 +39,6 @@
         "useSNI": {
           "type": "boolean"
         },
-        "ownerIds": {
-          "$ref": "#/definitions/csv"
-        },
         "manage": {
           "type": "boolean"
         }
@@ -3177,6 +3174,7 @@
     "msiCredentialsRefresher",
     "keyVaultDNSSuffix",
     "acrDNSSuffix",
-    "e2e"
+    "e2e",
+    "entraAppOwnerIds"
   ]
 }

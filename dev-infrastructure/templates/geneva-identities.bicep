@@ -20,16 +20,8 @@ param genevaActionsManageCertificates bool
 param genevaActionsCertificateDomain string
 param genevaActionApplicationName string
 param entraAppOwnerIds string
-param genevaActionApplicationOwnerIds string
 param genevaActionApplicationManage bool
 param genevaActionApplicationUseSNI bool
-
-// TODO: remove genevaActionApplicationOwnerIds fallback once entraAppOwnerIds is set in sdp-pipelines config
-var ownerIds = !empty(entraAppOwnerIds)
-  ? entraAppOwnerIds
-  : !empty(genevaActionApplicationOwnerIds)
-      ? genevaActionApplicationOwnerIds
-      : fail('At least one of entraAppOwnerIds or genevaActionApplicationOwnerIds must be provided')
 
 resource ev2MSI 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' existing = {
   name: ev2MsiName
@@ -89,7 +81,7 @@ module entraApp '../modules/entra/app.bicep' = if (genevaActionApplicationManage
   name: 'geneva-actions-entra-app'
   params: {
     applicationName: genevaActionApplicationName
-    ownerIds: ownerIds
+    ownerIds: entraAppOwnerIds
     isFallbackPublicClient: true
     manageSp: true
     trustedSubjectNameAndIssuers: genevaActionApplicationUseSNI
