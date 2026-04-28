@@ -25,12 +25,12 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/microsoft/go-otel-audit/audit/base"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/spf13/cobra"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
 	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
+
+	"k8s.io/component-base/metrics/legacyregistry"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
@@ -149,10 +149,6 @@ func (opts *FrontendOpts) Run() error {
 	logger := utils.DefaultLogger()
 	ctx = utils.ContextWithLogger(ctx, logger)
 
-	registry := prometheus.NewRegistry()
-	registry.MustRegister(collectors.NewGoCollector())
-	registry.MustRegister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
-
 	if len(opts.location) == 0 {
 		return errors.New("location is required")
 	}
@@ -170,7 +166,7 @@ func (opts *FrontendOpts) Run() error {
 	auditClient, err := audit.NewOtelAuditClient(
 		ctx,
 		audit.CreateConn(opts.auditConnectSocket),
-		registry,
+		legacyregistry.Registerer(),
 		base.WithLogger(slogLogger),
 		base.WithSettings(base.Settings{
 			QueueSize: opts.auditLogQueueSize,
@@ -232,7 +228,7 @@ func (opts *FrontendOpts) Run() error {
 		URL(opts.clustersServiceURL).
 		Insecure(opts.insecure).
 		MetricsSubsystem("frontend_clusters_service_client").
-		MetricsRegisterer(registry).
+		MetricsRegisterer(legacyregistry.Registerer()).
 		Build()
 	if err != nil {
 		return err
@@ -244,7 +240,9 @@ func (opts *FrontendOpts) Run() error {
 	)
 
 	f := frontend.NewFrontend(
-		logger, listener, metricsListener, registry, dbClient, csClient, auditClient, opts.location, opts.clusterServiceProvisionShard,
+		logger, listener, metricsListener,
+		legacyregistry.Registerer(), legacyregistry.DefaultGatherer,
+		dbClient, csClient, auditClient, opts.location, opts.clusterServiceProvisionShard,
 		opts.clusterServiceNoopProvision, opts.clusterServiceNoopDeprovision, opts.exitOnPanic,
 	)
 
