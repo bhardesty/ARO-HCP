@@ -7,8 +7,18 @@
 	"id": "9a361107-eb97-5b1b-bc2e-b9cfa961b5bc",
 	"partitionKey": "a433a095-1277-44f1-8453-8d61a4d848c2",
 	"properties": {
-		"activeOperationId": "ea807c13-7e15-43d4-b760-69ef7e31d273",
-		"internalId": "/api/clusters_mgmt/v1/clusters/swzpxg6nxn/external_auth_config/external_auths/5fghjjqxvd",
+		"intermediateResourceDoc": {
+			"activeOperationId": "ea807c13-7e15-43d4-b760-69ef7e31d273",
+			"internalId": "/api/clusters_mgmt/v1/clusters/swzpxg6nxn/external_auth_config/external_auths/5fghjjqxvd",
+			"provisioningState": "Accepted",
+			"resourceId": "/subscriptions/a433a095-1277-44f1-8453-8d61a4d848c2/resourceGroups/unimportantpostponement/providers/Microsoft.RedHatOpenShift/hcpOpenShiftClusters/monstrousprecinct/externalAuths/default",
+			"systemData": {
+				"createdBy": "Unknown-ARO-HCP-frontend",
+				"createdByType": "Application",
+				"lastModifiedBy": "Unknown-ARO-HCP-frontend",
+				"lastModifiedByType": "Application"
+			}
+		},
 		"internalState": {
 			"internalAPI": {
 				"properties": {
@@ -59,14 +69,6 @@
 					"clusterServiceID": ""
 				}
 			}
-		},
-		"provisioningState": "Accepted",
-		"resourceId": "/subscriptions/a433a095-1277-44f1-8453-8d61a4d848c2/resourceGroups/unimportantpostponement/providers/Microsoft.RedHatOpenShift/hcpOpenShiftClusters/monstrousprecinct/externalAuths/default",
-		"systemData": {
-			"createdBy": "Unknown-ARO-HCP-frontend",
-			"createdByType": "Application",
-			"lastModifiedBy": "Unknown-ARO-HCP-frontend",
-			"lastModifiedByType": "Application"
 		}
 	},
 	"resourceID": "/subscriptions/a433a095-1277-44f1-8453-8d61a4d848c2/resourceGroups/unimportantpostponement/providers/Microsoft.RedHatOpenShift/hcpOpenShiftClusters/monstrousprecinct/externalAuths/default",
