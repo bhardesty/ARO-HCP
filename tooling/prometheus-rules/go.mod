@@ -1,6 +1,6 @@
 module github.com/Azure/ARO-HCP/tooling/prometheus-rules
 
-go 1.25.5
+go 1.25.7
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/prometheusrulegroups/armprometheusrulegroups v0.1.0
