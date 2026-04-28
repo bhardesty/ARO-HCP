@@ -16,6 +16,7 @@ package upgradecontrollers
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 
@@ -26,14 +27,19 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
 
 	azcorearm "github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 
 	arohcpv1alpha1 "github.com/openshift-online/ocm-sdk-go/arohcp/v1alpha1"
 	configv1 "github.com/openshift/api/config/v1"
+	"github.com/openshift/hypershift/api/hypershift/v1beta1"
 
 	"github.com/Azure/ARO-HCP/backend/pkg/controllers/controllerutils"
+	"github.com/Azure/ARO-HCP/backend/pkg/listers"
+	"github.com/Azure/ARO-HCP/backend/pkg/listertesting"
 	"github.com/Azure/ARO-HCP/internal/api"
 	"github.com/Azure/ARO-HCP/internal/api/arm"
 	"github.com/Azure/ARO-HCP/internal/cincinatti"
@@ -158,16 +164,68 @@ func newCSNodePool(t *testing.T, version string) *arohcpv1alpha1.NodePool {
 	return csNodePool
 }
 
-// newCSCluster creates a Cluster Service cluster for testing.
-func newCSCluster(t *testing.T) *arohcpv1alpha1.Cluster {
+// hostedClusterContentResourceID returns the resource ID for the readonly HostedCluster ManagementClusterContent
+// associated with the test cluster. The slice lister matches on this ID to satisfy GetForCluster.
+func hostedClusterContentResourceID(t *testing.T) *azcorearm.ResourceID {
 	t.Helper()
+	return api.Must(azcorearm.ParseResourceID(
+		"/subscriptions/" + testSubscriptionID +
+			"/resourceGroups/" + testResourceGroupName +
+			"/providers/Microsoft.RedHatOpenShift/hcpOpenShiftClusters/" + testClusterName +
+			"/" + api.ManagementClusterContentResourceTypeName + "/" + string(api.MaestroBundleInternalNameReadonlyHypershiftHostedCluster)))
+}
 
-	csCluster, err := arohcpv1alpha1.NewCluster().
-		ID(testClusterName).
-		ExternalID(testClusterExternalID).
-		Build()
+// newHostedClusterContent builds a ManagementClusterContent whose KubeContent contains a single HostedCluster
+// with the given Spec.ClusterID. The controller parses spec.clusterID out of this raw payload via
+// unstructured.Unstructured, which requires apiVersion/kind to be present.
+func newHostedClusterContent(t *testing.T, clusterID string) *api.ManagementClusterContent {
+	t.Helper()
+	hostedCluster := &v1beta1.HostedCluster{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "HostedCluster",
+			APIVersion: v1beta1.GroupVersion.String(),
+		},
+		Spec: v1beta1.HostedClusterSpec{
+			ClusterID: clusterID,
+		},
+	}
+	raw, err := json.Marshal(hostedCluster)
 	require.NoError(t, err)
-	return csCluster
+	return &api.ManagementClusterContent{
+		CosmosMetadata: api.CosmosMetadata{ResourceID: hostedClusterContentResourceID(t)},
+		Status: api.ManagementClusterContentStatus{
+			KubeContent: &metav1.List{
+				Items: []kruntime.RawExtension{{Raw: raw}},
+			},
+		},
+	}
+}
+
+// newValidHostedClusterContentLister returns a lister with a HostedCluster carrying the canonical test UUID.
+// Tests that don't care about the new error paths get a working lister this way.
+func newValidHostedClusterContentLister(t *testing.T) listers.ManagementClusterContentLister {
+	t.Helper()
+	return &listertesting.SliceManagementClusterContentLister{
+		Contents: []*api.ManagementClusterContent{newHostedClusterContent(t, testClusterExternalID)},
+	}
+}
+
+// errorManagementClusterContentLister always returns the configured error for every method.
+type errorManagementClusterContentLister struct {
+	err error
+}
+
+func (l *errorManagementClusterContentLister) List(_ context.Context) ([]*api.ManagementClusterContent, error) {
+	return nil, l.err
+}
+func (l *errorManagementClusterContentLister) GetForCluster(_ context.Context, _, _, _, _ string) (*api.ManagementClusterContent, error) {
+	return nil, l.err
+}
+func (l *errorManagementClusterContentLister) ListForCluster(_ context.Context, _, _, _ string) ([]*api.ManagementClusterContent, error) {
+	return nil, l.err
+}
+func (l *errorManagementClusterContentLister) ListForNodePool(_ context.Context, _, _, _, _ string) ([]*api.ManagementClusterContent, error) {
+	return nil, l.err
 }
 
 func TestNodePoolVersionSyncer_SyncOnce(t *testing.T) {
@@ -182,6 +240,7 @@ func TestNodePoolVersionSyncer_SyncOnce(t *testing.T) {
 		name                  string
 		seedDB                func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockDBClient)
 		mockCS                func(t *testing.T, mockCS *ocm.MockClusterServiceClientSpec)
+		contentLister         func(t *testing.T) listers.ManagementClusterContentLister
 		expectedError         bool
 		expectedErrorContains string
 	}{
@@ -198,22 +257,6 @@ func TestNodePoolVersionSyncer_SyncOnce(t *testing.T) {
 			expectedError: false,
 		},
 		{
-			name: "cluster service get cluster call returns error",
-			seedDB: func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockDBClient) {
-				t.Helper()
-				createTestNodePoolWithVersion(t, ctx, mockDB, "4.19.15")
-			},
-			mockCS: func(t *testing.T, mockCS *ocm.MockClusterServiceClientSpec) {
-				t.Helper()
-				mockCS.EXPECT().
-					GetCluster(gomock.Any(), gomock.Any()).
-					Return(nil, errors.New("cluster service unavailable")).
-					Times(1)
-			},
-			expectedError:         true,
-			expectedErrorContains: "cluster service unavailable",
-		},
-		{
 			name: "cluster service get nodepool call returns error",
 			seedDB: func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockDBClient) {
 				t.Helper()
@@ -221,11 +264,6 @@ func TestNodePoolVersionSyncer_SyncOnce(t *testing.T) {
 			},
 			mockCS: func(t *testing.T, mockCS *ocm.MockClusterServiceClientSpec) {
 				t.Helper()
-				csCluster := newCSCluster(t)
-				mockCS.EXPECT().
-					GetCluster(gomock.Any(), gomock.Any()).
-					Return(csCluster, nil).
-					Times(1)
 				mockCS.EXPECT().
 					GetNodePool(gomock.Any(), gomock.Any()).
 					Return(nil, errors.New("cluster service unavailable")).
@@ -242,11 +280,6 @@ func TestNodePoolVersionSyncer_SyncOnce(t *testing.T) {
 			},
 			mockCS: func(t *testing.T, mockCS *ocm.MockClusterServiceClientSpec) {
 				t.Helper()
-				csCluster := newCSCluster(t)
-				mockCS.EXPECT().
-					GetCluster(gomock.Any(), gomock.Any()).
-					Return(csCluster, nil).
-					Times(1)
 				csNodePool := newCSNodePool(t, "") // No version
 				mockCS.EXPECT().
 					GetNodePool(gomock.Any(), gomock.Any()).
@@ -255,6 +288,137 @@ func TestNodePoolVersionSyncer_SyncOnce(t *testing.T) {
 			},
 			expectedError:         true,
 			expectedErrorContains: "node pool version not found in Cluster Service respons",
+		},
+		{
+			name: "management cluster content not found is silently skipped",
+			seedDB: func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockDBClient) {
+				t.Helper()
+				createTestNodePoolWithVersion(t, ctx, mockDB, "4.19.15")
+			},
+			mockCS: func(t *testing.T, mockCS *ocm.MockClusterServiceClientSpec) {
+				t.Helper()
+				// No CS mock setup - we return before reaching GetNodePool.
+			},
+			contentLister: func(t *testing.T) listers.ManagementClusterContentLister {
+				t.Helper()
+				return &listertesting.SliceManagementClusterContentLister{}
+			},
+			expectedError: false,
+		},
+		{
+			name: "management cluster content lister error is propagated",
+			seedDB: func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockDBClient) {
+				t.Helper()
+				createTestNodePoolWithVersion(t, ctx, mockDB, "4.19.15")
+			},
+			mockCS: func(t *testing.T, mockCS *ocm.MockClusterServiceClientSpec) {
+				t.Helper()
+			},
+			contentLister: func(t *testing.T) listers.ManagementClusterContentLister {
+				t.Helper()
+				return &errorManagementClusterContentLister{err: errors.New("indexer is on fire")}
+			},
+			expectedError:         true,
+			expectedErrorContains: "failed to get cluster management cluster content",
+		},
+		{
+			name: "management cluster content with nil KubeContent is silently skipped",
+			seedDB: func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockDBClient) {
+				t.Helper()
+				createTestNodePoolWithVersion(t, ctx, mockDB, "4.19.15")
+			},
+			mockCS: func(t *testing.T, mockCS *ocm.MockClusterServiceClientSpec) {
+				t.Helper()
+			},
+			contentLister: func(t *testing.T) listers.ManagementClusterContentLister {
+				t.Helper()
+				return &listertesting.SliceManagementClusterContentLister{
+					Contents: []*api.ManagementClusterContent{{
+						CosmosMetadata: api.CosmosMetadata{ResourceID: hostedClusterContentResourceID(t)},
+					}},
+				}
+			},
+			expectedError: false,
+		},
+		{
+			name: "management cluster content with multiple kubecontent items is silently skipped",
+			seedDB: func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockDBClient) {
+				t.Helper()
+				createTestNodePoolWithVersion(t, ctx, mockDB, "4.19.15")
+			},
+			mockCS: func(t *testing.T, mockCS *ocm.MockClusterServiceClientSpec) {
+				t.Helper()
+			},
+			contentLister: func(t *testing.T) listers.ManagementClusterContentLister {
+				t.Helper()
+				content := newHostedClusterContent(t, testClusterExternalID)
+				// Duplicate the single item so the count check (!= 1) fails.
+				content.Status.KubeContent.Items = append(content.Status.KubeContent.Items, content.Status.KubeContent.Items[0])
+				return &listertesting.SliceManagementClusterContentLister{
+					Contents: []*api.ManagementClusterContent{content},
+				}
+			},
+			expectedError: false,
+		},
+		{
+			name: "kubecontent unmarshal failure is returned as error",
+			seedDB: func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockDBClient) {
+				t.Helper()
+				createTestNodePoolWithVersion(t, ctx, mockDB, "4.19.15")
+			},
+			mockCS: func(t *testing.T, mockCS *ocm.MockClusterServiceClientSpec) {
+				t.Helper()
+			},
+			contentLister: func(t *testing.T) listers.ManagementClusterContentLister {
+				t.Helper()
+				return &listertesting.SliceManagementClusterContentLister{
+					Contents: []*api.ManagementClusterContent{{
+						CosmosMetadata: api.CosmosMetadata{ResourceID: hostedClusterContentResourceID(t)},
+						Status: api.ManagementClusterContentStatus{
+							KubeContent: &metav1.List{
+								Items: []kruntime.RawExtension{{Raw: []byte("not-json")}},
+							},
+						},
+					}},
+				}
+			},
+			expectedError:         true,
+			expectedErrorContains: "failed to unmarshal kubecontent",
+		},
+		{
+			name: "kubecontent without HostedCluster.Spec.ClusterID is silently skipped",
+			seedDB: func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockDBClient) {
+				t.Helper()
+				createTestNodePoolWithVersion(t, ctx, mockDB, "4.19.15")
+			},
+			mockCS: func(t *testing.T, mockCS *ocm.MockClusterServiceClientSpec) {
+				t.Helper()
+			},
+			contentLister: func(t *testing.T) listers.ManagementClusterContentLister {
+				t.Helper()
+				return &listertesting.SliceManagementClusterContentLister{
+					Contents: []*api.ManagementClusterContent{newHostedClusterContent(t, "")},
+				}
+			},
+			expectedError: false,
+		},
+		{
+			name: "invalid HostedCluster.Spec.ClusterID is returned as error",
+			seedDB: func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockDBClient) {
+				t.Helper()
+				createTestNodePoolWithVersion(t, ctx, mockDB, "4.19.15")
+			},
+			mockCS: func(t *testing.T, mockCS *ocm.MockClusterServiceClientSpec) {
+				t.Helper()
+			},
+			contentLister: func(t *testing.T) listers.ManagementClusterContentLister {
+				t.Helper()
+				return &listertesting.SliceManagementClusterContentLister{
+					Contents: []*api.ManagementClusterContent{newHostedClusterContent(t, "not-a-uuid")},
+				}
+			},
+			expectedError:         true,
+			expectedErrorContains: "failed to parse cluster UUID",
 		},
 	}
 
@@ -269,11 +433,17 @@ func TestNodePoolVersionSyncer_SyncOnce(t *testing.T) {
 			tt.seedDB(t, ctx, mockDB)
 			tt.mockCS(t, mockCS)
 
+			contentLister := newValidHostedClusterContentLister(t)
+			if tt.contentLister != nil {
+				contentLister = tt.contentLister(t)
+			}
+
 			syncer := &nodePoolVersionSyncer{
-				cooldownChecker:           &alwaysSyncCooldownChecker{},
-				cosmosClient:              mockDB,
-				clusterServiceClient:      mockCS,
-				clusterToCincinnatiClient: lru.New(100),
+				cooldownChecker:                       &alwaysSyncCooldownChecker{},
+				clusterManagementClusterContentLister: contentLister,
+				cosmosClient:                          mockDB,
+				clusterServiceClient:                  mockCS,
+				clusterToCincinnatiClient:             lru.New(100),
 			}
 
 			ctx = utils.ContextWithLogger(ctx, logr.Discard())
@@ -617,13 +787,6 @@ func TestNodePoolVersionSyncer_SyncOnce_SkipMinorVersionFails(t *testing.T) {
 	// Create ServiceProviderNodePool with active version 4.18.10 (to create skew)
 	createServiceProviderNodePoolWithVersion(t, ctx, mockDB, "4.18.10")
 
-	// Setup CS mocks
-	csCluster := newCSCluster(t)
-	mockCS.EXPECT().
-		GetCluster(gomock.Any(), gomock.Any()).
-		Return(csCluster, nil).
-		Times(1)
-
 	// CS returns node pool with current version 4.18.10
 	csNodePool := newCSNodePoolWithVersion(t, "4.18.10")
 	mockCS.EXPECT().
@@ -632,10 +795,11 @@ func TestNodePoolVersionSyncer_SyncOnce_SkipMinorVersionFails(t *testing.T) {
 		Times(1)
 
 	syncer := &nodePoolVersionSyncer{
-		cooldownChecker:           &alwaysSyncCooldownChecker{},
-		cosmosClient:              mockDB,
-		clusterServiceClient:      mockCS,
-		clusterToCincinnatiClient: lru.New(100),
+		cooldownChecker:                       &alwaysSyncCooldownChecker{},
+		clusterManagementClusterContentLister: newValidHostedClusterContentLister(t),
+		cosmosClient:                          mockDB,
+		clusterServiceClient:                  mockCS,
+		clusterToCincinnatiClient:             lru.New(100),
 	}
 
 	testKey := controllerutils.HCPNodePoolKey{
@@ -668,13 +832,6 @@ func TestNodePoolVersionSyncer_SyncOnce_DesiredExceedsControlPlaneFails(t *testi
 	// Create ServiceProviderNodePool with active version 4.19.5 (so desired is not already active)
 	createServiceProviderNodePoolWithVersion(t, ctx, mockDB, "4.19.5")
 
-	// Setup CS mocks
-	csCluster := newCSCluster(t)
-	mockCS.EXPECT().
-		GetCluster(gomock.Any(), gomock.Any()).
-		Return(csCluster, nil).
-		Times(1)
-
 	// CS returns node pool with current version 4.19.5
 	csNodePool := newCSNodePoolWithVersion(t, "4.19.5")
 	mockCS.EXPECT().
@@ -683,10 +840,11 @@ func TestNodePoolVersionSyncer_SyncOnce_DesiredExceedsControlPlaneFails(t *testi
 		Times(1)
 
 	syncer := &nodePoolVersionSyncer{
-		cooldownChecker:           &alwaysSyncCooldownChecker{},
-		cosmosClient:              mockDB,
-		clusterServiceClient:      mockCS,
-		clusterToCincinnatiClient: lru.New(100),
+		cooldownChecker:                       &alwaysSyncCooldownChecker{},
+		clusterManagementClusterContentLister: newValidHostedClusterContentLister(t),
+		cosmosClient:                          mockDB,
+		clusterServiceClient:                  mockCS,
+		clusterToCincinnatiClient:             lru.New(100),
 	}
 
 	testKey := controllerutils.HCPNodePoolKey{
@@ -717,13 +875,6 @@ func TestNodePoolVersionSyncer_SyncOnce_NoUpgradePathInCincinnatiFails(t *testin
 	// Create ServiceProviderCluster with control plane at 4.20.0 (allows the desired version)
 	createServiceProviderClusterWithVersion(t, ctx, mockDB, "4.20.0")
 
-	// Setup CS mocks
-	csCluster := newCSCluster(t)
-	mockCS.EXPECT().
-		GetCluster(gomock.Any(), gomock.Any()).
-		Return(csCluster, nil).
-		Times(1)
-
 	// CS returns node pool with current version 4.19.7
 	csNodePool := newCSNodePoolWithVersion(t, "4.19.7")
 	mockCS.EXPECT().
@@ -743,10 +894,11 @@ func TestNodePoolVersionSyncer_SyncOnce_NoUpgradePathInCincinnatiFails(t *testin
 		Times(1)
 
 	syncer := &nodePoolVersionSyncer{
-		cooldownChecker:           &alwaysSyncCooldownChecker{},
-		cosmosClient:              mockDB,
-		clusterServiceClient:      mockCS,
-		clusterToCincinnatiClient: lru.New(100),
+		cooldownChecker:                       &alwaysSyncCooldownChecker{},
+		clusterManagementClusterContentLister: newValidHostedClusterContentLister(t),
+		cosmosClient:                          mockDB,
+		clusterServiceClient:                  mockCS,
+		clusterToCincinnatiClient:             lru.New(100),
 	}
 
 	// Pre-populate Cincinnati client cache
@@ -787,13 +939,6 @@ func TestNodePoolVersionSyncer_SyncOnce_DowngradeFails(t *testing.T) {
 	// Create ServiceProviderNodePool with active version 4.19.10 (higher than desired)
 	createServiceProviderNodePoolWithVersion(t, ctx, mockDB, "4.19.10")
 
-	// Setup CS mocks
-	csCluster := newCSCluster(t)
-	mockCS.EXPECT().
-		GetCluster(gomock.Any(), gomock.Any()).
-		Return(csCluster, nil).
-		Times(1)
-
 	// CS returns node pool with current version 4.19.10
 	csNodePool := newCSNodePoolWithVersion(t, "4.19.10")
 	mockCS.EXPECT().
@@ -802,10 +947,11 @@ func TestNodePoolVersionSyncer_SyncOnce_DowngradeFails(t *testing.T) {
 		Times(1)
 
 	syncer := &nodePoolVersionSyncer{
-		cooldownChecker:           &alwaysSyncCooldownChecker{},
-		cosmosClient:              mockDB,
-		clusterServiceClient:      mockCS,
-		clusterToCincinnatiClient: lru.New(100),
+		cooldownChecker:                       &alwaysSyncCooldownChecker{},
+		clusterManagementClusterContentLister: newValidHostedClusterContentLister(t),
+		cosmosClient:                          mockDB,
+		clusterServiceClient:                  mockCS,
+		clusterToCincinnatiClient:             lru.New(100),
 	}
 
 	testKey := controllerutils.HCPNodePoolKey{
@@ -836,13 +982,6 @@ func TestNodePoolVersionSyncer_SyncOnce_UpgradePathExistsSucceeds(t *testing.T) 
 	// Create ServiceProviderCluster with control plane at 4.20.0
 	createServiceProviderClusterWithVersion(t, ctx, mockDB, "4.20.0")
 
-	// Setup CS mocks
-	csCluster := newCSCluster(t)
-	mockCS.EXPECT().
-		GetCluster(gomock.Any(), gomock.Any()).
-		Return(csCluster, nil).
-		Times(1)
-
 	// CS returns node pool with current version 4.19.10
 	csNodePool := newCSNodePoolWithVersion(t, "4.19.10")
 	mockCS.EXPECT().
@@ -866,10 +1005,11 @@ func TestNodePoolVersionSyncer_SyncOnce_UpgradePathExistsSucceeds(t *testing.T) 
 		Times(1)
 
 	syncer := &nodePoolVersionSyncer{
-		cooldownChecker:           &alwaysSyncCooldownChecker{},
-		cosmosClient:              mockDB,
-		clusterServiceClient:      mockCS,
-		clusterToCincinnatiClient: lru.New(100),
+		cooldownChecker:                       &alwaysSyncCooldownChecker{},
+		clusterManagementClusterContentLister: newValidHostedClusterContentLister(t),
+		cosmosClient:                          mockDB,
+		clusterServiceClient:                  mockCS,
+		clusterToCincinnatiClient:             lru.New(100),
 	}
 
 	// Pre-populate Cincinnati client cache
@@ -914,13 +1054,6 @@ func TestNodePoolVersionSyncer_SyncOnce_DesiredVersionUnchangedOnFailure_Changed
 	// Seed the database with a node pool
 	createTestNodePoolWithVersion(t, ctx, mockDB, "4.19.15")
 
-	// Setup CS mock to return a cluster with UUID
-	csCluster := newCSCluster(t)
-	mockCS.EXPECT().
-		GetCluster(gomock.Any(), gomock.Any()).
-		Return(csCluster, nil).
-		Times(1)
-
 	// Setup CS mock to return a node pool with version
 	csNodePool := newCSNodePool(t, "4.19.10")
 	mockCS.EXPECT().
@@ -940,10 +1073,11 @@ func TestNodePoolVersionSyncer_SyncOnce_DesiredVersionUnchangedOnFailure_Changed
 		AnyTimes()
 
 	syncer := &nodePoolVersionSyncer{
-		cooldownChecker:           &alwaysSyncCooldownChecker{},
-		cosmosClient:              mockDB,
-		clusterServiceClient:      mockCS,
-		clusterToCincinnatiClient: lru.New(100),
+		cooldownChecker:                       &alwaysSyncCooldownChecker{},
+		clusterManagementClusterContentLister: newValidHostedClusterContentLister(t),
+		cosmosClient:                          mockDB,
+		clusterServiceClient:                  mockCS,
+		clusterToCincinnatiClient:             lru.New(100),
 	}
 
 	// Pre-populate Cincinnati client cache
@@ -999,10 +1133,6 @@ func TestNodePoolVersionSyncer_SyncOnce_DesiredVersionUnchangedOnFailure_Changed
 
 	// Setup CS mocks for second sync
 	mockCS.EXPECT().
-		GetCluster(gomock.Any(), gomock.Any()).
-		Return(csCluster, nil).
-		Times(1)
-	mockCS.EXPECT().
 		GetNodePool(gomock.Any(), gomock.Any()).
 		Return(csNodePool, nil).
 		Times(1)
@@ -1039,10 +1169,6 @@ func TestNodePoolVersionSyncer_SyncOnce_DesiredVersionUnchangedOnFailure_Changed
 	// --- Phase 3: Cincinnati succeeds, desired should change ---
 
 	// Setup CS mocks for third sync
-	mockCS.EXPECT().
-		GetCluster(gomock.Any(), gomock.Any()).
-		Return(csCluster, nil).
-		Times(1)
 	mockCS.EXPECT().
 		GetNodePool(gomock.Any(), gomock.Any()).
 		Return(csNodePool, nil).

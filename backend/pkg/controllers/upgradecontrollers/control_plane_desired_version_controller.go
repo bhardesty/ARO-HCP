@@ -36,6 +36,7 @@ import (
 	"github.com/Azure/ARO-HCP/backend/pkg/controllers/controllerutils"
 	"github.com/Azure/ARO-HCP/backend/pkg/informers"
 	"github.com/Azure/ARO-HCP/backend/pkg/listers"
+	"github.com/Azure/ARO-HCP/backend/pkg/maestrohelpers"
 	"github.com/Azure/ARO-HCP/internal/admission"
 	"github.com/Azure/ARO-HCP/internal/api"
 	"github.com/Azure/ARO-HCP/internal/cincinatti"
@@ -49,10 +50,11 @@ import (
 // It handles automated (managed) z-stream (patch) upgrades and assists with y-stream (minor)
 // version upgrades by selecting the appropriate z-stream within the user-desired minor version.
 type controlPlaneDesiredVersionSyncer struct {
-	cooldownChecker      controllerutils.CooldownChecker
-	cosmosClient         database.DBClient
-	clusterServiceClient ocm.ClusterServiceClientSpec
-	subscriptionLister   listers.SubscriptionLister
+	cooldownChecker                       controllerutils.CooldownChecker
+	clusterManagementClusterContentLister listers.ManagementClusterContentLister
+	cosmosClient                          database.DBClient
+	clusterServiceClient                  ocm.ClusterServiceClientSpec
+	subscriptionLister                    listers.SubscriptionLister
 
 	cincinnatiClientLock      sync.RWMutex
 	clusterToCincinnatiClient *lru.Cache
@@ -71,13 +73,14 @@ func NewControlPlaneDesiredVersionController(
 	informers informers.BackendInformers,
 	subscriptionLister listers.SubscriptionLister,
 ) controllerutils.Controller {
-
+	_, clusterManagementClusterContentLister := informers.ManagementClusterContents()
 	syncer := &controlPlaneDesiredVersionSyncer{
-		cooldownChecker:           controllerutils.DefaultActiveOperationPrioritizingCooldown(activeOperationLister),
-		cosmosClient:              cosmosClient,
-		clusterToCincinnatiClient: lru.New(100000),
-		clusterServiceClient:      clusterServiceClient,
-		subscriptionLister:        subscriptionLister,
+		cooldownChecker:                       controllerutils.DefaultActiveOperationPrioritizingCooldown(activeOperationLister),
+		clusterManagementClusterContentLister: clusterManagementClusterContentLister,
+		cosmosClient:                          cosmosClient,
+		clusterToCincinnatiClient:             lru.New(100000),
+		clusterServiceClient:                  clusterServiceClient,
+		subscriptionLister:                    subscriptionLister,
 	}
 
 	controller := controllerutils.NewClusterWatchingController(
@@ -123,16 +126,14 @@ func (c *controlPlaneDesiredVersionSyncer) SyncOnce(ctx context.Context, key con
 		return utils.TrackError(fmt.Errorf("failed to get or create ServiceProviderCluster: %w", err))
 	}
 
-	// TODO bring the cluster uuid into serviceprovidercluster
-	clusterServiceCluster, err := c.clusterServiceClient.GetCluster(ctx, *existingCluster.ServiceProviderProperties.ClusterServiceID)
+	// Resolve the cluster UUID from the cached HostedCluster so we can build the Cincinnati client.
+	clusterUUID, found, err := maestrohelpers.GetCachedHostedClusterUUIDForCluster(ctx, c.clusterManagementClusterContentLister, key.SubscriptionID, key.ResourceGroupName, key.HCPClusterName)
 	if err != nil {
-		return utils.TrackError(fmt.Errorf("failed to get cluster from Cluster Service: %w", err))
+		return err
 	}
-
-	// Create Cincinnati client with cluster UUID from Cluster Service
-	clusterUUID, err := uuid.Parse(clusterServiceCluster.ExternalID())
-	if err != nil {
-		return utils.TrackError(fmt.Errorf("invalid cluster UUID from Cluster Service: %w", err))
+	if !found {
+		// will reappear once the informer relists; without the UUID we cannot build the Cincinnati client
+		return nil
 	}
 	cincinnatiClient := c.getCincinnatiClient(key, clusterUUID)
 
