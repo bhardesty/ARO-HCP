@@ -671,33 +671,6 @@ resource backend 'Microsoft.AlertsManagement/prometheusRuleGroups@2023-03-01' = 
             }
           }
         ]
-        alert: 'BackendOperationErrorRate'
-        enabled: true
-        labels: {
-          severity: 'info'
-        }
-        annotations: {
-          correlationId: 'BackendOperationErrorRate/{{ $labels.cluster }}'
-          description: 'The Backend operation error rate is above 5% for the last hour. Current value: {{ $value | humanizePercentage }}.'
-          info: 'The Backend operation error rate is above 5% for the last hour. Current value: {{ $value | humanizePercentage }}.'
-          runbook_url: 'https://eng.ms/docs/cloud-ai-platform/azure-core/azure-cloud-native-and-management-platform/control-plane-bburns/azure-red-hat-openshift/azure-redhat-openshift-team-doc/hcp/troubleshooting/backend-tsg.html'
-          summary: 'High Error Rate on Backend Operations'
-          title: 'High Error Rate on Backend Operations'
-        }
-        expression: '(sum by (cluster) (rate(backend_failed_operations_total[1h]))) / (sum by (cluster) (rate(backend_operations_total[1h]))) > 0.05'
-        for: 'PT5M'
-        severity: 4
-      }
-      {
-        actions: [
-          for g in actionGroups: {
-            actionGroupId: g
-            actionProperties: {
-              'IcM.Title': '#$.labels.cluster#: #$.annotations.title#'
-              'IcM.CorrelationId': '#$.annotations.correlationId#'
-            }
-          }
-        ]
         alert: 'BackendControllerRetryHotLoop'
         enabled: true
         labels: {
