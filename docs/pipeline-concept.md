@@ -143,14 +143,14 @@ Steps can be configured to automatically retry on failure by adding an `automate
 
 1. `automatedRetry`: Optional configuration block for automatic retry behavior.
 2. `errorContainsAny`: A list of strings to match against the error message (case-sensitive). If the error contains any of these strings, a retry will be triggered. Maximum of 16 items; total encoded length must not exceed 1KB.
-3. `maximumRetryCount`: The maximum number of retry attempts after the initial failure. Must be between 1 and 10. Defaults to 1 if not specified.
-4. `durationBetweenRetries`: The time to wait between retry attempts. Should be between 1 minute (`1m`) and 3 hours (`3h`). Uses Go's time.Duration syntax (e.g., `1m`, `5m`, `1h`).
+3. `maximumRetryCount`: The maximum total number of step executions, including the initial attempt. Must be between 1 and 10. Defaults to 1 if not specified. For example, `3` means up to 3 total attempts, not 1 initial attempt plus 3 retries.
+4. `durationBetweenRetries`: The time to wait between retry attempts. Should be between 1 minute (`1m`) and 3 hours (`3h`). Uses Go's time.Duration syntax (e.g., `30s`, `5m`, `1h`).
 
 **Important notes:**
 
 - The retry mechanism only triggers if the error message contains one of the specified strings
 - Each retry attempt counts toward the total step execution time
-- If all retries are exhausted and the step still fails, the entire pipeline will fail
+- If the configured maximum number of attempts is exhausted and the step still fails, the entire pipeline will fail
 - The `automatedRetry` configuration is available for all step types (ARM, Shell, Helm, etc.)
 
 ### Step execution context
