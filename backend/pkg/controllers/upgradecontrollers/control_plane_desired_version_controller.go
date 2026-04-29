@@ -161,7 +161,7 @@ func (c *controlPlaneDesiredVersionSyncer) SyncOnce(ctx context.Context, key con
 		persistIntentFailed := cincinatti.IsCincinnatiVersionNotFoundError(err) || !errors.As(err, &cincinnatiErr)
 		if persistIntentFailed {
 			controllerCRUD := c.cosmosClient.HCPClusters(key.SubscriptionID, key.ResourceGroupName).Controllers(key.HCPClusterName)
-			if err := controllerutils.WriteController(ctx, controllerCRUD, controlPlaneDesiredVersionControllerName, key.InitialController,
+			if writeErr := controllerutils.WriteController(ctx, controllerCRUD, controlPlaneDesiredVersionControllerName, key.InitialController,
 				func(ctrl *api.Controller) {
 					apimeta.SetStatusCondition(&ctrl.Status.Conditions, metav1.Condition{
 						Type:    api.ControllerConditionTypeIntentFailed,
@@ -169,11 +169,12 @@ func (c *controlPlaneDesiredVersionSyncer) SyncOnce(ctx context.Context, key con
 						Reason:  api.VersionUpgradeNotAcceptedReason,
 						Message: err.Error(),
 					})
-				}); err != nil {
-				return utils.TrackError(err)
+				}); writeErr != nil {
+				return utils.TrackError(writeErr)
 			}
+			return nil
 		}
-		return utils.TrackError(fmt.Errorf("failed to determine desired control plane version: %w", err))
+		return utils.TrackError(err)
 	}
 
 	previousDesiredVersion := existingServiceProviderCluster.Spec.ControlPlaneVersion.DesiredVersion

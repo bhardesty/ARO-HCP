@@ -988,13 +988,12 @@ func TestControlPlaneDesiredVersionSyncer_SyncOnce(t *testing.T) {
 			customerVersion:     "4.19",
 			controlPlaneVersion: "4.20.15",
 			setupCincinnati:     func(mc *cincinatti.MockClient) {},
-			wantSyncErr:         true,
-			wantErrContains:     "no downgrades",
 			wantDesiredVersion:  nil,
 			wantIntentFailed: &metav1.Condition{
-				Type:   api.ControllerConditionTypeIntentFailed,
-				Status: metav1.ConditionTrue,
-				Reason: api.VersionUpgradeNotAcceptedReason,
+				Type:    api.ControllerConditionTypeIntentFailed,
+				Status:  metav1.ConditionTrue,
+				Reason:  api.VersionUpgradeNotAcceptedReason,
+				Message: "invalid next y-stream upgrade path from 4.20.0 to 4.19.0: only upgrades to the next minor version are allowed, no downgrades",
 			},
 		},
 		{
@@ -1020,13 +1019,12 @@ func TestControlPlaneDesiredVersionSyncer_SyncOnce(t *testing.T) {
 					configv1.Release{}, nil, nil, &cincinnati.Error{Reason: "VersionNotFound"},
 				).Times(1)
 			},
-			wantSyncErr:        true,
-			wantErrContains:    "VersionNotFound",
 			wantDesiredVersion: nil,
 			wantIntentFailed: &metav1.Condition{
-				Type:   api.ControllerConditionTypeIntentFailed,
-				Status: metav1.ConditionTrue,
-				Reason: api.VersionUpgradeNotAcceptedReason,
+				Type:    api.ControllerConditionTypeIntentFailed,
+				Status:  metav1.ConditionTrue,
+				Reason:  api.VersionUpgradeNotAcceptedReason,
+				Message: "VersionNotFound",
 			},
 		},
 	}
@@ -1052,7 +1050,7 @@ func TestControlPlaneDesiredVersionSyncer_SyncOnce(t *testing.T) {
 				cosmosClient:                          mockDB,
 				clusterServiceClient:                  mockCS,
 				subscriptionLister:                    subscriptionLister,
-				clusterToCincinnatiClient:             lru.New(100),
+				clusterToCincinnatiClient:             lru.New(1),
 			}
 			syncer.clusterToCincinnatiClient.Add(clusterKey, mockCincinnati)
 
@@ -1063,6 +1061,7 @@ func TestControlPlaneDesiredVersionSyncer_SyncOnce(t *testing.T) {
 				assert.ErrorContains(t, err, tt.wantErrContains)
 			} else {
 				require.NoError(t, err)
+				assert.Empty(t, tt.wantErrContains, "when wantSyncErr is false, wantErrContains must be empty")
 			}
 
 			serviceProviderCluster, getServiceProviderClusterErr := mockDB.ServiceProviderClusters(testSubscriptionID, testResourceGroupName, testClusterName).Get(ctx, api.ServiceProviderClusterResourceName)
@@ -1087,10 +1086,10 @@ func TestControlPlaneDesiredVersionSyncer_SyncOnce(t *testing.T) {
 				assert.Equal(t, tt.wantIntentFailed.Status, intentFailedCondition.Status)
 				assert.Equal(t, tt.wantIntentFailed.Reason, intentFailedCondition.Reason)
 				if tt.wantIntentFailed.Status == metav1.ConditionTrue {
-					require.NotEmpty(t, tt.wantErrContains, "set wantErrContains to match the persisted IntentFailed message substring")
-					assert.Contains(t, intentFailedCondition.Message, tt.wantErrContains)
+					require.NotEmpty(t, tt.wantIntentFailed.Message, "set wantIntentFailed.Message to the exact persisted IntentFailed message")
+					assert.Contains(t, intentFailedCondition.Message, tt.wantIntentFailed.Message)
 				} else {
-					assert.Empty(t, intentFailedCondition.Message)
+					assert.Empty(t, intentFailedCondition.Message, "when wantIntentFailed.Status is false, intentFailedCondition.Message must be empty")
 				}
 			}
 		})
