@@ -11,7 +11,9 @@ COPY . .
 # NOTE: starting with go 1.27, GODEBUG=fips140=only can be used at runtime to also reject
 # non-FIPS algorithms. See https://github.com/microsoft/go/tree/microsoft/main/eng/doc/fips
 ENV CGO_ENABLED=1 GOFIPS140=latest
-RUN make --directory sessiongate build
+RUN --mount=type=cache,target=/go/cache \
+    GOCACHE=/go/cache \
+    make --directory sessiongate build
 
 FROM --platform=${PLATFORM} mcr.microsoft.com/azurelinux/distroless/base:3.0
 USER 65532:65532
