@@ -47,15 +47,6 @@ environments:
     ev2Cloud: public
     cxStamp: 1
     regionShortSuffix: "p${USER:0:4}"
-- name: swft
-  description: |
-    Used for personal SWIFT development and testing.
-  defaults:
-    region: uksouth
-    cloud: dev
-    ev2Cloud: public
-    cxStamp: 1
-    regionShortSuffix: "s${USER:0:4}"
 - name: opstool
   description: |
     AKS cluster for SRE operational tooling.
