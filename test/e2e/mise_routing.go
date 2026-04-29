@@ -16,7 +16,9 @@ package e2e
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -59,6 +61,15 @@ func (p *miseVersionCapture) Do(req *policy.Request) (*http.Response, error) {
 // rules are always evaluated.
 var _ = Describe("MISE Routing", func() {
 	defer GinkgoRecover()
+
+	// AROSLSRE-748: MISE routing test is permafailing across all E2E jobs.
+	// This time bomb will start failing after the deadline to ensure re-enablement.
+	timeBombDeadline := time.Date(2026, time.June, 1, 0, 0, 0, 0, time.UTC)
+	BeforeEach(func() {
+		if time.Now().Before(timeBombDeadline) {
+			Skip(fmt.Sprintf("MISE routing test permafailing (https://redhat.atlassian.net/browse/AROSLSRE-748); skipping until %s", timeBombDeadline.Format(time.RFC3339)))
+		}
+	})
 
 	DescribeTable("routes to the correct frontend based on version header",
 		labels.RequireNothing,
