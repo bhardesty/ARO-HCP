@@ -40,6 +40,7 @@ A tool that automatically fetches the latest container image digests from regist
 - [Reliability Features](#reliability-features)
   - [Automatic Retry](#automatic-retry)
   - [Context Cancellation](#context-cancellation)
+- [Repository Version Upgrade](#repository-version-upgrade)
 
 ## Quick Start
 
@@ -48,16 +49,16 @@ A tool that automatically fetches the latest container image digests from regist
 make update
 
 # Preview changes without modifying files
-./image-updater update --config config.yaml --dry-run
+./image-updater update --config config.yaml --tags --dry-run
 
 # Update specific components only
-./image-updater update --config config.yaml --components maestro,hypershift
+./image-updater update --config config.yaml --tags --components maestro,hypershift
 
 # Update all images in a group
-./image-updater update --config config.yaml --groups hypershift-stack
+./image-updater update --config config.yaml --tags --groups hypershift-stack
 
 # Save output to file
-./image-updater update --config config.yaml --output-file results.md --output-format markdown
+./image-updater update --config config.yaml --tags --output-file results.md --output-format markdown
 ```
 
 ## Supported Registries
@@ -129,16 +130,16 @@ All registries support anonymous access by default for public images. Private re
 
 ```bash
 # Update all images with latest digests
-./image-updater update --config config.yaml
+./image-updater update --config config.yaml --tags
 
 # Preview changes first
-./image-updater update --config config.yaml --dry-run
+./image-updater update --config config.yaml --tags --dry-run
 
 # Update only specific components
-./image-updater update --config config.yaml --components maestro,hypershift
+./image-updater update --config config.yaml --tags --components maestro,hypershift
 
 # Exclude certain components
-./image-updater update --config config.yaml --exclude-components arohcpfrontend
+./image-updater update --config config.yaml --tags --exclude-components arohcpfrontend
 ```
 
 ### Groups
@@ -147,16 +148,16 @@ Each image belongs to a `group`, allowing you to update logically related images
 
 ```bash
 # Update all images in the hypershift-stack group
-./image-updater update --config config.yaml --groups hypershift-stack
+./image-updater update --config config.yaml --tags --groups hypershift-stack
 
 # Update multiple groups at once
-./image-updater update --config config.yaml --groups hypershift-stack,velero
+./image-updater update --config config.yaml --tags --groups hypershift-stack,velero
 
 # Combine groups with individual components (union)
-./image-updater update --config config.yaml --components maestro --groups hypershift-stack
+./image-updater update --config config.yaml --tags --components maestro --groups hypershift-stack
 
 # Update a group but exclude specific components
-./image-updater update --config config.yaml --groups hypershift-stack --exclude-components maestro-agent-sidecar
+./image-updater update --config config.yaml --tags --groups hypershift-stack --exclude-components maestro-agent-sidecar
 
 # Using Makefile
 make update GROUPS=hypershift-stack,velero
@@ -169,10 +170,10 @@ Example groups include `aro-rp`, `cs`, `aro-deps`, `hypershift-stack`, `prom-sta
 
 ```bash
 # Save results as markdown
-./image-updater update --config config.yaml --output-file results.md --output-format markdown
+./image-updater update --config config.yaml --tags --output-file results.md --output-format markdown
 
 # Save as JSON for automation
-./image-updater update --config config.yaml --output-file results.json --output-format json
+./image-updater update --config config.yaml --tags --output-file results.json --output-format json
 
 # Use Makefile variables
 make update OUTPUT_FILE=results.md OUTPUT_FORMAT=markdown
@@ -182,10 +183,10 @@ make update OUTPUT_FILE=results.md OUTPUT_FORMAT=markdown
 
 ```bash
 # Enable verbose logging (shows retry attempts, API calls)
-./image-updater update --config config.yaml -v=2
+./image-updater update --config config.yaml --tags -v=2
 
 # Combine with dry-run for debugging without changes
-./image-updater update --config config.yaml --dry-run -v=2
+./image-updater update --config config.yaml --tags --dry-run -v=2
 ```
 
 ### Pinning Images and Rolling Back
@@ -546,13 +547,13 @@ Write results to file in different formats:
 
 ```bash
 # Table format (default)
-./image-updater update --config config.yaml --output-file results.txt
+./image-updater update --config config.yaml --tags --output-file results.txt
 
 # Markdown format
-./image-updater update --config config.yaml --output-file results.md --output-format markdown
+./image-updater update --config config.yaml --tags --output-file results.md --output-format markdown
 
 # JSON format
-./image-updater update --config config.yaml --output-file results.json --output-format json
+./image-updater update --config config.yaml --tags --output-file results.json --output-format json
 ```
 
 ## Command Reference
@@ -563,11 +564,13 @@ Write results to file in different formats:
 |------|------|---------|-------------|
 | `--config` | string | - | Path to configuration file (required) |
 | `--dry-run` | bool | false | Preview changes without modifying files |
+| `-t, --tags` | bool | false | Update image tags/digests (mutually exclusive with `--repositories`) |
+| `-r, --repositories` | bool | false | Check and update repository version upgrades (mutually exclusive with `--tags`) |
 | `--components` | string | - | Comma-separated list of components to update |
 | `--groups` | string | - | Comma-separated list of groups to update (can be combined with `--components`) |
 | `--exclude-components` | string | - | Comma-separated list of components to exclude (applied after `--components`/`--groups`) |
 | `--output-file` | string | - | Write results to file instead of stdout |
-| `--output-format` | string | table | Output format: `table`, `markdown`, or `json` |
+| `--output-format` | string | table | Output format: `table`, `markdown`, `json` |
 | `-v, --verbosity` | int | 0 | Log verbosity: 0=clean, 1=summary, 2+=debug |
 
 ### Verbosity Levels
@@ -609,6 +612,7 @@ Use `-v=2` for debugging auth issues, tag filtering, or network failures.
 | `useAuth` | bool | No | `false` | Require authentication (needed for private registries) |
 | `keyVault.url` | string | No | - | Azure Key Vault URL |
 | `keyVault.secretName` | string | No | - | Pull secret name in Key Vault |
+| `repoVersionUpgrade.repoPrefix` | string | No | - | Repo name prefix before version suffix; enables `--repositories` mode for this component |
 
 ### Target Fields
 
@@ -639,3 +643,48 @@ Retries on:
 - Supports Ctrl+C for graceful shutdown
 - Timeout enforcement
 - Proper resource cleanup
+
+## Repository Version Upgrade
+
+Some components publish new Quay repositories for each y-stream (minor) version (e.g. `acm-operator-bundle-acm-216` for ACM 2.16, `acm-operator-bundle-acm-217` for ACM 2.17). The `update --repositories` mode detects when a next y-stream repo appears and updates the config files. Components opt in via the `repoVersionUpgrade` field in their config entry.
+
+### How It Works
+
+1. Iterates over images with `source.repoVersionUpgrade.repoPrefix` configured
+2. Extracts the version suffix from the repo name (e.g. `216` → version `2.16`)
+3. Increments the y-stream (minor) version (`2.16` → `2.17`)
+4. Builds the next repo name (`acm-operator-bundle-acm-217`)
+5. Checks Quay.io API for the repo's existence
+6. If found, updates both config files with the new repo name
+
+### Configuration
+
+Add `repoVersionUpgrade` to an image's source to enable repository version detection:
+
+```yaml
+acm-operator:
+  group: hypershift-stack
+  source:
+    image: quay.io/redhat-user-workloads/crt-redhat-acm-tenant/acm-operator-bundle-acm-216
+    tagPattern: "^v\\d+\\.\\d+\\.\\d+-\\d+$"
+    repoVersionUpgrade:
+      repoPrefix: "acm-operator-bundle-acm-"
+  targets:
+  - jsonPath: defaults.acm.operator.bundle.digest
+    filePath: ../../config/config.yaml
+```
+
+### Usage
+
+```bash
+# Dry run — report only, no file changes
+./image-updater update --config config.yaml --repositories --dry-run
+
+# Update config files with new repo names
+make update-repositories
+
+# Or directly:
+./image-updater update --config config.yaml --repositories
+```
+
+> **Important**: A new repo existing does NOT mean it is GA. Always confirm GA status in the relevant release channel before merging any upgrade PR.

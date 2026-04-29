@@ -15,9 +15,15 @@
 package cmd
 
 import (
+	"context"
+	"fmt"
+	"os"
+
 	"github.com/spf13/cobra"
 
+	"github.com/Azure/ARO-HCP/tooling/image-updater/internal/config"
 	"github.com/Azure/ARO-HCP/tooling/image-updater/internal/options"
+	"github.com/Azure/ARO-HCP/tooling/image-updater/internal/upgrade"
 )
 
 func NewUpdateCommand() *cobra.Command {
@@ -25,10 +31,16 @@ func NewUpdateCommand() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "update",
-		Short: "Update image digests from their source registries",
-		Long: `Update reads the configuration file and fetches the latest image digests
-from their source registries, then updates the target configuration files
-with the new digests.
+		Short: "Update image tags/digests or repository versions",
+		Long: `Update reads the configuration file and updates image references in target
+configuration files. One of --tags or --repositories must be specified.
+
+With --tags/-t, it fetches the latest image digests from source registries
+and updates target files with new digests.
+
+With --repositories/-r, it checks for next-version repositories on Quay
+for components that have repoVersionUpgrade configured, and updates the
+repository references in both the image-updater config and target files.
 
 Use --dry-run to see what changes would be made without actually updating files.
 
@@ -50,6 +62,17 @@ Use --verbosity (or -v) to control logging verbosity:
 func runUpdate(cmd *cobra.Command, opts *options.RawUpdateOptions) error {
 	ctx := cmd.Context()
 
+	if opts.UpdateTags {
+		return runUpdateTags(ctx, opts)
+	}
+	if opts.UpdateRepositories {
+		return runUpdateRepositories(ctx, opts)
+	}
+
+	return fmt.Errorf("specify --tags or --repositories")
+}
+
+func runUpdateTags(ctx context.Context, opts *options.RawUpdateOptions) error {
 	validated, err := opts.Validate(ctx)
 	if err != nil {
 		return err
@@ -61,4 +84,48 @@ func runUpdate(cmd *cobra.Command, opts *options.RawUpdateOptions) error {
 	}
 
 	return completed.UpdateImages(ctx)
+}
+
+func runUpdateRepositories(ctx context.Context, opts *options.RawUpdateOptions) error {
+	// These flags are only meaningful for the default tags/digests mode
+	if opts.Components != "" || opts.Groups != "" || opts.ExcludeComponents != "" {
+		return fmt.Errorf("--components, --groups, and --exclude-components cannot be used with --repositories")
+	}
+
+	cfg, err := config.Load(opts.ConfigPath)
+	if err != nil {
+		return fmt.Errorf("failed to load config: %w", err)
+	}
+
+	checker := upgrade.NewChecker(cfg)
+	results, err := checker.CheckAll(ctx)
+	if err != nil {
+		return fmt.Errorf("repository version check failed: %w", err)
+	}
+
+	output, err := upgrade.FormatResults(results, opts.OutputFormat)
+	if err != nil {
+		return fmt.Errorf("failed to format results: %w", err)
+	}
+
+	if opts.OutputFile != "" {
+		if err := os.WriteFile(opts.OutputFile, []byte(output), 0644); err != nil {
+			return fmt.Errorf("failed to write output file %s: %w", opts.OutputFile, err)
+		}
+	} else {
+		fmt.Print(output)
+	}
+
+	if !upgrade.HasUpgrades(results) {
+		return nil
+	}
+
+	if !opts.DryRun {
+		if err := upgrade.ApplyUpgrades(results, opts.ConfigPath, cfg); err != nil {
+			return fmt.Errorf("failed to apply upgrades: %w", err)
+		}
+		fmt.Fprintln(os.Stderr, "Config files updated successfully.")
+	}
+
+	return nil
 }

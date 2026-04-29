@@ -1,4 +1,4 @@
-.PHONY: build update clean test test-verbose test-coverage help
+.PHONY: build update update-repositories clean test test-verbose test-coverage help
 
 export AZURE_TOKEN_CREDENTIALS ?= dev
 
@@ -22,7 +22,10 @@ build:
 	@go build -o $(BINARY_NAME) .
 
 update: build
-	@./$(BINARY_NAME) update --config $(CONFIG_FILE) $(COMPONENT_FLAGS) $(GROUP_FLAGS) $(EXCLUDE_FLAGS) $(VERBOSITY_FLAGS) $(OUTPUT_FLAGS)
+	@./$(BINARY_NAME) update --config $(CONFIG_FILE) --tags $(COMPONENT_FLAGS) $(GROUP_FLAGS) $(EXCLUDE_FLAGS) $(VERBOSITY_FLAGS) $(OUTPUT_FLAGS)
+
+update-repositories: build
+	@./$(BINARY_NAME) update --config $(CONFIG_FILE) --repositories $(VERBOSITY_FLAGS) $(OUTPUT_FLAGS)
 
 test:
 	@go test ./...
@@ -39,7 +42,8 @@ clean:
 help:
 	@echo "Available targets:"
 	@echo "  build              - Build the image-updater binary"
-	@echo "  update             - Build and run the updater"
+	@echo "  update             - Build and run the updater (tags/digests mode)"
+	@echo "  update-repositories - Check and update repository versions"
 	@echo "  test               - Run tests"
 	@echo "  test-verbose       - Run tests with verbose output"
 	@echo "  test-coverage      - Run tests with coverage"
@@ -60,3 +64,5 @@ help:
 	@echo "  make update GROUPS=hypershift-stack EXCLUDE_COMPONENTS=maestro-agent-sidecar"
 	@echo "  make update EXCLUDE_COMPONENTS=maestro VERBOSITY=1"
 	@echo "  make update OUTPUT_FILE=results.md OUTPUT_FORMAT=markdown"
+	@echo "  make update-repositories"
+	@echo "  make update-repositories VERBOSITY=2"
