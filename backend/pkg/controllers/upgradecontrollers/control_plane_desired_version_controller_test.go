@@ -1024,7 +1024,7 @@ func TestControlPlaneDesiredVersionSyncer_SyncOnce(t *testing.T) {
 				Type:    api.ControllerConditionTypeIntentFailed,
 				Status:  metav1.ConditionTrue,
 				Reason:  api.VersionUpgradeNotAcceptedReason,
-				Message: "VersionNotFound",
+				Message: "VersionNotFound: ",
 			},
 		},
 	}
@@ -1087,7 +1087,7 @@ func TestControlPlaneDesiredVersionSyncer_SyncOnce(t *testing.T) {
 				assert.Equal(t, tt.wantIntentFailed.Reason, intentFailedCondition.Reason)
 				if tt.wantIntentFailed.Status == metav1.ConditionTrue {
 					require.NotEmpty(t, tt.wantIntentFailed.Message, "set wantIntentFailed.Message to the exact persisted IntentFailed message")
-					assert.Contains(t, intentFailedCondition.Message, tt.wantIntentFailed.Message)
+					assert.Equal(t, tt.wantIntentFailed.Message, intentFailedCondition.Message)
 				} else {
 					assert.Empty(t, intentFailedCondition.Message, "when wantIntentFailed.Status is false, intentFailedCondition.Message must be empty")
 				}

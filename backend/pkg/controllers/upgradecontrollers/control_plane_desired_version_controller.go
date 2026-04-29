@@ -154,12 +154,15 @@ func (c *controlPlaneDesiredVersionSyncer) SyncOnce(ctx context.Context, key con
 	}
 	desiredVersion, err := c.desiredControlPlaneZVersion(ctx, cincinnatiClient, key.GetResourceID(), customerDesiredMinor, channelGroup, activeVersions,
 		operation.HasOption(api.FeatureExperimentalReleaseFeatures))
+	logger := utils.LoggerFromContext(ctx)
+
 	if err != nil {
 		// Persist IntentFailed on the controller document for Cincinnati VersionNotFound or any non-Cincinnati resolution error.
 		// Other Cincinnati errors are treated as transient graph or transport issues.
 		var cincinnatiErr *cincinnati.Error
 		persistIntentFailed := cincinatti.IsCincinnatiVersionNotFoundError(err) || !errors.As(err, &cincinnatiErr)
 		if persistIntentFailed {
+			logger.Error(err, "desired version resolution failed, persisting IntentFailed condition")
 			controllerCRUD := c.cosmosClient.HCPClusters(key.SubscriptionID, key.ResourceGroupName).Controllers(key.HCPClusterName)
 			if writeErr := controllerutils.WriteController(ctx, controllerCRUD, controlPlaneDesiredVersionControllerName, key.InitialController,
 				func(ctrl *api.Controller) {
@@ -167,7 +170,7 @@ func (c *controlPlaneDesiredVersionSyncer) SyncOnce(ctx context.Context, key con
 						Type:    api.ControllerConditionTypeIntentFailed,
 						Status:  metav1.ConditionTrue,
 						Reason:  api.VersionUpgradeNotAcceptedReason,
-						Message: err.Error(),
+						Message: utils.ErrorMessageWithoutLineTracking(err),
 					})
 				}); writeErr != nil {
 				return utils.TrackError(writeErr)
@@ -180,7 +183,6 @@ func (c *controlPlaneDesiredVersionSyncer) SyncOnce(ctx context.Context, key con
 	previousDesiredVersion := existingServiceProviderCluster.Spec.ControlPlaneVersion.DesiredVersion
 	desiredVersionUpdated := false
 	if desiredVersion != nil && (previousDesiredVersion == nil || !desiredVersion.EQ(*previousDesiredVersion)) {
-		logger := utils.LoggerFromContext(ctx)
 		logger.Info("Selected desired version", "desiredVersion", desiredVersion, "previousDesiredVersion", previousDesiredVersion)
 		existingServiceProviderCluster.Spec.ControlPlaneVersion.DesiredVersion = desiredVersion
 		desiredVersionUpdated = true
