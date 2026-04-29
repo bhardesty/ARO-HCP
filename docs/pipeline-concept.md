@@ -144,7 +144,7 @@ Steps can be configured to automatically retry on failure by adding an `automate
 1. `automatedRetry`: Optional configuration block for automatic retry behavior.
 2. `errorContainsAny`: A list of strings to match against the error message (case-insensitive). If the error contains any of these strings, a retry will be triggered. Maximum of 16 items; total encoded length must not exceed 1KB.
 3. `maximumRetryCount`: The maximum number of retry attempts after the initial failure. Must be between 1 and 10. Defaults to 1 if not specified.
-4. `durationBetweenRetries`: The time to wait between retry attempts. Should be between 1 minute (`1m`) and 3 hours (`3h`). Uses Go's time.Duration syntax (e.g., `30s`, `5m`, `1h`).
+4. `durationBetweenRetries`: The time to wait between retry attempts. Should be between 1 minute (`1m`) and 3 hours (`3h`). Uses Go's time.Duration syntax (e.g., `1m`, `5m`, `1h`).
 
 **Important notes:**
 
