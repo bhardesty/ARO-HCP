@@ -54,7 +54,13 @@ image: Dockerfile $(BACKEND_SOURCES) Makefile
 
 build-and-push: image $(ORAS)
 	az acr login --name ${ARO_HCP_IMAGE_ACR}
-	$(CONTAINER_ENGINE) push ${BACKEND_TAGGED_IMAGE}
+	@LOCAL_DIGEST=$$($(CONTAINER_ENGINE) image inspect --format '{{.Id}}' ${BACKEND_TAGGED_IMAGE}); \
+	REMOTE_DIGEST=$$($(ORAS) manifest fetch ${BACKEND_TAGGED_IMAGE} 2>/dev/null | jq -r .config.digest | sed 's/sha256://'); \
+	if [ "$$LOCAL_DIGEST" = "$$REMOTE_DIGEST" ]; then \
+		echo "Image ${BACKEND_TAGGED_IMAGE} already up to date in registry, skipping push"; \
+	else \
+		$(CONTAINER_ENGINE) push ${BACKEND_TAGGED_IMAGE}; \
+	fi
 .PHONY: build-and-push
 
 # Unix timestamp for this make run; computed once so multiple targets see the same value.
