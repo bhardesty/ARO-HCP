@@ -6,6 +6,7 @@ Welcome to the ARO HCP project! We appreciate your interest in contributing. Thi
 ## Table of Contents
 - [Getting Started](#getting-started)
 - [Contributing Guidelines](#contributing-guidelines)
+- [PR and Issue Lifecycle](#pr-and-issue-lifecycle)
 - [Code of Conduct](#code-of-conduct)
 - [License](#license)
 
@@ -48,6 +49,36 @@ Please follow these guidelines when contributing to ARO HCP:
   help others to understand the context and decisions made.
 
 Please note, that you might be asked to comply with these guidelines before your PR is accepted.
+
+
+## PR and Issue Lifecycle
+
+This repository uses automated Prow lifecycle management to keep PRs and issues from going stale. Inactive PRs and issues progress through three stages before being automatically closed.
+
+### Lifecycle Stages
+
+| Stage | Label | Trigger | What happens |
+|-------|-------|---------|--------------|
+| **Stale** | `lifecycle/stale` | 90 days of inactivity | A comment is added warning that the PR/issue will be closed if no activity occurs |
+| **Rotten** | `lifecycle/rotten` | Stale + continued inactivity | A second warning is added |
+| **Closed** | — | Rotten + continued inactivity | The PR/issue is automatically closed |
+
+Any activity (comments, pushes, label changes) resets the inactivity timer and removes the lifecycle label.
+
+### Prow Commands
+
+Use these commands in a PR or issue comment to manage the lifecycle:
+
+| Command | Effect |
+|---------|--------|
+| `/remove-lifecycle stale` | Remove the stale label and reset the timer |
+| `/remove-lifecycle rotten` | Remove the rotten label and reset the timer |
+| `/lifecycle frozen` | Exempt the PR/issue from automatic closure entirely |
+| `/remove-lifecycle frozen` | Remove the frozen exemption |
+
+### Keeping Long-Running PRs Open
+
+If you have a PR that is intentionally paused (e.g. waiting on a dependency, blocked by another team, or a long-term draft), add the `/lifecycle frozen` command to prevent it from being automatically closed.
 
 
 ## Code of Conduct
