@@ -44,13 +44,14 @@ clean:
 	rm -f ${BINARY}
 .PHONY: clean
 
-image: Dockerfile $(BACKEND_SOURCES) Makefile
+image:
 	cd $(BACKEND_DIR)/.. && \
 	$(CONTAINER_ENGINE) build . --file backend/Dockerfile \
 		--build-arg PLATFORM=linux/amd64 \
 		--build-arg ARO_HCP_REVISION=${ARO_HCP_REVISION} \
 		--build-arg ARO_HCP_COMMIT_TIME=${ARO_HCP_COMMIT_TIME} \
 		--tag ${BACKEND_TAGGED_IMAGE}
+.PHONY: image
 
 build-and-push: image $(ORAS)
 	az acr login --name ${ARO_HCP_IMAGE_ACR}

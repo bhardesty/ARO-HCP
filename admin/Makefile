@@ -63,7 +63,7 @@ clean:
 	rm -f ${BINARY}
 .PHONY: clean
 
-image: Dockerfile $(ADMIN_API_SOURCES) Makefile
+image:
 	@rm -f $(BINARY)
 	cd $(ADMIN_DIR)/.. && \
 	$(CONTAINER_ENGINE) build . --file admin/Dockerfile \
@@ -71,6 +71,7 @@ image: Dockerfile $(ADMIN_API_SOURCES) Makefile
 		--build-arg ARO_HCP_REVISION=${ARO_HCP_REVISION} \
 		--build-arg ARO_HCP_COMMIT_TIME=${ARO_HCP_COMMIT_TIME} \
 		--tag ${ADMIN_API_TAGGED_IMAGE}
+.PHONY: image
 
 build-and-push: image $(ORAS)
 	az acr login --name ${ARO_HCP_IMAGE_ACR}

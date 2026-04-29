@@ -44,7 +44,7 @@ run:
 	go run . controller --namespace ${NAMESPACE} --ingress-base-url "http://localhost:8080" -v 2
 .PHONY: run
 
-image: Dockerfile $(SESSION_GATE_SOURCES) Makefile
+image:
 	rm -f $(BINARY)
 	cd $(SESSIONGATE_DIR)/.. && \
 	$(CONTAINER_ENGINE) build . --file sessiongate/Dockerfile \
@@ -52,6 +52,7 @@ image: Dockerfile $(SESSION_GATE_SOURCES) Makefile
 		--build-arg ARO_HCP_REVISION=${ARO_HCP_REVISION} \
 		--build-arg ARO_HCP_COMMIT_TIME=${ARO_HCP_COMMIT_TIME} \
 		--tag ${SESSION_GATE_TAGGED_IMAGE}
+.PHONY: image
 
 build-and-push: image $(ORAS)
 	az acr login --name ${ARO_HCP_IMAGE_ACR}
