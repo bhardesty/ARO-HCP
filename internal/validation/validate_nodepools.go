@@ -172,8 +172,9 @@ var (
 func validateNodePoolVersionProfile(ctx context.Context, op operation.Operation, fldPath *field.Path, newObj, oldObj *api.NodePoolVersionProfile) field.ErrorList {
 	errs := field.ErrorList{}
 
+	// Version ID is required since 20251223preview version but some records may not have had it originally, so don't fail them yet.
 	//ID           string `json:"id,omitempty"`
-	if newObj.ChannelGroup != "stable" {
+	if oldObj == nil || len(oldObj.ID) > 0 {
 		errs = append(errs, validate.RequiredValue(ctx, op, fldPath.Child("id"), &newObj.ID, safe.Field(oldObj, toNodePoolVersionProfileID))...)
 	}
 
