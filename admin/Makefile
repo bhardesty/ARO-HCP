@@ -75,7 +75,7 @@ image:
 
 build-and-push: image $(ORAS)
 	az acr login --name ${ARO_HCP_IMAGE_ACR}
-	@LOCAL_DIGEST=$$($(CONTAINER_ENGINE) image inspect --format '{{.Id}}' ${ADMIN_API_TAGGED_IMAGE}); \
+	@LOCAL_DIGEST=$$($(CONTAINER_ENGINE) image inspect --format '{{.Id}}' ${ADMIN_API_TAGGED_IMAGE} | sed 's/sha256://'); \
 	REMOTE_DIGEST=$$($(ORAS) manifest fetch ${ADMIN_API_TAGGED_IMAGE} 2>/dev/null | jq -r .config.digest | sed 's/sha256://'); \
 	if [ "$$LOCAL_DIGEST" = "$$REMOTE_DIGEST" ]; then \
 		echo "Image ${ADMIN_API_TAGGED_IMAGE} already up to date in registry, skipping push"; \
