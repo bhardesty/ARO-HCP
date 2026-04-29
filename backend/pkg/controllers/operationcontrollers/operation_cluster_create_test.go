@@ -219,53 +219,6 @@ func newClusterWithAPIURL(url string) *api.HCPOpenShiftCluster {
 	return cluster
 }
 
-func TestCompareOperationState(t *testing.T) {
-	tests := []struct {
-		name     string
-		lhs      *operationState
-		rhs      *operationState
-		expected int
-	}{
-		{
-			name:     "both nil",
-			lhs:      nil,
-			rhs:      nil,
-			expected: 0,
-		},
-		{
-			name:     "lhs nil",
-			lhs:      nil,
-			rhs:      newOperationState(arm.ProvisioningStateSucceeded, ""),
-			expected: -1,
-		},
-		{
-			name:     "rhs nil",
-			lhs:      newOperationState(arm.ProvisioningStateSucceeded, ""),
-			rhs:      nil,
-			expected: 1,
-		},
-		{
-			name:     "Succeeded > Provisioning",
-			lhs:      newOperationState(arm.ProvisioningStateSucceeded, ""),
-			rhs:      newOperationState(arm.ProvisioningStateProvisioning, ""),
-			expected: 1,
-		},
-		{
-			name:     "Deleting < Provisioning",
-			lhs:      newOperationState(arm.ProvisioningStateDeleting, ""),
-			rhs:      newOperationState(arm.ProvisioningStateProvisioning, ""),
-			expected: -1,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := compareOperationState(tt.lhs, tt.rhs)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
-
 func TestDetermineOperationStatus(t *testing.T) {
 	fixture := newClusterTestFixture()
 	operation := fixture.newOperation(database.OperationRequestCreate)

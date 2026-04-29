@@ -14,13 +14,12 @@
 
 package api
 
+// Controller status condition Type values (metav1.Condition.Type) for HCP controller documents.
 const (
-	// DegradedCondition is True when the cluster is in a degraded state.
-	DegradedCondition = "Degraded"
+	ControllerConditionTypeIntentFailed = "IntentFailed"
 )
 
-// Known ServiceProviderCluster status condition Reason values (metav1.Condition.Reason).
+// Known controller status condition Reason values (metav1.Condition.Reason).
 const (
-	VersionUpgradeNotAcceptedReason string = "VersionUpgradeNotAccepted"
-	NoErrorsReason                  string = "NoErrors"
+	ControllerConditionReasonAsExpected = "AsExpected"
 )

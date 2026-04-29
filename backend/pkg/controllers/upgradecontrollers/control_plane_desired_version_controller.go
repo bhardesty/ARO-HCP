@@ -48,6 +48,9 @@ import (
 	"github.com/Azure/ARO-HCP/internal/validation"
 )
 
+// controlPlaneDesiredVersionControllerName is the Cosmos controller document ID for this syncer.
+const controlPlaneDesiredVersionControllerName = "ControlPlaneDesiredVersion"
+
 // controlPlaneDesiredVersionSyncer is a Cluster syncer that manages control plane desired version.
 // It handles automated (managed) z-stream (patch) upgrades and assists with y-stream (minor)
 // version upgrades by selecting the appropriate z-stream within the user-desired minor version.
@@ -67,7 +70,6 @@ var _ controllerutils.ClusterSyncer = (*controlPlaneDesiredVersionSyncer)(nil)
 // NewControlPlaneDesiredVersionController creates a new controller that manages the desired
 // control plane version. It periodically checks each cluster and sets the desired version
 // based on the OCPVersion logic documented in the ServiceProviderCluster type.
-// The controller name remains "ControlPlaneVersion" for compatibility.
 func NewControlPlaneDesiredVersionController(
 	cosmosClient database.DBClient,
 	clusterServiceClient ocm.ClusterServiceClientSpec,
@@ -86,7 +88,7 @@ func NewControlPlaneDesiredVersionController(
 	}
 
 	controller := controllerutils.NewClusterWatchingController(
-		"ControlPlaneDesiredVersion",
+		controlPlaneDesiredVersionControllerName,
 		cosmosClient,
 		informers,
 		5*time.Minute, // Check for upgrades every 5 minutes
@@ -153,37 +155,26 @@ func (c *controlPlaneDesiredVersionSyncer) SyncOnce(ctx context.Context, key con
 	desiredVersion, err := c.desiredControlPlaneZVersion(ctx, cincinnatiClient, key.GetResourceID(), customerDesiredMinor, channelGroup, activeVersions,
 		operation.HasOption(api.FeatureExperimentalReleaseFeatures))
 	if err != nil {
-		// Persist Degraded for Cincinnati version-not-found or any non-Cincinnati resolution error.
+		// Persist IntentFailed on the controller document for Cincinnati VersionNotFound or any non-Cincinnati resolution error.
 		// Other Cincinnati errors are treated as transient graph or transport issues.
 		var cincinnatiErr *cincinnati.Error
-		persistDegraded := cincinatti.IsCincinnatiVersionNotFoundError(err) || !errors.As(err, &cincinnatiErr)
-		if persistDegraded {
-			apimeta.SetStatusCondition(&existingServiceProviderCluster.Status.Conditions, metav1.Condition{
-				Type:    api.DegradedCondition,
-				Status:  metav1.ConditionTrue,
-				Reason:  api.ServiceProviderClusterConditionReasonVersionUpgradeNotAccepted,
-				Message: err.Error(),
-			})
-			spcClient := c.cosmosClient.ServiceProviderClusters(key.SubscriptionID, key.ResourceGroupName, key.HCPClusterName)
-			if _, replaceErr := spcClient.Replace(ctx, existingServiceProviderCluster, nil); replaceErr != nil {
-				return utils.TrackError(fmt.Errorf("failed to determine desired control plane version: %w; failed to persist degraded condition: %v", err, replaceErr))
+		persistIntentFailed := cincinatti.IsCincinnatiVersionNotFoundError(err) || !errors.As(err, &cincinnatiErr)
+		if persistIntentFailed {
+			controllerCRUD := c.cosmosClient.HCPClusters(key.SubscriptionID, key.ResourceGroupName).Controllers(key.HCPClusterName)
+			if err := controllerutils.WriteController(ctx, controllerCRUD, controlPlaneDesiredVersionControllerName, key.InitialController,
+				func(ctrl *api.Controller) {
+					apimeta.SetStatusCondition(&ctrl.Status.Conditions, metav1.Condition{
+						Type:    api.ControllerConditionTypeIntentFailed,
+						Status:  metav1.ConditionTrue,
+						Reason:  api.VersionUpgradeNotAcceptedReason,
+						Message: err.Error(),
+					})
+				}); err != nil {
+				return utils.TrackError(err)
 			}
 		}
 		return utils.TrackError(fmt.Errorf("failed to determine desired control plane version: %w", err))
 	}
-
-	// Resolution succeeded: clear Degraded/VersionUpgradeNotAccepted if present so we persist recovery (degradedCleared).
-	degradedCleared := false
-	if existingDegraded := apimeta.FindStatusCondition(existingServiceProviderCluster.Status.Conditions, api.DegradedCondition); existingDegraded != nil &&
-		existingDegraded.Status == metav1.ConditionTrue &&
-		existingDegraded.Reason == api.ServiceProviderClusterConditionReasonVersionUpgradeNotAccepted {
-		degradedCleared = apimeta.SetStatusCondition(&existingServiceProviderCluster.Status.Conditions, metav1.Condition{
-			Type:   api.DegradedCondition,
-			Status: metav1.ConditionFalse,
-			Reason: api.ServiceProviderClusterConditionReasonNoErrors,
-		})
-	}
-	serviceProviderClustersCosmosClient := c.cosmosClient.ServiceProviderClusters(key.SubscriptionID, key.ResourceGroupName, key.HCPClusterName)
 
 	previousDesiredVersion := existingServiceProviderCluster.Spec.ControlPlaneVersion.DesiredVersion
 	desiredVersionUpdated := false
@@ -194,11 +185,28 @@ func (c *controlPlaneDesiredVersionSyncer) SyncOnce(ctx context.Context, key con
 		desiredVersionUpdated = true
 	}
 
-	if !desiredVersionUpdated && !degradedCleared {
-		return nil
+	// on successful resolution of the desired version.
+	// update the ServiceProviderCluster first and only afterwards
+	// clear the IntentFailed condition
+	if desiredVersionUpdated {
+		serviceProviderClustersCosmosClient := c.cosmosClient.ServiceProviderClusters(key.SubscriptionID, key.ResourceGroupName, key.HCPClusterName)
+		_, err := serviceProviderClustersCosmosClient.Replace(ctx, existingServiceProviderCluster, nil)
+		if err != nil {
+			return utils.TrackError(fmt.Errorf("failed to replace ServiceProviderCluster: %w", err))
+		}
 	}
-	if _, err := serviceProviderClustersCosmosClient.Replace(ctx, existingServiceProviderCluster, nil); err != nil {
-		return utils.TrackError(fmt.Errorf("failed to replace ServiceProviderCluster: %w", err))
+
+	controllerCRUD := c.cosmosClient.HCPClusters(key.SubscriptionID, key.ResourceGroupName).Controllers(key.HCPClusterName)
+	if err = controllerutils.WriteController(ctx, controllerCRUD, controlPlaneDesiredVersionControllerName, key.InitialController,
+		func(ctrl *api.Controller) {
+			apimeta.SetStatusCondition(&ctrl.Status.Conditions, metav1.Condition{
+				Type:    api.ControllerConditionTypeIntentFailed,
+				Status:  metav1.ConditionFalse,
+				Reason:  api.ControllerConditionReasonAsExpected,
+				Message: "",
+			})
+		}); err != nil {
+		return utils.TrackError(err)
 	}
 	return nil
 }

@@ -140,7 +140,7 @@ func (c *operationClusterUpdate) determineOperationState(ctx context.Context, op
 		return nil, err
 	}
 	if len(operationStates) == 0 {
-		return nil, utils.TrackError(fmt.Errorf("no operation states"))
+		return nil, errors.New("no operation states")
 	}
 	slices.SortStableFunc(operationStates, compareOperationState)
 	if operationStates[0] == nil {
@@ -178,13 +178,26 @@ func (c *operationClusterUpdate) desiredVersionResolutionOperationState(ctx cont
 		customerDesiredVersion.Minor == resultingDesiredVersion.Minor {
 		return newOperationState(arm.ProvisioningStateSucceeded, ""), nil
 	}
-	existingDegraded := apimeta.FindStatusCondition(existingServiceProviderCluster.Status.Conditions,
-		api.DegradedCondition)
-	if existingDegraded != nil && existingDegraded.Status == metav1.ConditionTrue &&
-		existingDegraded.Reason == api.ServiceProviderClusterConditionReasonVersionUpgradeNotAccepted {
-		return newOperationState(arm.ProvisioningStateFailed, existingDegraded.Message), nil
+	clusterKey := controllerutils.HCPClusterKey{
+		SubscriptionID:    operation.ExternalID.SubscriptionID,
+		ResourceGroupName: operation.ExternalID.ResourceGroupName,
+		HCPClusterName:    operation.ExternalID.Name,
 	}
-	return nil, utils.TrackError(fmt.Errorf("customer desired version does not match resolved desired version"))
+	controllerDoc, getControllerErr := controllerutils.GetOrCreateController(
+		ctx,
+		c.cosmosClient,
+		operation.ExternalID,
+		"ControlPlaneDesiredVersion",
+		clusterKey.InitialController,
+	)
+	if getControllerErr != nil {
+		return nil, utils.TrackError(getControllerErr)
+	}
+	intentFailedCondition := apimeta.FindStatusCondition(controllerDoc.Status.Conditions, api.ControllerConditionTypeIntentFailed)
+	if intentFailedCondition == nil || intentFailedCondition.Status != metav1.ConditionTrue || intentFailedCondition.Reason != api.VersionUpgradeNotAcceptedReason {
+		return nil, utils.TrackError(fmt.Errorf("customer desired version does not match resolved desired version"))
+	}
+	return newOperationState(arm.ProvisioningStateFailed, intentFailedCondition.Message), nil
 }
 
 func (c *operationClusterUpdate) clusterServiceUpdateOperationState(ctx context.Context, operation *api.Operation) (*operationState, error) {

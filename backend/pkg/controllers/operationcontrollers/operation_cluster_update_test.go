@@ -42,13 +42,14 @@ import (
 
 func TestOperationClusterUpdate_SynchronizeOperation(t *testing.T) {
 	tests := []struct {
-		name                                   string
-		clusterState                           arohcpv1alpha1.ClusterState
-		expectError                            bool
-		wantErrContains                        string
-		customerVersionID                      string
-		serviceProviderClusterStatusConditions []metav1.Condition
-		verify                                 func(t *testing.T, ctx context.Context, db *databasetesting.MockDBClient, fixture *clusterTestFixture)
+		name                                           string
+		clusterState                                   arohcpv1alpha1.ClusterState
+		expectError                                    bool
+		wantErrContains                                string
+		customerVersionID                              string
+		serviceProviderClusterStatusConditions         []metav1.Condition
+		controlPlaneDesiredVersionControllerConditions []metav1.Condition
+		verify                                         func(t *testing.T, ctx context.Context, db *databasetesting.MockDBClient, fixture *clusterTestFixture)
 	}{
 		{
 			name:              "cluster ready transitions operation to succeeded",
@@ -111,14 +112,14 @@ func TestOperationClusterUpdate_SynchronizeOperation(t *testing.T) {
 			},
 		},
 		{
-			name:              "customer minor mismatch with VersionUpgradeNotAccepted Degraded marks operation failed",
+			name:              "customer minor mismatch with IntentFailed on ControlPlaneDesiredVersion controller marks operation failed",
 			clusterState:      arohcpv1alpha1.ClusterStateReady,
 			customerVersionID: "4.20",
-			serviceProviderClusterStatusConditions: []metav1.Condition{
+			controlPlaneDesiredVersionControllerConditions: []metav1.Condition{
 				{
-					Type:    api.DegradedCondition,
+					Type:    api.ControllerConditionTypeIntentFailed,
 					Status:  metav1.ConditionTrue,
-					Reason:  api.ServiceProviderClusterConditionReasonVersionUpgradeNotAccepted,
+					Reason:  api.VersionUpgradeNotAcceptedReason,
 					Message: "no downgrades allowed",
 				},
 			},
@@ -137,7 +138,7 @@ func TestOperationClusterUpdate_SynchronizeOperation(t *testing.T) {
 			},
 		},
 		{
-			name:              "customer minor mismatch without VersionUpgradeNotAccepted leaves operation accepted",
+			name:              "customer minor mismatch without ControlPlaneDesiredVersion IntentFailed leaves operation accepted",
 			clusterState:      arohcpv1alpha1.ClusterStateReady,
 			expectError:       true,
 			wantErrContains:   "customer desired version does not match resolved desired version",
@@ -175,7 +176,7 @@ func TestOperationClusterUpdate_SynchronizeOperation(t *testing.T) {
 				api.ServiceProviderClusterResourceName,
 			)))
 
-			spc := &api.ServiceProviderCluster{
+			_, err = mockDB.ServiceProviderClusters(testSubscriptionID, testResourceGroupName, testClusterName).Create(ctx, &api.ServiceProviderCluster{
 				CosmosMetadata: api.CosmosMetadata{ResourceID: resourceId},
 				ResourceID:     *resourceId,
 				Spec: api.ServiceProviderClusterSpec{
@@ -186,8 +187,20 @@ func TestOperationClusterUpdate_SynchronizeOperation(t *testing.T) {
 				Status: api.ServiceProviderClusterStatus{
 					Conditions: tt.serviceProviderClusterStatusConditions,
 				},
-			}
-			_, err = mockDB.ServiceProviderClusters(testSubscriptionID, testResourceGroupName, testClusterName).Create(ctx, spc, nil)
+			}, nil)
+			require.NoError(t, err)
+
+			rid := api.Must(azcorearm.ParseResourceID(
+				fixture.clusterResourceID.String() + "/hcpOpenShiftControllers/ControlPlaneDesiredVersion",
+			))
+			_, err = mockDB.HCPClusters(testSubscriptionID, testResourceGroupName).Controllers(testClusterName).Create(ctx, &api.Controller{
+				CosmosMetadata: api.CosmosMetadata{ResourceID: rid},
+				ResourceID:     rid,
+				ExternalID:     fixture.clusterResourceID,
+				Status: api.ControllerStatus{
+					Conditions: tt.controlPlaneDesiredVersionControllerConditions,
+				},
+			}, nil)
 			require.NoError(t, err)
 
 			mockCSClient := ocm.NewMockClusterServiceClientSpec(ctrl)
