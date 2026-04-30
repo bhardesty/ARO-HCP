@@ -150,12 +150,19 @@ func TestAssignmentWithinSubscriptionScope(t *testing.T) {
 			},
 			want: false,
 		},
+		{
+			name: "rejects different subscription with shared prefix",
+			role: &armauthorization.RoleAssignment{
+				ID: strPtr("/subscriptions/abc123/providers/Microsoft.Authorization/roleAssignments/ra1"),
+			},
+			want: false,
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			got := assignmentWithinSubscriptionScope(tc.role, "/subscriptions/abc")
+			got := assignmentWithinSubscriptionScope(tc.role, "/subscriptions/abc/")
 			if got != tc.want {
 				t.Fatalf("expected %t, got %t", tc.want, got)
 			}

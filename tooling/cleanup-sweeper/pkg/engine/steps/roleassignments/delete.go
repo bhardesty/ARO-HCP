@@ -298,7 +298,7 @@ func listRoleAssignments(
 ) ([]roleAssignmentRecord, error) {
 	pager := roleAssignmentsClient.NewListForSubscriptionPager(nil)
 	assignments := make([]roleAssignmentRecord, 0)
-	subscriptionScopePrefix := "/subscriptions/" + normalizeID(subscriptionID)
+	subscriptionScopePrefix := "/subscriptions/" + normalizeID(subscriptionID) + "/"
 
 	for pager.More() {
 		page, err := pager.NextPage(ctx)
