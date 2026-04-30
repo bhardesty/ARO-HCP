@@ -201,7 +201,7 @@ By enforcing a schema, configuration files remain predictable and can be automat
 2. Inspect the effects of the changes in the materialized configuration files.
 3. Commit the materialized files, open a PR, review, and merge.
 
-Check the section about [Materializing Configuration](#materializing-configuration) and [Propagate Configuration Changes](#propagate-configuration-changes) for more details.
+Check the section about to [Propagate Configuration Changes](#propagate-configuration-changes) for more details.
 
 ## Propagate Configuration Changes
 
@@ -211,7 +211,7 @@ Propagation of configuration changes varies depending on the environment:
   - Only the **cspr** environment is automatically reconciled with new changes for configuration, infrastructure, and service deployments via [Prow](prow.md).
   - personal development environments (**pers**) are fully controlled by developers. If there are relevant changes, notify developers so they can apply updates manually.
 
-- **[ADO sdp-pipelines/hcp/config.clouds-overlay.yaml](https://dev.azure.com/msazure/AzureRedHatOpenShift/_git/sdp-pipelines?path=/hcp/config.clouds-overlay.yaml)**:
+- **[ADO sdp-pipelines/hcp/config.msft.sensitive.clouds-overlay.yaml](https://dev.azure.com/msazure/AzureRedHatOpenShift/_git/sdp-pipelines?path=/hcp/config.msft.sensitive.clouds-overlay.yaml)**:
   - This file serves as a `clouds.public` override to the [ARO HCP baseline configuration](../config/config.yaml) for Microsoft environments.
   - Propagation is **not automated**.
   - Refer to the [EV2 deployment documentation](ev2-deployment.md) for details on how to prepare and trigger a deployment.
