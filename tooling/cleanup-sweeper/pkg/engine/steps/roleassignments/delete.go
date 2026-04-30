@@ -185,8 +185,8 @@ func discoverOrphanedRoleAssignments(
 		return nil, fmt.Errorf("%s: %w", preflightFailureMessage, err)
 	}
 
-	// 1) List all role assignments at resource-group scope (ARM).
-	assignments, err := listRoleAssignments(ctx, roleAssignmentsClient, subscriptionID, logger, skipReporter)
+	// 1) List all role assignments in the subscription (ARM).
+	assignments, err := listRoleAssignments(ctx, roleAssignmentsClient, logger, skipReporter)
 	if err != nil {
 		return nil, err
 	}
@@ -292,13 +292,11 @@ type roleAssignmentRecord struct {
 func listRoleAssignments(
 	ctx context.Context,
 	roleAssignmentsClient *armauthorization.RoleAssignmentsClient,
-	subscriptionID string,
 	logger logr.Logger,
 	skipReporter *common.DiscoverySkipReporter,
 ) ([]roleAssignmentRecord, error) {
 	pager := roleAssignmentsClient.NewListForSubscriptionPager(nil)
 	assignments := make([]roleAssignmentRecord, 0)
-	resourceGroupScopePrefix := "/subscriptions/" + normalizeID(subscriptionID) + "/resourcegroups/"
 
 	for pager.More() {
 		page, err := pager.NextPage(ctx)
@@ -306,9 +304,6 @@ func listRoleAssignments(
 			return nil, fmt.Errorf("failed listing role assignments: %w", err)
 		}
 		for _, roleAssignment := range page.Value {
-			if !assignmentWithinResourceGroupScope(roleAssignment, resourceGroupScopePrefix) {
-				continue
-			}
 			record, ok := toRoleAssignmentRecord(roleAssignment, logger, skipReporter)
 			if !ok {
 				continue
@@ -452,25 +447,3 @@ func roleAssignmentType(roleAssignment *armauthorization.RoleAssignment) string 
 	return ResourceType
 }
 
-func assignmentWithinResourceGroupScope(
-	roleAssignment *armauthorization.RoleAssignment,
-	resourceGroupScopePrefix string,
-) bool {
-	scope := roleAssignmentScope(roleAssignment)
-	if scope != "" {
-		return strings.HasPrefix(normalizeID(scope), resourceGroupScopePrefix)
-	}
-
-	id, ok := roleAssignmentID(roleAssignment)
-	if !ok {
-		return false
-	}
-	return strings.HasPrefix(normalizeID(id), resourceGroupScopePrefix)
-}
-
-func roleAssignmentScope(roleAssignment *armauthorization.RoleAssignment) string {
-	if roleAssignment != nil && roleAssignment.Properties != nil && roleAssignment.Properties.Scope != nil {
-		return strings.TrimSpace(*roleAssignment.Properties.Scope)
-	}
-	return ""
-}

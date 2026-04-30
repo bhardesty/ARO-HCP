@@ -121,52 +121,6 @@ func TestEscapeODataString_EscapesSingleQuotes(t *testing.T) {
 	}
 }
 
-func TestAssignmentWithinResourceGroupScope_UsesScopeWhenPresent(t *testing.T) {
-	t.Parallel()
-
-	testCases := []struct {
-		name string
-		role *armauthorization.RoleAssignment
-		want bool
-	}{
-		{
-			name: "uses scope when present",
-			role: &armauthorization.RoleAssignment{
-				Properties: &armauthorization.RoleAssignmentProperties{
-					Scope: strPtr("/subscriptions/abc/resourceGroups/rg-one/providers/Microsoft.Compute/virtualMachines/vm1"),
-				},
-			},
-			want: true,
-		},
-		{
-			name: "falls back to ID",
-			role: &armauthorization.RoleAssignment{
-				ID: strPtr("/subscriptions/abc/resourceGroups/rg-one/providers/Microsoft.Authorization/roleAssignments/ra1"),
-			},
-			want: true,
-		},
-		{
-			name: "rejects non-RG scope",
-			role: &armauthorization.RoleAssignment{
-				Properties: &armauthorization.RoleAssignmentProperties{
-					Scope: strPtr("/subscriptions/abc"),
-				},
-			},
-			want: false,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			got := assignmentWithinResourceGroupScope(tc.role, "/subscriptions/abc/resourcegroups/")
-			if got != tc.want {
-				t.Fatalf("expected %t, got %t", tc.want, got)
-			}
-		})
-	}
-}
-
 func TestToRoleAssignmentRecord_ReturnsFalseWithoutID(t *testing.T) {
 	t.Parallel()
 
