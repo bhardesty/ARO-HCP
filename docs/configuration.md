@@ -201,7 +201,7 @@ By enforcing a schema, configuration files remain predictable and can be automat
 2. Inspect the effects of the changes in the materialized configuration files.
 3. Commit the materialized files, open a PR, review, and merge.
 
-Check the section about to [Propagate Configuration Changes](#propagate-configuration-changes) for more details.
+Check [Propagate Configuration Changes](#propagate-configuration-changes) for more details.
 
 ## Propagate Configuration Changes
 
