@@ -1,5 +1,5 @@
 # Configuration Management
-The ARO Tools Documentation explains in greater detail about how the config templates are used. https://github.com/Azure/ARO-Tools/blob/main/pkg/config/README.md 
+The [ARO Tools Documentation](https://github.com/Azure/ARO-Tools/blob/main/config/README.md) explains in greater detail about how the config templates are used. 
 It's important to note that these configuration files are **Go Templates** and won't render as YAML locally, this can be confusing with the .yaml file extensions, but is a very important as any misplaced linting would not catch the difference. To render these files use the ARO-Tools library. 
 
 ## Purpose of Configuration Management Strategy
