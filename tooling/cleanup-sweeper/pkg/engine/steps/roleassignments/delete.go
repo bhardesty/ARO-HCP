@@ -462,4 +462,3 @@ func assignmentWithinSubscriptionScope(
 	}
 	return strings.HasPrefix(normalizeID(id), subscriptionScopePrefix)
 }
-
