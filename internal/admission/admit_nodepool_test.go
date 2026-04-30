@@ -117,6 +117,82 @@ func TestMutateNodePool(t *testing.T) {
 	}
 }
 
+func TestAdmitNodePool_SubnetVNet(t *testing.T) {
+	const (
+		clusterSubnet      = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg/providers/Microsoft.Network/virtualNetworks/cluster-vnet/subnets/cluster-subnet"
+		sameVNetSubnet     = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg/providers/Microsoft.Network/virtualNetworks/cluster-vnet/subnets/np-subnet"
+		differentVNetSubnet = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg/providers/Microsoft.Network/virtualNetworks/other-vnet/subnets/np-subnet"
+	)
+
+	parseID := func(s string) *azcorearm.ResourceID {
+		return api.Must(azcorearm.ParseResourceID(s))
+	}
+
+	cluster := &api.HCPOpenShiftCluster{
+		CustomerProperties: api.HCPOpenShiftClusterCustomerProperties{
+			Platform: api.CustomerPlatformProfile{SubnetID: parseID(clusterSubnet)},
+			Version:  api.VersionProfile{ChannelGroup: "stable"},
+		},
+	}
+
+	nodePoolWithSubnet := func(subnetID string) *api.HCPOpenShiftClusterNodePool {
+		np := &api.HCPOpenShiftClusterNodePool{
+			Properties: api.HCPOpenShiftClusterNodePoolProperties{
+				Version: api.NodePoolVersionProfile{ChannelGroup: "stable"},
+			},
+		}
+		if subnetID != "" {
+			np.Properties.Platform.SubnetID = parseID(subnetID)
+		}
+		return np
+	}
+
+	tests := []struct {
+		name      string
+		newObj    *api.HCPOpenShiftClusterNodePool
+		oldObj    *api.HCPOpenShiftClusterNodePool
+		expectErr string
+	}{
+		{
+			name:   "create: subnet matches cluster subnet (same cluster reuse allowed)",
+			newObj: nodePoolWithSubnet(clusterSubnet),
+		},
+		{
+			name:   "create: subnet in same VNet allowed",
+			newObj: nodePoolWithSubnet(sameVNetSubnet),
+		},
+		{
+			name:      "create: subnet in different VNet rejected",
+			newObj:    nodePoolWithSubnet(differentVNetSubnet),
+			expectErr: "must belong to the same VNet as the parent cluster VNet",
+		},
+		{
+			name:   "update: unchanged subnet in different VNet not re-validated",
+			oldObj: nodePoolWithSubnet(sameVNetSubnet),
+			newObj: nodePoolWithSubnet(sameVNetSubnet),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			errs := AdmitNodePool(tt.newObj, tt.oldObj, cluster)
+			if tt.expectErr == "" {
+				assert.Empty(t, errs)
+				return
+			}
+			require.NotEmpty(t, errs)
+			found := false
+			for _, e := range errs {
+				if strings.Contains(e.Error(), tt.expectErr) {
+					found = true
+					break
+				}
+			}
+			assert.True(t, found, "expected error containing %q, got %v", tt.expectErr, errs)
+		})
+	}
+}
+
 // assertNodePoolEqual compares node pools via their JSON representations so
 // that pointers to types with unexported fields (e.g. *azcorearm.ResourceID)
 // are compared by their externally-visible state.
