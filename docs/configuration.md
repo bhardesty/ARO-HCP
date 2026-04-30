@@ -1,6 +1,6 @@
 # Configuration Management
-The [ARO Tools Documentation](https://github.com/Azure/ARO-Tools/blob/main/config/README.md) explains in greater detail about how the config templates are used. 
-It's important to note that these configuration files are **Go Templates** and no valid YAML without rendering. This can be confusing with the .yaml file extensions, but is a very important as any misplaced linting would not catch the difference. To render these files use the ARO-Tools library. 
+The [ARO Tools Documentation](https://github.com/Azure/ARO-Tools/blob/main/config/README.md) explains in greater detail how the configuration templates are used.
+It is important to note that these configuration files are **Go templates** and are not valid YAML until they are rendered. The `.yaml` file extension can therefore be misleading, and linters may not catch issues caused by template syntax versus YAML syntax. Use the ARO-Tools library to render these files.
 
 ## Purpose of Configuration Management Strategy
 Managing configuration effectively is crucial for ensuring that deployments remain consistent and adaptable to various environments. Configuration data for every aspect of ARO HCP is stored in a configuration file and used for infrastructure and service deployments alike.
@@ -201,7 +201,7 @@ By enforcing a schema, configuration files remain predictable and can be automat
 2. Inspect the effects of the changes in the materialized configuration files.
 3. Commit the materialized files, open a PR, review, and merge.
 
-Check the section about to [Propagate Configuration Changes](#propagate-configuration-changes) for more details.
+Check [Propagate Configuration Changes](#propagate-configuration-changes) for more details.
 
 ## Propagate Configuration Changes
 
