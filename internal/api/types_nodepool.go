@@ -83,7 +83,7 @@ type NodePoolVersionProfile struct {
 // NodePoolPlatformProfile represents a worker node pool configuration.
 // Visibility for the entire struct is "read create".
 type NodePoolPlatformProfile struct {
-	// Subnet can be nil and when it is nil, that means "use the cluster subnet field"
+	// If SubnetID is nil on CREATE, mutation defaults it to the cluster subnet.
 	SubnetID               *azcorearm.ResourceID `json:"subnetId,omitempty"`
 	VMSize                 string                `json:"vmSize,omitempty"`
 	EnableEncryptionAtHost bool                  `json:"enableEncryptionAtHost"`

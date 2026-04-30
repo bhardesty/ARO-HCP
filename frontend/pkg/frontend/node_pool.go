@@ -83,6 +83,12 @@ func (f *Frontend) ArmResourceListNodePools(writer http.ResponseWriter, request 
 	resourceGroupName := request.PathValue(PathSegmentResourceGroupName)
 	clusterName := request.PathValue(PathSegmentResourceName)
 
+	// Verify the parent cluster exists so we return 404 instead of an empty
+	// list for a non-existent cluster (Cosmos List is prefix-based).
+	if _, err := f.dbClient.HCPClusters(subscriptionID, resourceGroupName).Get(ctx, clusterName); err != nil {
+		return utils.TrackError(err)
+	}
+
 	pagedResponse := arm.NewPagedResponse()
 
 	internalNodePoolIterator, err := f.dbClient.HCPClusters(subscriptionID, resourceGroupName).NodePools(clusterName).List(ctx, dbListOptionsFromRequest(request))
@@ -214,12 +220,7 @@ func decodeDesiredNodePoolCreate(ctx context.Context, azureLocation string) (*ap
 	return newInternalNodePool, nil
 }
 
-func (f *Frontend) newNodePoolAdmissionContext(ctx context.Context, nodePoolResourceID *azcorearm.ResourceID) (*admission.NodePoolAdmissionContext, error) {
-	cluster, err := f.getInternalClusterFromStorage(ctx, nodePoolResourceID.Parent)
-	if err != nil {
-		return nil, utils.TrackError(err)
-	}
-
+func (f *Frontend) newNodePoolAdmissionContext(ctx context.Context, cluster *api.HCPOpenShiftCluster) (*admission.NodePoolAdmissionContext, error) {
 	return &admission.NodePoolAdmissionContext{
 		Cluster: cluster,
 	}, nil
@@ -262,7 +263,7 @@ func (f *Frontend) createNodePool(writer http.ResponseWriter, request *http.Requ
 		return utils.TrackError(fmt.Errorf("cluster %s has no ClusterServiceID", cluster.ID))
 	}
 
-	admissionContext, err := f.newNodePoolAdmissionContext(ctx, resourceID)
+	admissionContext, err := f.newNodePoolAdmissionContext(ctx, cluster)
 	if err != nil {
 		return utils.TrackError(err)
 	}
@@ -542,7 +543,7 @@ func (f *Frontend) updateNodePoolInCosmos(ctx context.Context, writer http.Respo
 		return utils.TrackError(err)
 	}
 
-	admissionContext, err := f.newNodePoolAdmissionContext(ctx, oldInternalNodePool.ID)
+	admissionContext, err := f.newNodePoolAdmissionContext(ctx, cluster)
 	if err != nil {
 		return utils.TrackError(err)
 	}
@@ -550,7 +551,7 @@ func (f *Frontend) updateNodePoolInCosmos(ctx context.Context, writer http.Respo
 		Type:    operation.Update,
 		Options: validation.AFECsToValidationOptions(subscription.GetRegisteredFeatures()),
 	}
-	if mutationErrs := admission.MutateNodePool(ctx, admissionContext, restOperation, newInternalNodePool, nil); len(mutationErrs) > 0 {
+	if mutationErrs := admission.MutateNodePool(ctx, admissionContext, restOperation, newInternalNodePool, oldInternalNodePool); len(mutationErrs) > 0 {
 		return utils.TrackError(arm.CloudErrorFromFieldErrors(mutationErrs))
 	}
 

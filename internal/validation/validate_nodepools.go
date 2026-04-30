@@ -37,15 +37,17 @@ func ValidateNodePool(ctx context.Context, op operation.Operation, newObj, oldOb
 	return validateNodePool(ctx, op, newObj, oldObj)
 }
 
-var (
-	toNodePoolTrackedResource = func(oldObj *api.HCPOpenShiftClusterNodePool) *arm.TrackedResource { return &oldObj.TrackedResource }
-	ToNodePoolProperties      = func(oldObj *api.HCPOpenShiftClusterNodePool) *api.HCPOpenShiftClusterNodePoolProperties {
-		return &oldObj.Properties
-	}
-	toNodePoolServiceProviderProperties = func(oldObj *api.HCPOpenShiftClusterNodePool) *api.HCPOpenShiftClusterNodePoolServiceProviderProperties {
-		return &oldObj.ServiceProviderProperties
-	}
-)
+func toNodePoolTrackedResource(oldObj *api.HCPOpenShiftClusterNodePool) *arm.TrackedResource {
+	return &oldObj.TrackedResource
+}
+
+func ToNodePoolProperties(oldObj *api.HCPOpenShiftClusterNodePool) *api.HCPOpenShiftClusterNodePoolProperties {
+	return &oldObj.Properties
+}
+
+func toNodePoolServiceProviderProperties(oldObj *api.HCPOpenShiftClusterNodePool) *api.HCPOpenShiftClusterNodePoolServiceProviderProperties {
+	return &oldObj.ServiceProviderProperties
+}
 
 func validateNodePool(ctx context.Context, op operation.Operation, newObj, oldObj *api.HCPOpenShiftClusterNodePool) field.ErrorList {
 	errs := field.ErrorList{}
@@ -67,24 +69,37 @@ func validateNodePool(ctx context.Context, op operation.Operation, newObj, oldOb
 	return errs
 }
 
-var (
-	toNodePoolPropertiesProvisioningState = func(oldObj *api.HCPOpenShiftClusterNodePoolProperties) *arm.ProvisioningState {
-		return &oldObj.ProvisioningState
-	}
-	toNodePoolPropertiesVersion = func(oldObj *api.HCPOpenShiftClusterNodePoolProperties) *api.NodePoolVersionProfile {
-		return &oldObj.Version
-	}
-	ToNodePoolPropertiesPlatform = func(oldObj *api.HCPOpenShiftClusterNodePoolProperties) *api.NodePoolPlatformProfile {
-		return &oldObj.Platform
-	}
-	toNodePoolPropertiesReplicas    = func(oldObj *api.HCPOpenShiftClusterNodePoolProperties) *int32 { return &oldObj.Replicas }
-	toNodePoolPropertiesAutoRepair  = func(oldObj *api.HCPOpenShiftClusterNodePoolProperties) *bool { return &oldObj.AutoRepair }
-	toNodePoolPropertiesAutoScaling = func(oldObj *api.HCPOpenShiftClusterNodePoolProperties) *api.NodePoolAutoScaling {
-		return oldObj.AutoScaling
-	}
-	toNodePoolPropertiesLabels = func(oldObj *api.HCPOpenShiftClusterNodePoolProperties) map[string]string { return oldObj.Labels }
-	toNodePoolPropertiesTaints = func(oldObj *api.HCPOpenShiftClusterNodePoolProperties) []api.Taint { return oldObj.Taints }
-)
+func toNodePoolPropertiesProvisioningState(oldObj *api.HCPOpenShiftClusterNodePoolProperties) *arm.ProvisioningState {
+	return &oldObj.ProvisioningState
+}
+
+func toNodePoolPropertiesVersion(oldObj *api.HCPOpenShiftClusterNodePoolProperties) *api.NodePoolVersionProfile {
+	return &oldObj.Version
+}
+
+func ToNodePoolPropertiesPlatform(oldObj *api.HCPOpenShiftClusterNodePoolProperties) *api.NodePoolPlatformProfile {
+	return &oldObj.Platform
+}
+
+func toNodePoolPropertiesReplicas(oldObj *api.HCPOpenShiftClusterNodePoolProperties) *int32 {
+	return &oldObj.Replicas
+}
+
+func toNodePoolPropertiesAutoRepair(oldObj *api.HCPOpenShiftClusterNodePoolProperties) *bool {
+	return &oldObj.AutoRepair
+}
+
+func toNodePoolPropertiesAutoScaling(oldObj *api.HCPOpenShiftClusterNodePoolProperties) *api.NodePoolAutoScaling {
+	return oldObj.AutoScaling
+}
+
+func toNodePoolPropertiesLabels(oldObj *api.HCPOpenShiftClusterNodePoolProperties) map[string]string {
+	return oldObj.Labels
+}
+
+func toNodePoolPropertiesTaints(oldObj *api.HCPOpenShiftClusterNodePoolProperties) []api.Taint {
+	return oldObj.Taints
+}
 
 func validateNodePoolProperties(ctx context.Context, op operation.Operation, fldPath *field.Path, newObj, oldObj *api.HCPOpenShiftClusterNodePoolProperties) field.ErrorList {
 	errs := field.ErrorList{}
