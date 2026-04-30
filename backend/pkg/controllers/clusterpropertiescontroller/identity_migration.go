@@ -94,26 +94,32 @@ func (c *identityMigrationSyncer) NeedsWork(ctx context.Context, existingCluster
 		return true
 	}
 
+	expectedIdentityResourceIDs := map[string]struct{}{}
+	for _, resourceID := range existingCluster.CustomerProperties.Platform.OperatorsAuthentication.UserAssignedIdentities.ControlPlaneOperators {
+		if resourceID != nil {
+			expectedIdentityResourceIDs[resourceID.String()] = struct{}{}
+		}
+	}
+	if serviceManagedIdentity := existingCluster.CustomerProperties.Platform.OperatorsAuthentication.UserAssignedIdentities.ServiceManagedIdentity; serviceManagedIdentity != nil {
+		expectedIdentityResourceIDs[serviceManagedIdentity.String()] = struct{}{}
+	}
+
 	for operatorIdentityResourceIDString, userAssignedIdentity := range existingCluster.Identity.UserAssignedIdentities {
 		if userAssignedIdentity == nil || len(ptr.Deref(userAssignedIdentity.ClientID, "")) == 0 || len(ptr.Deref(userAssignedIdentity.PrincipalID, "")) == 0 {
 			// try to fill in the information.
 			return true
 		}
 
-		controlPlaneExists := false
-		for _, resourceID := range existingCluster.CustomerProperties.Platform.OperatorsAuthentication.UserAssignedIdentities.ControlPlaneOperators {
-			if resourceID != nil && resourceID.String() == operatorIdentityResourceIDString {
-				controlPlaneExists = true
-				break
-			}
-		}
-		if !controlPlaneExists {
+		if _, ok := expectedIdentityResourceIDs[operatorIdentityResourceIDString]; !ok {
 			// need to prune
 			return true
 		}
 	}
 
 	for _, operatorIdentityResourceID := range existingCluster.CustomerProperties.Platform.OperatorsAuthentication.UserAssignedIdentities.ControlPlaneOperators {
+		if operatorIdentityResourceID == nil {
+			return true
+		}
 		userAssignedIdentity, ok := existingCluster.Identity.UserAssignedIdentities[operatorIdentityResourceID.String()]
 		if !ok {
 			return true

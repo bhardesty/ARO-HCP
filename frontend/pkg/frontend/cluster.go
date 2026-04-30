@@ -305,7 +305,9 @@ func (f *Frontend) createHCPCluster(writer http.ResponseWriter, request *http.Re
 	// we must validate using user provided .Identity.UserAssignedIdentities because that is the intent expressed by the user to allow
 	// us to use these identities. The information contained in those key is not trusted to be accurate, so we clear this field and set to
 	// a valid, but empty set of information
-	newInternalCluster.Identity.UserAssignedIdentities = nil
+	if newInternalCluster.Identity != nil {
+		newInternalCluster.Identity.UserAssignedIdentities = nil
+	}
 	completeClusterIdentity(newInternalCluster, nil)
 
 	var tenantID string
@@ -588,8 +590,14 @@ func (f *Frontend) updateHCPClusterInCosmos(ctx context.Context, writer http.Res
 	// we must validate using user provided .Identity.UserAssignedIdentities because that is the intent expressed by the user to allow
 	// us to use these identities. The information contained in those key is not trusted to be accurate, so we clear this field and set to
 	// a valid, but empty set of information
-	newInternalCluster.Identity.UserAssignedIdentities = nil
-	completeClusterIdentity(newInternalCluster, oldInternalCluster.Identity.UserAssignedIdentities)
+	if newInternalCluster.Identity != nil {
+		newInternalCluster.Identity.UserAssignedIdentities = nil
+	}
+	var existingUserAssignedIdentities map[string]*arm.UserAssignedIdentity
+	if oldInternalCluster.Identity != nil {
+		existingUserAssignedIdentities = oldInternalCluster.Identity.UserAssignedIdentities
+	}
+	completeClusterIdentity(newInternalCluster, existingUserAssignedIdentities)
 
 	var tenantID string
 	if subscription.Properties != nil && subscription.Properties.TenantId != nil {
@@ -893,6 +901,9 @@ func completeClusterIdentity(cluster *api.HCPOpenShiftCluster, existingUserAssig
 
 	// set default .Identity.UserAssignedIdentities if none exist for required entry.
 	for _, operatorIdentityResourceID := range cluster.CustomerProperties.Platform.OperatorsAuthentication.UserAssignedIdentities.ControlPlaneOperators {
+		if operatorIdentityResourceID == nil {
+			continue
+		}
 		allExpectedKeys.Insert(operatorIdentityResourceID.String())
 		if cluster.Identity == nil {
 			cluster.Identity = &arm.ManagedServiceIdentity{}
@@ -928,9 +939,11 @@ func completeClusterIdentity(cluster *api.HCPOpenShiftCluster, existingUserAssig
 		}
 	}
 
-	for key := range cluster.Identity.UserAssignedIdentities {
-		if !allExpectedKeys.Has(key) {
-			delete(cluster.Identity.UserAssignedIdentities, key)
+	if cluster.Identity != nil {
+		for key := range cluster.Identity.UserAssignedIdentities {
+			if !allExpectedKeys.Has(key) {
+				delete(cluster.Identity.UserAssignedIdentities, key)
+			}
 		}
 	}
 }

@@ -331,7 +331,7 @@ func convertCIDRBlockAllowAccessRPToCS(in api.CustomerAPIProfile) (*arohcpv1alph
 	return arohcpv1alpha1.NewCIDRBlockAccess().Allow(cidrBlockAllowAccess), nil
 }
 
-// GetClusterServiceUserAssignedIdentities converts a CS Cluster object into an HCPOpenShiftCluster object.
+// GetClusterServiceUserAssignedIdentities extracts user-assigned identities from a CS Cluster object, keyed by resource ID.
 func GetClusterServiceUserAssignedIdentities(clusterServiceCluster *arohcpv1alpha1.Cluster) map[string]*arm.UserAssignedIdentity {
 	ret := make(map[string]*arm.UserAssignedIdentity)
 
