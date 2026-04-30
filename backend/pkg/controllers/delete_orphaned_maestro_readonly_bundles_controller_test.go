@@ -551,6 +551,29 @@ func (g *orphanTestGlobalListersSPNPOnly) ServiceProviderNodePools() database.Gl
 
 var _ database.GlobalListers = (*orphanTestGlobalListersSPNPOnly)(nil)
 
+// hcpClusterGetErrorInjectingDBClient wraps a MockDBClient and forces HCPClusters().Get to return a configurable
+// non-NotFound error. Lets tests exercise the "real Get failure" path without modifying the in-memory mock.
+type hcpClusterGetErrorInjectingDBClient struct {
+	*databasetesting.MockDBClient
+	getErr error
+}
+
+func (e *hcpClusterGetErrorInjectingDBClient) HCPClusters(subscriptionID, resourceGroupName string) database.HCPClusterCRUD {
+	return &hcpClusterGetErrorInjectingCRUD{
+		HCPClusterCRUD: e.MockDBClient.HCPClusters(subscriptionID, resourceGroupName),
+		getErr:         e.getErr,
+	}
+}
+
+type hcpClusterGetErrorInjectingCRUD struct {
+	database.HCPClusterCRUD
+	getErr error
+}
+
+func (e *hcpClusterGetErrorInjectingCRUD) Get(_ context.Context, _ string) (*api.HCPOpenShiftCluster, error) {
+	return nil, e.getErr
+}
+
 func TestDeleteOrphanedMaestroReadonlyBundles_SyncOnce_ListServiceProviderClustersError(t *testing.T) {
 	ctx := utils.ContextWithLogger(context.Background(), testr.New(t))
 	ctrl := gomock.NewController(t)
@@ -750,7 +773,10 @@ func TestDeleteOrphanedMaestroReadonlyBundles_mapServiceProviderClustersByProvis
 		{
 			name: "Get cluster error",
 			setup: func(ctrl *gomock.Controller) (*deleteOrphanedMaestroReadonlyBundles, map[string]*shardMaestroClient, []*api.ServiceProviderCluster) {
-				mockDB := databasetesting.NewMockDBClient()
+				mockDB := &hcpClusterGetErrorInjectingDBClient{
+					MockDBClient: databasetesting.NewMockDBClient(),
+					getErr:       fmt.Errorf("boom"),
+				}
 				mockCS := ocm.NewMockClusterServiceClientSpec(ctrl)
 				spc := &api.ServiceProviderCluster{
 					CosmosMetadata: arm.CosmosMetadata{ResourceID: spcResourceID},
@@ -762,6 +788,23 @@ func TestDeleteOrphanedMaestroReadonlyBundles_mapServiceProviderClustersByProvis
 			},
 			wantErr:   true,
 			errSubstr: "failed to get Cluster",
+		},
+		{
+			name: "cluster not found is silently skipped so its bundles can be reaped as orphans",
+			setup: func(ctrl *gomock.Controller) (*deleteOrphanedMaestroReadonlyBundles, map[string]*shardMaestroClient, []*api.ServiceProviderCluster) {
+				mockDB := databasetesting.NewMockDBClient()
+				mockCS := ocm.NewMockClusterServiceClientSpec(ctrl)
+				spc := &api.ServiceProviderCluster{
+					CosmosMetadata: arm.CosmosMetadata{ResourceID: spcResourceID},
+					ResourceID:     *spcResourceID,
+				}
+				return &deleteOrphanedMaestroReadonlyBundles{cosmosClient: mockDB, clusterServiceClient: mockCS},
+					map[string]*shardMaestroClient{"unused-shard": noopMaestroShardClient},
+					[]*api.ServiceProviderCluster{spc}
+			},
+			validateOut: func(t *testing.T, shardToSPCs map[string][]*api.ServiceProviderCluster) {
+				assert.Empty(t, shardToSPCs)
+			},
 		},
 		{
 			name: "Get provision shard error",
@@ -1043,7 +1086,10 @@ func TestDeleteOrphanedMaestroReadonlyBundles_mapServiceProviderNodePoolsByProvi
 		{
 			name: "Get cluster error",
 			setup: func(ctrl *gomock.Controller) (*deleteOrphanedMaestroReadonlyBundles, map[string]*shardMaestroClient, []*api.ServiceProviderNodePool) {
-				mockDB := databasetesting.NewMockDBClient()
+				mockDB := &hcpClusterGetErrorInjectingDBClient{
+					MockDBClient: databasetesting.NewMockDBClient(),
+					getErr:       fmt.Errorf("boom"),
+				}
 				mockCS := ocm.NewMockClusterServiceClientSpec(ctrl)
 				spnp := &api.ServiceProviderNodePool{
 					CosmosMetadata: arm.CosmosMetadata{ResourceID: spnpResourceID},
@@ -1055,6 +1101,23 @@ func TestDeleteOrphanedMaestroReadonlyBundles_mapServiceProviderNodePoolsByProvi
 			},
 			wantErr:   true,
 			errSubstr: "failed to get Cluster",
+		},
+		{
+			name: "cluster not found is silently skipped so its bundles can be reaped as orphans",
+			setup: func(ctrl *gomock.Controller) (*deleteOrphanedMaestroReadonlyBundles, map[string]*shardMaestroClient, []*api.ServiceProviderNodePool) {
+				mockDB := databasetesting.NewMockDBClient()
+				mockCS := ocm.NewMockClusterServiceClientSpec(ctrl)
+				spnp := &api.ServiceProviderNodePool{
+					CosmosMetadata: arm.CosmosMetadata{ResourceID: spnpResourceID},
+					ResourceID:     *spnpResourceID,
+				}
+				return &deleteOrphanedMaestroReadonlyBundles{cosmosClient: mockDB, clusterServiceClient: mockCS},
+					map[string]*shardMaestroClient{"unused-shard": noopMaestroShardClient},
+					[]*api.ServiceProviderNodePool{spnp}
+			},
+			validateOut: func(t *testing.T, shardToSPNPs map[string][]*api.ServiceProviderNodePool) {
+				assert.Empty(t, shardToSPNPs)
+			},
 		},
 		{
 			name: "Get provision shard error",
