@@ -20,7 +20,8 @@
 		"provisioningState": "Succeeded",
 		"replicas": 0,
 		"version": {
-			"channelGroup": "stable"
+			"channelGroup": "stable",
+			"id": "4.20.8"
 		}
 	},
 	"systemData": {

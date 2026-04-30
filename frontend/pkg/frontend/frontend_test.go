@@ -398,6 +398,7 @@ func TestDeploymentPreflight(t *testing.T) {
 				},
 				"properties": map[string]any{
 					"version": map[string]any{
+						"id":           "4.20.16",
 						"channelGroup": "stable",
 					},
 					"platform": map[string]any{
@@ -421,6 +422,7 @@ func TestDeploymentPreflight(t *testing.T) {
 				},
 				"properties": map[string]any{
 					"version": map[string]any{
+						"id":           "4.20.16",
 						"channelGroup": "stable",
 					},
 					"platform": map[string]any{
