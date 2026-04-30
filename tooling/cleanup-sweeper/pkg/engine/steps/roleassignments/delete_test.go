@@ -121,6 +121,48 @@ func TestEscapeODataString_EscapesSingleQuotes(t *testing.T) {
 	}
 }
 
+func TestAssignmentWithinSubscriptionScope(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name string
+		role *armauthorization.RoleAssignment
+		want bool
+	}{
+		{
+			name: "accepts subscription scope",
+			role: &armauthorization.RoleAssignment{
+				ID: strPtr("/subscriptions/abc/providers/Microsoft.Authorization/roleAssignments/ra1"),
+			},
+			want: true,
+		},
+		{
+			name: "accepts resource group scope",
+			role: &armauthorization.RoleAssignment{
+				ID: strPtr("/subscriptions/abc/resourceGroups/rg-one/providers/Microsoft.Authorization/roleAssignments/ra1"),
+			},
+			want: true,
+		},
+		{
+			name: "rejects management group scope",
+			role: &armauthorization.RoleAssignment{
+				ID: strPtr("/providers/Microsoft.Management/managementGroups/mg1/providers/Microsoft.Authorization/roleAssignments/ra1"),
+			},
+			want: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			got := assignmentWithinSubscriptionScope(tc.role, "/subscriptions/abc")
+			if got != tc.want {
+				t.Fatalf("expected %t, got %t", tc.want, got)
+			}
+		})
+	}
+}
+
 func TestToRoleAssignmentRecord_ReturnsFalseWithoutID(t *testing.T) {
 	t.Parallel()
 
