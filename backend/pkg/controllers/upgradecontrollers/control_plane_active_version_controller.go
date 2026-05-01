@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"slices"
 	"time"
 
 	"github.com/blang/semver/v4"
@@ -106,8 +105,13 @@ func (c *controlPlaneActiveVersionSyncer) SyncOnce(ctx context.Context, key cont
 	if err != nil {
 		return utils.TrackError(fmt.Errorf("failed to get or create ServiceProviderCluster: %w", err))
 	}
+	// Use NeedsUpdate (semantic equality) instead of slices.Equal: HCPClusterActiveVersion holds
+	// *semver.Version, and Go's `==` (which slices.Equal relies on) compares those pointers, not
+	// the represented version. Two independent reads/parses of the same version produce different
+	// pointer addresses, which previously caused a Replace on every reconciliation cycle even
+	// when the active versions were semantically identical.
 	oldActiveVersions := existingServiceProviderCluster.Status.ControlPlaneVersion.ActiveVersions
-	if slices.Equal(oldActiveVersions, newActiveVersions) {
+	if !controllerutils.NeedsUpdate(oldActiveVersions, newActiveVersions) {
 		return nil
 	}
 	logger := utils.LoggerFromContext(ctx)
