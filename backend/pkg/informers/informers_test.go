@@ -665,7 +665,6 @@ func controllerInformerTestCase() informerTestCase {
 			CosmosMetadata: api.CosmosMetadata{
 				ResourceID: controllerResourceID,
 			},
-			ResourceID: controllerResourceID,
 		}
 	}
 
@@ -681,7 +680,6 @@ func controllerInformerTestCase() informerTestCase {
 			CosmosMetadata: api.CosmosMetadata{
 				ResourceID: controllerResourceID,
 			},
-			ResourceID: controllerResourceID,
 		}
 	}
 
@@ -697,7 +695,6 @@ func controllerInformerTestCase() informerTestCase {
 			CosmosMetadata: api.CosmosMetadata{
 				ResourceID: controllerResourceID,
 			},
-			ResourceID: controllerResourceID,
 		}
 	}
 

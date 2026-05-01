@@ -410,7 +410,6 @@ func newTestClusterController(subscriptionID, resourceGroupName, clusterName, co
 		CosmosMetadata: arm.CosmosMetadata{
 			ResourceID: resourceID,
 		},
-		ResourceID: resourceID,
 	}
 }
 
@@ -426,7 +425,6 @@ func newTestNodePoolController(subscriptionID, resourceGroupName, clusterName, n
 		CosmosMetadata: arm.CosmosMetadata{
 			ResourceID: resourceID,
 		},
-		ResourceID: resourceID,
 	}
 }
 
@@ -442,7 +440,6 @@ func newTestExternalAuthController(subscriptionID, resourceGroupName, clusterNam
 		CosmosMetadata: arm.CosmosMetadata{
 			ResourceID: resourceID,
 		},
-		ResourceID: resourceID,
 	}
 }
 

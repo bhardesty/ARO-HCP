@@ -666,7 +666,6 @@ func TestMockResourcesDBClient_Controller_ETagConditionalReplace(t *testing.T) {
 		CosmosMetadata: api.CosmosMetadata{
 			ResourceID: controllerResourceID,
 		},
-		ResourceID: controllerResourceID,
 		ExternalID: clusterResourceID,
 		Status: api.ControllerStatus{
 			Conditions: []metav1.Condition{

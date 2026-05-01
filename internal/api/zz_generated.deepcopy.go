@@ -65,10 +65,6 @@ func (in *ClusterImageRegistryProfile) DeepCopy() *ClusterImageRegistryProfile {
 func (in *Controller) DeepCopyInto(out *Controller) {
 	*out = *in
 	in.CosmosMetadata.DeepCopyInto(&out.CosmosMetadata)
-	if in.ResourceID != nil {
-		in, out := &in.ResourceID, &out.ResourceID
-		*out = arm.DeepCopyResourceID(*in)
-	}
 	if in.ExternalID != nil {
 		in, out := &in.ExternalID, &out.ExternalID
 		*out = arm.DeepCopyResourceID(*in)
