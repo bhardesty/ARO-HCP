@@ -35,7 +35,7 @@ adminApi:
     issuer: Self
     name: admin-api-cert-cspr-usw3
   image:
-    digest: sha256:5d3089ab7df81886f5022ad843ce57a9248407734d625468fe8d768d90fea070
+    digest: sha256:d4951e3789c5bed9769256a1aeb34ac8057886d2d80c067980dabaadb858a0ad
     registry: arohcpsvcdev.azurecr.io
     repository: arohcpadminapi
   k8s:
@@ -102,7 +102,7 @@ backend:
     roleSetName: dev
   exitOnPanic: true
   image:
-    digest: sha256:5e3f784cdb5f8b9c293ac6cd83145be0e52be107ff492e46be53451962360675
+    digest: sha256:b987997a467560eca062af6dc72a9629fe5a5b1126442050ff40e76a0ffe7b61
     registry: arohcpsvcdev.azurecr.io
     repository: arohcpbackend
   k8s:
@@ -205,7 +205,7 @@ clustersService:
 customExporter:
   enabledCollectors: service-tag-usage,kusto-logs-current
   image:
-    digest: sha256:53dfedeb08bafd7caf89a1b7ee0e6c6615e1c44ebe8212a6cff9a63ad548d12b
+    digest: sha256:b5e0f9a58c5e544f3feb36a4b43622fcab53856d917b66fe21fdfe7c438c29d0
     registry: arohcpsvcdev.azurecr.io
     repository: arohcpmetrics
   k8s:
@@ -268,7 +268,7 @@ frontend:
     zoneRedundantMode: Disabled
   exitOnPanic: true
   image:
-    digest: sha256:379ae510e52d7824617538529a4b846bdfee4c8c5d9d1c7750a74f811e56103d
+    digest: sha256:c21cfe7e4485075a8a52ef9d456d09b9c65c787d30807bc109a0aacd8b6e6996
     registry: arohcpsvcdev.azurecr.io
     repository: arohcpfrontend
   k8s:
@@ -398,7 +398,7 @@ hcpRecovery:
 hypershift:
   additionalInstallArg: --enable-cpo-overrides
   image:
-    digest: sha256:db1b3d94a5ddf54f9113def83292a9fbbb823ca9b5b70e9c36f4ea05bd89c86f
+    digest: sha256:4c383775d7101dba751fed52f1f7a255b4a401e2c0bb82bc396e56cc89453aac
     registry: quay.io
     repository: redhat-services-prod/crt-redhat-acm-tenant/hypershift/hypershift-operator
   limitClusterSizes: true
@@ -413,7 +413,7 @@ imageSync:
   ocMirror:
     enabled: true
     image:
-      digest: sha256:ce582bec4910ab6e3b57801f7709171d5a4dde2f4cbd326f9ed213c9e55b41d2
+      digest: sha256:153b8a20c2c0ce20f1c88c08894bf6e12130083270814fae94e4346a05909c9c
       registry: arohcpsvcdev.azurecr.io
       repository: image-sync/oc-mirror
     jobNamePrefix: ""
@@ -819,7 +819,7 @@ sessiongate:
     issuer: Self
     name: sessiongate-cert-cspr-usw3
   image:
-    digest: sha256:87ef7ed3135e4c416380ec579089340a0bff82e208a6dddae17a4f51dfe6a74c
+    digest: sha256:f88600f723296bbeeb1c92c92a8abba902933b62da7539b29680544b9ba81939
     registry: arohcpsvcdev.azurecr.io
     repository: arohcpsessiongate
   k8s:
