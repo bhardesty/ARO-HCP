@@ -118,7 +118,7 @@ spec:
         - name: OPERAND_IMAGE_REGISTRATION_OPERATOR
           value: '{{ .Values.imageRegistry }}/{{ .Values.imageRootRepository }}/registration-operator-rhel9@sha256:9ef595be566a7348baa9618e2e4881f675026cc9257a8d495f0cda4565c95a84'
         - name: OPERAND_IMAGE_WORK
-          value: '{{ .Values.imageRegistry }}/{{ .Values.imageRootRepository }}/work-rhel9@sha256:a5d2a8dd597de3459a19e213db398c26b6fcdafe714a7545f24dba4a9abd6c29'
+          value: '{{ .Values.imageRegistry }}/{{ .Values.imageRootRepository }}/work-rhel9@sha256:74e8f27d3e4c34cd405d0e669817d6929cbe9557d963a401dfdf233d25e3584f'
         - name: OPERAND_IMAGE_ASSISTED_IMAGE_SERVICE
           value: '{{ .Values.imageRegistry }}/{{ .Values.imageRootRepository }}/assisted-image-service-rhel9@sha256:92f37d4e62d0be6705e275da4afcdbb5817bee2cffe10615c27935b0bebebccf'
         - name: OPERAND_IMAGE_ASSISTED_INSTALLER
