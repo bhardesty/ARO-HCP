@@ -356,11 +356,24 @@ generate-kiota:
 PERS_OVERRIDE_FILE ?= /tmp/personal-dev-override.yaml
 
 build-services:
-	$(MAKE) -C frontend build-and-push
-	$(MAKE) -C backend build-and-push
-	$(MAKE) -C admin build-and-push
-	$(MAKE) -C sessiongate build-and-push
+	$(MAKE) -j4 build-frontend build-backend build-admin build-sessiongate
 .PHONY: build-services
+
+build-frontend:
+	$(MAKE) -C frontend build-and-push
+.PHONY: build-frontend
+
+build-backend:
+	$(MAKE) -C backend build-and-push
+.PHONY: build-backend
+
+build-admin:
+	$(MAKE) -C admin build-and-push
+.PHONY: build-admin
+
+build-sessiongate:
+	$(MAKE) -C sessiongate build-and-push
+.PHONY: build-sessiongate
 
 record-services-override: $(YQ) $(ORAS)
 	$(MAKE) -C frontend record-override OVERRIDE_CONFIG_FILE=/tmp/_frontend-override.yaml
