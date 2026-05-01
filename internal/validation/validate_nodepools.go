@@ -41,6 +41,9 @@ func toNodePoolTrackedResource(oldObj *api.HCPOpenShiftClusterNodePool) *arm.Tra
 	return &oldObj.TrackedResource
 }
 
+// ToNodePoolProperties returns a pointer to the Properties field of a node pool.
+// It is exported for use as a field accessor with safe.Field by external callers
+// (e.g. admission code) that need to navigate into the Properties subtree.
 func ToNodePoolProperties(oldObj *api.HCPOpenShiftClusterNodePool) *api.HCPOpenShiftClusterNodePoolProperties {
 	return &oldObj.Properties
 }
@@ -77,6 +80,10 @@ func toNodePoolPropertiesVersion(oldObj *api.HCPOpenShiftClusterNodePoolProperti
 	return &oldObj.Version
 }
 
+// ToNodePoolPropertiesPlatform returns a pointer to the Platform field of node
+// pool properties. It is exported for use as a field accessor with safe.Field
+// by external callers (e.g. admission code) that need to navigate into the
+// Platform subtree.
 func ToNodePoolPropertiesPlatform(oldObj *api.HCPOpenShiftClusterNodePoolProperties) *api.NodePoolPlatformProfile {
 	return &oldObj.Platform
 }

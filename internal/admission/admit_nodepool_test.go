@@ -119,8 +119,8 @@ func TestMutateNodePool(t *testing.T) {
 
 func TestAdmitNodePool_SubnetVNet(t *testing.T) {
 	const (
-		clusterSubnet      = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg/providers/Microsoft.Network/virtualNetworks/cluster-vnet/subnets/cluster-subnet"
-		sameVNetSubnet     = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg/providers/Microsoft.Network/virtualNetworks/cluster-vnet/subnets/np-subnet"
+		clusterSubnet       = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg/providers/Microsoft.Network/virtualNetworks/cluster-vnet/subnets/cluster-subnet"
+		sameVNetSubnet      = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg/providers/Microsoft.Network/virtualNetworks/cluster-vnet/subnets/np-subnet"
 		differentVNetSubnet = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg/providers/Microsoft.Network/virtualNetworks/other-vnet/subnets/np-subnet"
 	)
 
@@ -168,8 +168,14 @@ func TestAdmitNodePool_SubnetVNet(t *testing.T) {
 		},
 		{
 			name:   "update: unchanged subnet in different VNet not re-validated",
-			oldObj: nodePoolWithSubnet(sameVNetSubnet),
-			newObj: nodePoolWithSubnet(sameVNetSubnet),
+			oldObj: nodePoolWithSubnet(differentVNetSubnet),
+			newObj: nodePoolWithSubnet(differentVNetSubnet),
+		},
+		{
+			name:      "update: subnet changed to different VNet rejected",
+			oldObj:    nodePoolWithSubnet(sameVNetSubnet),
+			newObj:    nodePoolWithSubnet(differentVNetSubnet),
+			expectErr: "must belong to the same VNet as the parent cluster VNet",
 		},
 	}
 

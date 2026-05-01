@@ -30,10 +30,15 @@ import (
 	"github.com/Azure/ARO-HCP/internal/validation"
 )
 
+// NodePoolAdmissionContext carries dependencies that node pool mutation needs
+// beyond the node pool object itself, currently the parent cluster.
 type NodePoolAdmissionContext struct {
 	Cluster *api.HCPOpenShiftCluster
 }
 
+// MutateNodePool applies admission-time mutations to a node pool (e.g. defaulting
+// the subnet from the parent cluster on CREATE). It returns any field errors
+// produced by the mutation step.
 func MutateNodePool(ctx context.Context, admissionContext *NodePoolAdmissionContext, op operation.Operation, newObj, oldObj *api.HCPOpenShiftClusterNodePool) field.ErrorList {
 	errs := field.ErrorList{}
 
@@ -78,17 +83,25 @@ func AdmitNodePool(newNodePool, oldNodePool *api.HCPOpenShiftClusterNodePool, cl
 		))
 	}
 
-	// Check only if it is a creating nodepool or a change in the Subnet
-	if (oldNodePool == nil || newNodePool.Properties.Platform.SubnetID != oldNodePool.Properties.Platform.SubnetID) &&
-		newNodePool.Properties.Platform.SubnetID != nil && cluster.CustomerProperties.Platform.SubnetID != nil {
-		clusterVNet := cluster.CustomerProperties.Platform.SubnetID.Parent.String()
-		nodePoolVNet := newNodePool.Properties.Platform.SubnetID.Parent.String()
-		if !strings.EqualFold(nodePoolVNet, clusterVNet) {
-			errs = append(errs, field.Invalid(
-				field.NewPath("properties", "platform", "subnetId"),
-				newNodePool.Properties.Platform.SubnetID,
-				fmt.Sprintf("must belong to the same VNet as the parent cluster VNet '%s'", clusterVNet),
-			))
+	// Check only if it is a creating nodepool or a change in the Subnet.
+	// Compare by string value (not pointer identity) so equal-but-distinct
+	// *azcorearm.ResourceID values aren't treated as a change.
+	if newNodePool.Properties.Platform.SubnetID != nil && cluster.CustomerProperties.Platform.SubnetID != nil {
+		var oldSubnetID string
+		if oldNodePool != nil && oldNodePool.Properties.Platform.SubnetID != nil {
+			oldSubnetID = oldNodePool.Properties.Platform.SubnetID.String()
+		}
+		newSubnetID := newNodePool.Properties.Platform.SubnetID.String()
+		if oldNodePool == nil || !strings.EqualFold(newSubnetID, oldSubnetID) {
+			clusterVNet := cluster.CustomerProperties.Platform.SubnetID.Parent.String()
+			nodePoolVNet := newNodePool.Properties.Platform.SubnetID.Parent.String()
+			if !strings.EqualFold(nodePoolVNet, clusterVNet) {
+				errs = append(errs, field.Invalid(
+					field.NewPath("properties", "platform", "subnetId"),
+					newNodePool.Properties.Platform.SubnetID,
+					fmt.Sprintf("must belong to the same VNet as the parent cluster VNet '%s'", clusterVNet),
+				))
+			}
 		}
 	}
 
