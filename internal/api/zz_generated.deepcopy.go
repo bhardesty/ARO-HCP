@@ -960,7 +960,6 @@ func (in MaestroBundleReferenceList) DeepCopy() MaestroBundleReferenceList {
 func (in *ManagementClusterContent) DeepCopyInto(out *ManagementClusterContent) {
 	*out = *in
 	in.CosmosMetadata.DeepCopyInto(&out.CosmosMetadata)
-	out.ResourceID = *arm.DeepCopyResourceID(&in.ResourceID)
 	in.Status.DeepCopyInto(&out.Status)
 	return
 }

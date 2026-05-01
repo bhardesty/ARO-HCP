@@ -464,7 +464,6 @@ func newTestClusterScopedManagementClusterContent(subscriptionID, resourceGroupN
 	))
 	return &api.ManagementClusterContent{
 		CosmosMetadata: arm.CosmosMetadata{ResourceID: resourceID},
-		ResourceID:     *resourceID,
 	}
 }
 
@@ -478,6 +477,5 @@ func newTestNodePoolScopedManagementClusterContent(subscriptionID, resourceGroup
 	))
 	return &api.ManagementClusterContent{
 		CosmosMetadata: arm.CosmosMetadata{ResourceID: resourceID},
-		ResourceID:     *resourceID,
 	}
 }
