@@ -238,6 +238,42 @@ func TestControlPlaneActiveVersionSyncer_SyncOnce(t *testing.T) {
 	}
 }
 
+// TestControlPlaneActiveVersionSyncer_NoReplaceWhenVersionsUnchanged is a regression test for
+// unnecessary writes against ServiceProviderClusters/default. The previous comparison used
+// slices.Equal on []HCPClusterActiveVersion, where each element holds a *semver.Version. Two
+// independently-parsed semver pointers compare unequal under Go's `==` even when the represented
+// versions are identical, so every reconciliation produced a Replace whose only effect was a new
+// _etag / _ts / properties.cosmosMetadata.etag.
+func TestControlPlaneActiveVersionSyncer_NoReplaceWhenVersionsUnchanged(t *testing.T) {
+	runCtx := utils.ContextWithLogger(context.Background(), logr.Discard())
+	mockDB := databasetesting.NewMockDBClient()
+
+	createTestHCPCluster(t, runCtx, mockDB)
+	createServiceProviderClusterWithVersion(t, runCtx, mockDB, "4.19.15")
+	createManagementClusterContentWithHostedClusterHistory(t, runCtx, mockDB, []configv1.UpdateHistory{
+		{Version: "4.19.15", State: configv1.CompletedUpdate},
+	})
+
+	spcCRUD := mockDB.ServiceProviderClusters(testSubscriptionID, testResourceGroupName, testClusterName)
+	before, err := spcCRUD.Get(runCtx, api.ServiceProviderClusterResourceName)
+	require.NoError(t, err)
+	beforeETag := before.CosmosETag
+
+	syncer := &controlPlaneActiveVersionSyncer{
+		cooldownChecker: &alwaysSyncCooldownChecker{},
+		cosmosClient:    mockDB,
+	}
+	require.NoError(t, syncer.SyncOnce(runCtx, controllerutils.HCPClusterKey{
+		SubscriptionID:    testSubscriptionID,
+		ResourceGroupName: testResourceGroupName,
+		HCPClusterName:    testClusterName,
+	}))
+
+	after, err := spcCRUD.Get(runCtx, api.ServiceProviderClusterResourceName)
+	require.NoError(t, err)
+	assert.Equal(t, beforeETag, after.CosmosETag, "ServiceProviderCluster.CosmosETag changed despite identical ActiveVersions; the syncer wrote unnecessarily")
+}
+
 // createTestHCPCluster creates an HCP cluster in the mock database (no node pools).
 // Used as the parent resource for control plane active version sync.
 func createTestHCPCluster(t *testing.T, ctx context.Context, mockDB *databasetesting.MockDBClient) {

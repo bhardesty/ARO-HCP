@@ -242,6 +242,27 @@ func TestMaestroReadonlyBundleHelpers_getSingleResourceStatusFeedbackRawJSONFrom
 	}
 }
 
+// callCountingMCCCRUD wraps ManagementClusterContentCRUD to count calls to Replace and Create
+// so tests can assert that no unnecessary writes happen when the desired and existing documents
+// match.
+type callCountingMCCCRUD struct {
+	database.ManagementClusterContentCRUD
+	replaceCount int
+	createCount  int
+}
+
+func (c *callCountingMCCCRUD) Replace(ctx context.Context, obj *api.ManagementClusterContent, opts *azcosmos.ItemOptions) (*api.ManagementClusterContent, error) {
+	c.replaceCount++
+	return c.ManagementClusterContentCRUD.Replace(ctx, obj, opts)
+}
+
+func (c *callCountingMCCCRUD) Create(ctx context.Context, obj *api.ManagementClusterContent, opts *azcosmos.ItemOptions) (*api.ManagementClusterContent, error) {
+	c.createCount++
+	return c.ManagementClusterContentCRUD.Create(ctx, obj, opts)
+}
+
+var _ database.ManagementClusterContentCRUD = &callCountingMCCCRUD{}
+
 // errorInjectingMCCCRUD wraps ManagementClusterContentCRUD to allow error injection for testing.
 type errorInjectingMCCCRUD struct {
 	database.ManagementClusterContentCRUD
@@ -544,6 +565,38 @@ func TestMaestroReadonlyBundleHelpers_readAndPersistMaestroReadonlyBundleContent
 		require.NoError(t, err)
 		require.NotNil(t, got.Status.KubeContent)
 		require.Len(t, got.Status.KubeContent.Items, 1)
+	})
+
+	t.Run("Replace is not called when desired matches existing", func(t *testing.T) {
+		// Regression test: when readAndPersistMaestroReadonlyBundleContent is invoked repeatedly
+		// against unchanged content, it should not write to Cosmos. Previously the equality check
+		// compared `existing` (which has CosmosMetadata.ExistingCosmosUID populated by the read
+		// conversion) with a freshly-built `desired` (where ExistingCosmosUID is empty). Because
+		// equality.Semantic.DeepEqual sees those struct fields differ, Replace was called every
+		// iteration even when the document content was identical, generating churn (new etag /
+		// timestamp on each write).
+		ctrl := gomock.NewController(t)
+		mockMaestro := maestro.NewMockClient(ctrl)
+		b := buildTestMaestroBundleWithStatusFeedback("bundle-name", "ns", validHCJSON)
+		// Get is called once when building desired for pre-create, and once inside readAndPersistMaestroReadonlyBundleContent.
+		mockMaestro.EXPECT().Get(gomock.Any(), "bundle-name", gomock.Any()).Return(b, nil).Times(2)
+
+		mockDB := databasetesting.NewMockDBClient()
+		baseMCCCRUD := mockDB.HCPClusters("sub", "rg").ManagementClusterContents("cluster")
+		desired, err := calculateManagementClusterContentFromMaestroBundle(ctx, cluster.ID, ref, mockMaestro)
+		require.NoError(t, err)
+		require.NotNil(t, desired)
+		// Pre-create the same content via the underlying CRUD (so the counter wrapper isn't
+		// charged for setup work).
+		_, err = baseMCCCRUD.Create(ctx, desired, nil)
+		require.NoError(t, err)
+
+		counter := &callCountingMCCCRUD{ManagementClusterContentCRUD: baseMCCCRUD}
+		err = readAndPersistMaestroReadonlyBundleContent(ctx, cluster.ID, ref, mockMaestro, counter)
+		require.NoError(t, err)
+
+		assert.Equal(t, 0, counter.replaceCount, "expected no Replace calls when desired matches existing; CosmosMetadata.ExistingCosmosUID populated by the read conversion is not copied to desired and trips equality.Semantic.DeepEqual")
+		assert.Equal(t, 0, counter.createCount, "Create should not be called when the document already exists")
 	})
 
 	t.Run("error occurs when object has been modified in Cosmos since we retrieved it", func(t *testing.T) {

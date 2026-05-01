@@ -20,7 +20,6 @@ import (
 
 	workv1 "open-cluster-management.io/api/work/v1"
 
-	"k8s.io/apimachinery/pkg/api/equality"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -322,7 +321,7 @@ func readAndPersistMaestroReadonlyBundleContent(
 	}
 	desired.Status.Conditions = mergedConditions
 
-	if equality.Semantic.DeepEqual(existing, desired) {
+	if !controllerutils.NeedsUpdate(existing, desired) {
 		return nil
 	}
 
