@@ -42,14 +42,27 @@ type logEntry struct {
 
 // contentData represents the content object in the log JSON
 type contentData struct {
+	ResourceID     string             `json:"resourceID"`
+	ExternalId     string             `json:"externalId"`
+	Request        string             `json:"request"`
+	CosmosMetadata *cosmosMetadataRef `json:"cosmosMetadata,omitempty"`
+}
+
+// cosmosMetadataRef is the relevant slice of arm.CosmosMetadata as serialized inside `content`.
+// Resource types whose top-level envelope no longer carries a redundant `resourceID` (e.g.
+// Operation, ManagementClusterContent) only expose it here.
+type cosmosMetadataRef struct {
 	ResourceID string `json:"resourceID"`
-	ExternalId string `json:"externalId"`
-	Request    string `json:"request"`
 }
 
 // logData represents the full log JSON structure
 type logData struct {
-	Content *contentData `json:"content"`
+	// CurrentResourceID is the structured-logging key DumpDataToLogger sets alongside `content`
+	// for every dumped record. It's populated even when the inner content has no top-level
+	// resourceID (operation statuses, etc.), so it's our most reliable source of the document's
+	// ARM resource ID.
+	CurrentResourceID string       `json:"currentResourceID"`
+	Content           *contentData `json:"content"`
 }
 
 // dataDumpEntry represents a parsed data dump entry
@@ -218,9 +231,14 @@ func parseCSVFile(path string) ([]dataDumpEntry, error) {
 
 // looksLikeDataDump is a coarse substring filter to skip log lines that
 // clearly aren't data-dump entries before we attempt JSON parsing.
+//
+// We match against tokens from the *explicit* logger.Info call (the msg text or the log
+// keys / values we control). Tokens that only appear because of incidental Go-runtime metadata
+// (e.g. the receiver type name leaking into source.function) are too brittle to rely on:
+// LogValues.AddControllerName lowercases the controller name, so the registered controller name
+// "SubscriptionNonClusterDataDump" lands on the wire as "subscriptionnonclusterdatadump".
 func looksLikeDataDump(logJSON string) bool {
-	return strings.Contains(logJSON, "DumpDataToLogger") ||
-		strings.Contains(logJSON, "subscriptionNonClusterDataDump") ||
+	return strings.Contains(logJSON, "dumping resourceID ") ||
 		strings.Contains(logJSON, "cluster-service state dump") ||
 		strings.Contains(logJSON, "cluster-service node pool state dump")
 }
@@ -381,15 +399,28 @@ func extractStringField(logJSON, field string) string {
 	return s
 }
 
-// extractResourceID extracts the resource ID from .content.resourceID
+// extractResourceID extracts the resource ID of the dumped record. It tries, in order:
+//  1. The top-level structured-logging `currentResourceID` key set by DumpDataToLogger. This is
+//     always present for data dumps and is the only reliable location for record types whose
+//     `content` does not carry its own top-level `resourceID` (e.g. hcpOperationStatuses,
+//     managementClusterContents).
+//  2. `.content.resourceID` for record types whose envelope still serializes it (clusters,
+//     nodepools, externalauths).
+//  3. `.content.cosmosMetadata.resourceID` as a final fallback.
 func extractResourceID(logJSON string) string {
 	var data logData
 	if err := json.Unmarshal([]byte(logJSON), &data); err != nil {
 		return ""
 	}
 
+	if data.CurrentResourceID != "" {
+		return data.CurrentResourceID
+	}
 	if data.Content != nil && data.Content.ResourceID != "" {
 		return data.Content.ResourceID
+	}
+	if data.Content != nil && data.Content.CosmosMetadata != nil && data.Content.CosmosMetadata.ResourceID != "" {
+		return data.Content.CosmosMetadata.ResourceID
 	}
 	return ""
 }
