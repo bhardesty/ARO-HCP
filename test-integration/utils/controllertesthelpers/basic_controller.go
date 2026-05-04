@@ -64,6 +64,9 @@ func (tc *BasicControllerTest) RunTest(t *testing.T) {
 	testDir, err := fs.Sub(tc.ArtifactDir, tc.Name)
 	require.NoError(t, err)
 
+	_, err = fs.Lstat(tc.ArtifactDir, tc.Name)
+	require.NoError(t, err)
+
 	ctx = utils.ContextWithLogger(ctx, integrationutils.DefaultLogger(t))
 	logger := utils.LoggerFromContext(ctx)
 	logger = tc.ControllerKey.AddLoggerValues(logger)
