@@ -17,7 +17,6 @@ package operationcontrollers
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -689,11 +688,15 @@ func SetDeleteOperationAsCompleted(ctx context.Context, cosmosClient database.DB
 			continue
 		}
 
-		resourceInfo := database.ResourceDocument{}
-		if err := json.Unmarshal(childResource.Properties, &resourceInfo); err != nil {
-			return utils.TrackError(err)
+		// Use childResource.ResourceID directly. Earlier code parsed childResource.Properties
+		// into a ResourceDocument and used its ResourceID, but that field is no longer present
+		// at properties' top level (it lives inside intermediateResourceDoc, or only in
+		// CosmosMetadata). The TypedDocument-level ResourceID is preserved across that
+		// migration and is the authoritative ARM ID for the document.
+		if childResource.ResourceID == nil {
+			return utils.TrackError(fmt.Errorf("child resource at cosmosID %q has no resourceID; refusing to delete", childResource.ID))
 		}
-		if err := untypedCRUD.Delete(ctx, resourceInfo.ResourceID); err != nil {
+		if err := untypedCRUD.Delete(ctx, childResource.ResourceID); err != nil {
 			return utils.TrackError(err)
 		}
 	}
