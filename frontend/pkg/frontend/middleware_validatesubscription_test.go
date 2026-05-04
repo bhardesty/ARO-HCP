@@ -235,6 +235,11 @@ func TestMiddlewareValidateSubscription(t *testing.T) {
 
 			assert.Equal(t, tt.expectedState, subscription.State)
 
+			// Verify the subscription was stashed in the request context.
+			stashedSubscription, err := SubscriptionFromContext(request.Context())
+			assert.NoError(t, err)
+			assert.Equal(t, subscription.ResourceID, stashedSubscription.ResourceID)
+
 			// Check that the attributes have been added to the span too.
 			ss := sr.collect()
 			require.Len(t, ss, 1)
