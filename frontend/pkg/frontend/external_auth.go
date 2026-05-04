@@ -28,7 +28,6 @@ import (
 	azcorearm "github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos"
 
-	arohcpv1alpha1 "github.com/openshift-online/ocm-sdk-go/arohcp/v1alpha1"
 	ocmerrors "github.com/openshift-online/ocm-sdk-go/errors"
 
 	"github.com/Azure/ARO-HCP/internal/api"
@@ -71,7 +70,6 @@ func (f *Frontend) GetExternalAuth(writer http.ResponseWriter, request *http.Req
 
 func (f *Frontend) ArmResourceListExternalAuths(writer http.ResponseWriter, request *http.Request) error {
 	ctx := request.Context()
-	logger := utils.LoggerFromContext(ctx)
 
 	versionedInterface, err := VersionFromContext(ctx)
 	if err != nil {
@@ -82,23 +80,25 @@ func (f *Frontend) ArmResourceListExternalAuths(writer http.ResponseWriter, requ
 	resourceGroupName := request.PathValue(PathSegmentResourceGroupName)
 	resourceName := request.PathValue(PathSegmentResourceName)
 
-	internalCluster, err := f.dbClient.HCPClusters(subscriptionID, resourceGroupName).Get(ctx, resourceName)
+	// Verify the parent cluster exists so we return 404 instead of an empty list for a non-existent cluster (Cosmos List is prefix-based)
+	_, err = f.dbClient.HCPClusters(subscriptionID, resourceGroupName).Get(ctx, resourceName)
 	if err != nil {
 		return utils.TrackError(err)
-	}
-	if internalCluster.ServiceProviderProperties.ClusterServiceID == nil {
-		return utils.TrackError(fmt.Errorf("cluster %s has no ClusterServiceID", internalCluster.ID))
 	}
 
 	pagedResponse := arm.NewPagedResponse()
 
-	externalAuthsByClusterServiceID := make(map[string]*api.HCPOpenShiftClusterExternalAuth)
 	internalExternalAuthIterator, err := f.dbClient.HCPClusters(subscriptionID, resourceGroupName).ExternalAuth(resourceName).List(ctx, dbListOptionsFromRequest(request))
 	if err != nil {
 		return utils.TrackError(err)
 	}
 	for _, externalAuth := range internalExternalAuthIterator.Items(ctx) {
-		externalAuthsByClusterServiceID[externalAuth.ServiceProviderProperties.ClusterServiceID.ID()] = externalAuth
+		resultingExternalExternalAuth := versionedInterface.NewHCPOpenShiftClusterExternalAuth(externalAuth)
+		jsonBytes, err := arm.MarshalJSON(resultingExternalExternalAuth)
+		if err != nil {
+			return utils.TrackError(err)
+		}
+		pagedResponse.AddValue(jsonBytes)
 	}
 	err = internalExternalAuthIterator.GetError()
 	if err != nil {
@@ -107,35 +107,6 @@ func (f *Frontend) ArmResourceListExternalAuths(writer http.ResponseWriter, requ
 
 	// MiddlewareReferer ensures Referer is present.
 	err = pagedResponse.SetNextLink(request.Referer(), internalExternalAuthIterator.GetContinuationToken())
-	if err != nil {
-		return utils.TrackError(err)
-	}
-
-	// Build a Cluster Service query that looks for
-	// the specific IDs returned by the Cosmos query.
-	queryIDs := make([]string, 0, len(externalAuthsByClusterServiceID))
-	for key := range externalAuthsByClusterServiceID {
-		queryIDs = append(queryIDs, "'"+key+"'")
-	}
-	query := fmt.Sprintf("id in (%s)", strings.Join(queryIDs, ", "))
-	logger.Info(fmt.Sprintf("Searching Cluster Service for %q", query))
-
-	csIterator := f.clusterServiceClient.ListExternalAuths(*internalCluster.ServiceProviderProperties.ClusterServiceID, query)
-	for csExternalAuth := range csIterator.Items(ctx) {
-		if internalExternalAuth, ok := externalAuthsByClusterServiceID[csExternalAuth.ID()]; ok {
-			internalExternalAuth, err = mergeToInternalExternalAuth(csExternalAuth, internalExternalAuth)
-			if err != nil {
-				return utils.TrackError(err)
-			}
-			resultingExternalExternalAuth := versionedInterface.NewHCPOpenShiftClusterExternalAuth(internalExternalAuth)
-			jsonBytes, err := arm.MarshalJSON(resultingExternalExternalAuth)
-			if err != nil {
-				return utils.TrackError(err)
-			}
-			pagedResponse.AddValue(jsonBytes)
-		}
-	}
-	err = csIterator.GetError()
 	if err != nil {
 		return utils.TrackError(err)
 	}
@@ -177,15 +148,9 @@ func (f *Frontend) CreateOrUpdateExternalAuth(writer http.ResponseWriter, reques
 
 	updating := oldInternalExternalAuth != nil
 	if updating {
-		// re-write oldInternalCluster for as long as cluster-service needs to be consulted for pre-existing state.
-		oldInternalExternalAuth, err = f.readInternalExternalAuthFromClusterService(ctx, oldInternalExternalAuth)
-		if err != nil {
-			return utils.TrackError(err)
-		}
 		if err := checkForProvisioningStateConflict(ctx, f.dbClient, database.OperationRequestUpdate, oldInternalExternalAuth.ID, oldInternalExternalAuth.Properties.ProvisioningState); err != nil {
 			return utils.TrackError(err)
 		}
-
 		switch request.Method {
 		case http.MethodPut:
 			return f.updateExternalAuth(writer, request, oldInternalExternalAuth)
@@ -351,11 +316,6 @@ func (f *Frontend) createExternalAuth(writer http.ResponseWriter, request *http.
 	if !ok {
 		return fmt.Errorf("unexpected type %T", resultingUncastInternalExternalAuth)
 	}
-	// TODO this overwrite will transformed into a "set" function as we transition fields to ownership in cosmos
-	resultingInternalExternalAuth, err = mergeToInternalExternalAuth(csExternalAuth, resultingInternalExternalAuth)
-	if err != nil {
-		return utils.TrackError(err)
-	}
 	responseBytes, err := arm.MarshalJSON(versionedInterface.NewHCPOpenShiftClusterExternalAuth(resultingInternalExternalAuth))
 	if err != nil {
 		return utils.TrackError(err)
@@ -420,6 +380,10 @@ func decodeDesiredExternalAuthReplace(ctx context.Context, oldInternalExternalAu
 	conversion.CopyReadOnlyExternalAuthValues(newInternalExternalAuth, oldInternalExternalAuth)
 	newInternalExternalAuth.SystemData = ensureSystemData(systemData, oldInternalExternalAuth.SystemData)
 
+	// Backstop for fields unknown to this API version's SetDefaultValues*.
+	// See docs/api-version-defaults-and-storage.md.
+	newInternalExternalAuth.EnsureDefaults()
+
 	return newInternalExternalAuth, nil
 }
 
@@ -469,6 +433,10 @@ func decodeDesiredExternalAuthPatch(ctx context.Context, oldInternalExternalAuth
 	conversion.CopyReadOnlyExternalAuthValues(newInternalExternalAuth, oldInternalExternalAuth)
 	newInternalExternalAuth.SystemData = ensureSystemData(systemData, oldInternalExternalAuth.SystemData)
 
+	// Backstop for fields unknown to this API version's SetDefaultValues*.
+	// See docs/api-version-defaults-and-storage.md.
+	newInternalExternalAuth.EnsureDefaults()
+
 	return newInternalExternalAuth, nil
 }
 
@@ -508,7 +476,7 @@ func (f *Frontend) updateExternalAuthInCosmos(ctx context.Context, writer http.R
 	}
 
 	logger.Info(fmt.Sprintf("updating resource %s", oldInternalExternalAuth.ID))
-	csExternalAuth, err := f.clusterServiceClient.UpdateExternalAuth(ctx, oldInternalExternalAuth.ServiceProviderProperties.ClusterServiceID, csExternalAuthBuilder)
+	_, err = f.clusterServiceClient.UpdateExternalAuth(ctx, oldInternalExternalAuth.ServiceProviderProperties.ClusterServiceID, csExternalAuthBuilder)
 	if err != nil {
 		return utils.TrackError(err)
 	}
@@ -557,11 +525,6 @@ func (f *Frontend) updateExternalAuthInCosmos(ctx context.Context, writer http.R
 	resultingInternalExternalAuth, ok := resultingUncastInternalExternalAuth.(*api.HCPOpenShiftClusterExternalAuth)
 	if !ok {
 		return fmt.Errorf("unexpected type %T", resultingUncastInternalExternalAuth)
-	}
-	// TODO this overwrite will transformed into a "set" function as we transition fields to ownership in cosmos
-	resultingInternalExternalAuth, err = mergeToInternalExternalAuth(csExternalAuth, resultingInternalExternalAuth)
-	if err != nil {
-		return utils.TrackError(err)
 	}
 	responseBytes, err := arm.MarshalJSON(versionedInterface.NewHCPOpenShiftClusterExternalAuth(resultingInternalExternalAuth))
 	if err != nil {
@@ -685,22 +648,6 @@ func (f *Frontend) addDeleteExternalAuthToTransaction(ctx context.Context, write
 	return nil
 }
 
-// the necessary conversions for the API version of the request.
-// TODO this overwrite will transformed into a "set" function as we transition fields to ownership in cosmos
-func mergeToInternalExternalAuth(csEternalAuth *arohcpv1alpha1.ExternalAuth, internalObj *api.HCPOpenShiftClusterExternalAuth) (*api.HCPOpenShiftClusterExternalAuth, error) {
-	mergedExternalAuth, err := ocm.ConvertCStoExternalAuth(internalObj.ID, csEternalAuth)
-	if err != nil {
-		return nil, utils.TrackError(err)
-	}
-
-	// this does not use conversion.CopyReadOnly* because some ServiceProvider properties come from cluster-service-only or live reads
-	mergedExternalAuth.SystemData = internalObj.SystemData.DeepCopy()
-	mergedExternalAuth.Properties.ProvisioningState = internalObj.Properties.ProvisioningState
-	mergedExternalAuth.ServiceProviderProperties = *internalObj.ServiceProviderProperties.DeepCopy()
-
-	return mergedExternalAuth, nil
-}
-
 func (f *Frontend) getInternalExternalAuthFromStorage(ctx context.Context, resourceID *azcorearm.ResourceID) (*api.HCPOpenShiftClusterExternalAuth, error) {
 	internalExternalAuth, err := f.dbClient.HCPClusters(resourceID.SubscriptionID, resourceID.ResourceGroupName).ExternalAuth(resourceID.Parent.Name).Get(ctx, resourceID.Name)
 	if database.IsNotFoundError(err) {
@@ -729,23 +676,5 @@ func (f *Frontend) getInternalExternalAuthFromStorage(ctx context.Context, resou
 	}
 	internalExternalAuth.ID = resourceID
 
-	return f.readInternalExternalAuthFromClusterService(ctx, internalExternalAuth)
-
-}
-
-// readInternalExternalAuthFromClusterService takes an internal ExternalAuth read from cosmos, retrieves the corresponding cluster-service data,
-// merges the states together, and returns the internal representation.
-func (f *Frontend) readInternalExternalAuthFromClusterService(ctx context.Context, oldInternalExternalAuth *api.HCPOpenShiftClusterExternalAuth) (*api.HCPOpenShiftClusterExternalAuth, error) {
-	oldClusterServiceExternalAuth, err := f.clusterServiceClient.GetExternalAuth(ctx, oldInternalExternalAuth.ServiceProviderProperties.ClusterServiceID)
-	if err != nil {
-		return nil, utils.TrackError(err)
-	}
-
-	// TODO this overwrite will transformed into a "set" function as we transition fields to ownership in cosmos
-	oldInternalExternalAuth, err = mergeToInternalExternalAuth(oldClusterServiceExternalAuth, oldInternalExternalAuth)
-	if err != nil {
-		return nil, utils.TrackError(err)
-	}
-
-	return oldInternalExternalAuth, nil
+	return internalExternalAuth, nil
 }

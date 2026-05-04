@@ -85,6 +85,7 @@ func (f *Frontend) routes(r prometheus.Registerer) http.Handler {
 
 	// Resource list endpoints
 	postMuxMiddleware := NewMiddleware(
+		MiddlewareResourceID,
 		MiddlewareLoggingPostMux,
 		newMiddlewareValidatedAPIVersion(f.apiRegistry).handleRequest,
 		newMiddlewareValidateSubscriptionState(f.dbClient).handleRequest)
