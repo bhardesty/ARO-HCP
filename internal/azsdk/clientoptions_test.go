@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
+	azcorearm "github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
@@ -156,7 +156,7 @@ func TestClientOptionsUserAgentHeader(t *testing.T) {
 		},
 	}
 
-	rgClient, err := armresources.NewResourceGroupsClient("test-subscription", &fakeCredential{}, &arm.ClientOptions{
+	rgClient, err := armresources.NewResourceGroupsClient("test-subscription", &fakeCredential{}, &azcorearm.ClientOptions{
 		ClientOptions: clientOptions,
 	})
 	if err != nil {
