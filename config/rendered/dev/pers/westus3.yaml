@@ -546,7 +546,7 @@ mgmt:
       vmSize: Standard_D4s_v3
       zoneRedundantMode: Auto
       zones: ""
-    kubernetesVersion: 1.34.4
+    kubernetesVersion: 1.35.1
     name: pers-usw3test-mgmt-1
     networkDataplane: azure
     networkPolicy: azure
@@ -847,7 +847,7 @@ svc:
       vmSize: Standard_D2s_v3
       zoneRedundantMode: Auto
       zones: ""
-    kubernetesVersion: 1.34.4
+    kubernetesVersion: 1.35.1
     name: pers-usw3test-svc
     networkDataplane: cilium
     networkPolicy: cilium
