@@ -151,26 +151,17 @@ func (tc *perBinaryInvocationTestContext) getAzureCredentials() (azcore.TokenCre
 }
 
 func (tc *perBinaryInvocationTestContext) getClientFactoryOptions() *azcorearm.ClientOptions {
-	if tc.isDevelopmentEnvironment {
-		clientOpts := azsdk.NewClientOptions(azsdk.ComponentE2E)
-		clientOpts.Retry = azureRetryOptions
-		clientOpts.Transport = &proxiedConnectionTransporter{
-			delegate: tc.defaultTransport,
-		}
-		clientOpts.PerCallPolicies = []policy.Policy{
-			&correlationRequestIDPolicy{},
-			NewLROPollerRetryDeploymentNotFoundPolicy(),
-			&sanitizeAuthHeaderPolicy{},
-		}
-		return &azcorearm.ClientOptions{
-			ClientOptions: clientOpts,
-		}
-	}
 	clientOpts := azsdk.NewClientOptions(azsdk.ComponentE2E)
 	clientOpts.Retry = azureRetryOptions
 	clientOpts.PerCallPolicies = []policy.Policy{
 		NewLROPollerRetryDeploymentNotFoundPolicy(),
 		&sanitizeAuthHeaderPolicy{},
+	}
+	if tc.isDevelopmentEnvironment {
+		clientOpts.Transport = &proxiedConnectionTransporter{
+			delegate: tc.defaultTransport,
+		}
+		clientOpts.PerCallPolicies = append([]policy.Policy{&correlationRequestIDPolicy{}}, clientOpts.PerCallPolicies...)
 	}
 	return &azcorearm.ClientOptions{
 		ClientOptions: clientOpts,

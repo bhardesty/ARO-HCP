@@ -16,7 +16,6 @@ package azsdk
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -78,6 +77,12 @@ func TestFirstN(t *testing.T) {
 			n:        0,
 			expected: "",
 		},
+		{
+			name:     "n is negative",
+			str:      "hello",
+			n:        -1,
+			expected: "",
+		},
 	}
 
 	for _, tt := range tests {
@@ -135,14 +140,16 @@ func TestApplicationID(t *testing.T) {
 }
 
 func TestClientOptionsUserAgentHeader(t *testing.T) {
-	expectedValue := fmt.Sprintf("%s/%s", ComponentFrontend, version.CommitSHA)
+	expectedValue := ApplicationID(ComponentFrontend)
 
 	ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userAgent := r.Header.Get("User-Agent")
 		if !strings.Contains(userAgent, expectedValue) {
 			t.Errorf("expected User-Agent to contain %q, got %q", expectedValue, userAgent)
 		}
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{}`))
 	}))
 	defer ts.Close()
 

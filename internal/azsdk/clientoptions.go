@@ -50,6 +50,9 @@ func NewClientOptions(component Component) azcore.ClientOptions {
 }
 
 func firstN(str string, n int) string {
+	if n <= 0 {
+		return ""
+	}
 	v := []rune(str)
 	if n >= len(v) {
 		return str
