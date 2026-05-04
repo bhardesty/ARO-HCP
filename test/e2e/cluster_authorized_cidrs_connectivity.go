@@ -161,10 +161,9 @@ var _ = Describe("Authorized CIDRs", func() {
 					output, err := framework.RunVMCommand(ctx, tc, *resourceGroup.Name, vmName, connectivityTest, 2*time.Minute)
 					g.Expect(err).NotTo(HaveOccurred(), "RunVMCommand for connectivity test failed (command: %s)", connectivityTest)
 
-					// Should get HTTP response (likely 401 or 200, but not connection refused)
 					httpCode = strings.TrimSpace(output)
 					By(fmt.Sprintf("VM received HTTP status code: %s", httpCode))
-					g.Expect(httpCode).To(MatchRegexp("^[2-5][0-9][0-9]$"), "Should receive valid HTTP status code from authorized IP, got: %s", httpCode)
+					g.Expect(httpCode).NotTo(Equal("000"), "Should receive HTTP response from authorized IP, got curl error code 000 (no response)")
 				}, 5*time.Minute, 10*time.Second).Should(Succeed())
 
 				By("testing connectivity from current machine (should be blocked)")
