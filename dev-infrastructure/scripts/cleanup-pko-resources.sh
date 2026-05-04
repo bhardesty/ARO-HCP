@@ -49,11 +49,24 @@ delete_crs() {
 count_crs() {
   local plural="$1" group="$2" scope="$3"
   local resource="${plural}.${group}"
+  local output
 
   if [[ "${scope}" == "Namespaced" ]]; then
-    kubectl get "${resource}" --all-namespaces -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null | wc -l
+    output=$(kubectl get "${resource}" --all-namespaces -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}') || {
+      echo "ERROR: kubectl get ${resource} --all-namespaces failed" >&2
+      return 1
+    }
   else
-    kubectl get "${resource}" -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null | wc -l
+    output=$(kubectl get "${resource}" -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}') || {
+      echo "ERROR: kubectl get ${resource} failed" >&2
+      return 1
+    }
+  fi
+
+  if [[ -z "${output}" ]]; then
+    echo 0
+  else
+    echo "${output}" | wc -l
   fi
 }
 
