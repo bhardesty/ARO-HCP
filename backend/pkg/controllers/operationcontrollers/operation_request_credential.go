@@ -68,6 +68,9 @@ func (opsync *operationRequestCredential) ShouldProcess(ctx context.Context, ope
 	if operation.Request != database.OperationRequestRequestCredential {
 		return false
 	}
+	if len(operation.InternalID.String()) == 0 {
+		return false
+	}
 	return true
 }
 

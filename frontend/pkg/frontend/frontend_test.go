@@ -33,11 +33,8 @@ import (
 	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/mock/gomock"
 
 	azcorearm "github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
-
-	cmv1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
 
 	"github.com/Azure/ARO-HCP/internal/api"
 	"github.com/Azure/ARO-HCP/internal/api/arm"
@@ -582,10 +579,8 @@ func TestRequestAdminCredential(t *testing.T) {
 
 			requestPath := path.Join(clusterResourceID.String(), "requestAdminCredential")
 
-			ctrl := gomock.NewController(t)
 			reg := prometheus.NewRegistry()
 			mockDBClient := databasetesting.NewMockDBClient()
-			mockCSClient := ocm.NewMockClusterServiceClientSpec(ctrl)
 
 			f := NewFrontend(
 				testr.New(t),
@@ -594,7 +589,7 @@ func TestRequestAdminCredential(t *testing.T) {
 				reg,
 				reg,
 				mockDBClient,
-				mockCSClient,
+				nil,
 				newNoopAuditClient(t),
 				api.TestLocation,
 				"", false, false, true,
@@ -635,14 +630,6 @@ func TestRequestAdminCredential(t *testing.T) {
 				}
 				_, err := mockDBClient.Operations(clusterResourceID.SubscriptionID).Create(ctx, revokeOp, nil)
 				require.NoError(t, err)
-			}
-
-			// Set up cluster service expectations for success case
-			if test.clusterProvisioningState.IsTerminal() && len(test.revokeCredentialsOperationID) == 0 {
-				mockCSClient.EXPECT().
-					PostBreakGlassCredential(gomock.Any(), clusterInternalID).
-					Return(cmv1.NewBreakGlassCredential().
-						HREF(ocm.GenerateOCMCommercialBreakGlassCredentialHREF(clusterInternalID.String(), "0")).Build())
 			}
 
 			subs := map[string]*arm.Subscription{
@@ -702,10 +689,8 @@ func TestRevokeCredentials(t *testing.T) {
 
 			requestPath := path.Join(clusterResourceID.String(), "revokeCredentials")
 
-			ctrl := gomock.NewController(t)
 			reg := prometheus.NewRegistry()
 			mockDBClient := databasetesting.NewMockDBClient()
-			mockCSClient := ocm.NewMockClusterServiceClientSpec(ctrl)
 
 			f := NewFrontend(
 				testr.New(t),
@@ -714,7 +699,7 @@ func TestRevokeCredentials(t *testing.T) {
 				reg,
 				reg,
 				mockDBClient,
-				mockCSClient,
+				nil,
 				newNoopAuditClient(t),
 				api.TestLocation,
 				"", false, false, true,
@@ -774,13 +759,6 @@ func TestRevokeCredentials(t *testing.T) {
 				}
 				_, err := mockDBClient.Operations(clusterResourceID.SubscriptionID).Create(ctx, requestOp, nil)
 				require.NoError(t, err)
-			}
-
-			// Set up cluster service expectations for success case
-			if test.clusterProvisioningState.IsTerminal() && len(test.revokeCredentialsOperationID) == 0 {
-				mockCSClient.EXPECT().
-					DeleteBreakGlassCredentials(gomock.Any(), clusterInternalID).
-					Return(nil)
 			}
 
 			subs := map[string]*arm.Subscription{
