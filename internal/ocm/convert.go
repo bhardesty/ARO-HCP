@@ -346,6 +346,8 @@ func GetClusterServiceUserAssignedIdentities(clusterServiceCluster *arohcpv1alph
 						ClientID:    &clientID,
 						PrincipalID: &principalID,
 					}
+				} else {
+					ret[operatorIdentity.ResourceID()] = &arm.UserAssignedIdentity{} // empty, but valid
 				}
 			}
 			if len(mi.ServiceManagedIdentity().ResourceID()) > 0 {
@@ -356,6 +358,8 @@ func GetClusterServiceUserAssignedIdentities(clusterServiceCluster *arohcpv1alph
 						ClientID:    &clientID,
 						PrincipalID: &principalID,
 					}
+				} else {
+					ret[mi.ServiceManagedIdentity().ResourceID()] = &arm.UserAssignedIdentity{} // empty, but valid
 				}
 			}
 		}
