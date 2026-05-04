@@ -19,10 +19,14 @@ import (
 	"testing"
 
 	"github.com/blang/semver/v4"
+	"github.com/go-logr/logr"
+	"github.com/golang/groupcache/lru"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
+	apimeta "k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 
 	azcorearm "github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
@@ -30,10 +34,14 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/cluster-version-operator/pkg/cincinnati"
 
+	"github.com/Azure/ARO-HCP/backend/pkg/controllers/controllerutils"
+	"github.com/Azure/ARO-HCP/backend/pkg/listertesting"
 	"github.com/Azure/ARO-HCP/internal/api"
 	"github.com/Azure/ARO-HCP/internal/api/arm"
 	cincinatti "github.com/Azure/ARO-HCP/internal/cincinatti"
 	"github.com/Azure/ARO-HCP/internal/databasetesting"
+	"github.com/Azure/ARO-HCP/internal/ocm"
+	"github.com/Azure/ARO-HCP/internal/utils"
 )
 
 func TestDesiredControlPlaneZVersion_ZStreamManagedUpgrade(t *testing.T) {
@@ -890,5 +898,200 @@ func assertVersionResult(t *testing.T, result *semver.Version, err error, expect
 			assert.NotNil(t, result)
 			assert.True(t, result.EQ(*expectedVersion), "Expected version %q, got %q", expectedVersion.String(), result.String())
 		}
+	}
+}
+
+func createTestHCPClusterWithCustomerVersion(t *testing.T, ctx context.Context, mockDB *databasetesting.MockDBClient, customerVersionID, channelGroup string) {
+	t.Helper()
+	createTestSubscription(t, ctx, mockDB)
+	clusterResourceID := api.Must(azcorearm.ParseResourceID("/subscriptions/" + testSubscriptionID +
+		"/resourceGroups/" + testResourceGroupName +
+		"/providers/Microsoft.RedHatOpenShift/hcpOpenShiftClusters/" + testClusterName))
+	clusterInternalID, err := api.NewInternalID(testCSClusterIDStr)
+	require.NoError(t, err)
+	cluster := &api.HCPOpenShiftCluster{
+		TrackedResource: arm.TrackedResource{
+			Resource: arm.Resource{
+				ID:   clusterResourceID,
+				Name: testClusterName,
+				Type: api.ClusterResourceType.String(),
+			},
+			Location: "eastus",
+		},
+		CustomerProperties: api.HCPOpenShiftClusterCustomerProperties{
+			Version: api.VersionProfile{
+				ID:           customerVersionID,
+				ChannelGroup: channelGroup,
+			},
+		},
+		ServiceProviderProperties: api.HCPOpenShiftClusterServiceProviderProperties{
+			ProvisioningState: arm.ProvisioningStateSucceeded,
+			ClusterServiceID:  &clusterInternalID,
+		},
+	}
+	_, err = mockDB.HCPClusters(testSubscriptionID, testResourceGroupName).Create(ctx, cluster, nil)
+	require.NoError(t, err)
+}
+
+func TestControlPlaneDesiredVersionSyncer_SyncOnce(t *testing.T) {
+	clusterKey := controllerutils.HCPClusterKey{
+		SubscriptionID:    testSubscriptionID,
+		ResourceGroupName: testResourceGroupName,
+		HCPClusterName:    testClusterName,
+	}
+	subResourceID := api.Must(azcorearm.ParseResourceID("/subscriptions/" + testSubscriptionID))
+	subscriptionLister := &listertesting.SliceSubscriptionLister{
+		Subscriptions: []*arm.Subscription{{
+			CosmosMetadata: arm.CosmosMetadata{ResourceID: subResourceID},
+			ResourceID:     subResourceID,
+			Properties:     &arm.SubscriptionProperties{},
+		}},
+	}
+
+	stableURI := api.Must(cincinatti.GetCincinnatiURI("stable"))
+	const testChannelGroup = "stable"
+
+	tests := []struct {
+		name                string
+		customerVersion     string
+		controlPlaneVersion string
+		setupCincinnati     func(mc *cincinatti.MockClient)
+		wantSyncErr         bool
+		wantErrContains     string
+		wantDesiredVersion  *semver.Version
+		wantIntentFailed    *metav1.Condition
+	}{
+		{
+			name:                "successful resolution persists desired version and sets IntentFailed False",
+			customerVersion:     "4.19",
+			controlPlaneVersion: "4.19.15",
+			setupCincinnati: func(mc *cincinatti.MockClient) {
+				mc.EXPECT().GetUpdates(gomock.Any(), stableURI, "multi", "multi", "stable-4.19", semver.MustParse("4.19.15")).Return(
+					configv1.Release{},
+					[]configv1.Release{{Version: "4.19.22"}},
+					nil,
+					nil,
+				).Times(1)
+				mc.EXPECT().GetUpdates(gomock.Any(), stableURI, "multi", "multi", "stable-4.20", semver.MustParse("4.19.22")).Return(
+					configv1.Release{}, nil, nil, &cincinnati.Error{Reason: "VersionNotFound"},
+				).Times(1)
+			},
+			wantDesiredVersion: ptr.To(semver.MustParse("4.19.22")),
+			wantIntentFailed: &metav1.Condition{
+				Type:   api.ControllerConditionTypeIntentFailed,
+				Status: metav1.ConditionFalse,
+				Reason: api.ControllerConditionReasonAsExpected,
+			},
+		},
+		{
+			name:                "validation error persists IntentFailed and does not set desired version",
+			customerVersion:     "4.19",
+			controlPlaneVersion: "4.20.15",
+			setupCincinnati:     func(mc *cincinatti.MockClient) {},
+			wantDesiredVersion:  nil,
+			wantIntentFailed: &metav1.Condition{
+				Type:    api.ControllerConditionTypeIntentFailed,
+				Status:  metav1.ConditionTrue,
+				Reason:  api.VersionUpgradeNotAcceptedReason,
+				Message: "invalid next y-stream upgrade path from 4.20.0 to 4.19.0: only upgrades to the next minor version are allowed, no downgrades",
+			},
+		},
+		{
+			name:                "Cincinnati upstream error does not persist IntentFailed or desired version",
+			customerVersion:     "4.19",
+			controlPlaneVersion: "4.19.15",
+			setupCincinnati: func(mc *cincinatti.MockClient) {
+				mc.EXPECT().GetUpdates(gomock.Any(), stableURI, "multi", "multi", "stable-4.19", semver.MustParse("4.19.15")).Return(
+					configv1.Release{}, nil, nil, &cincinnati.Error{Reason: "ServiceUnavailable", Message: "503 Service Unavailable"},
+				).Times(1)
+			},
+			wantSyncErr:        true,
+			wantErrContains:    "503 Service Unavailable",
+			wantDesiredVersion: nil,
+			wantIntentFailed:   nil,
+		},
+		{
+			name:                "Cincinnati VersionNotFound persists IntentFailed and does not set desired version",
+			customerVersion:     "4.19",
+			controlPlaneVersion: "4.19.15",
+			setupCincinnati: func(mc *cincinatti.MockClient) {
+				mc.EXPECT().GetUpdates(gomock.Any(), stableURI, "multi", "multi", "stable-4.19", semver.MustParse("4.19.15")).Return(
+					configv1.Release{}, nil, nil, &cincinnati.Error{Reason: "VersionNotFound"},
+				).Times(1)
+			},
+			wantDesiredVersion: nil,
+			wantIntentFailed: &metav1.Condition{
+				Type:    api.ControllerConditionTypeIntentFailed,
+				Status:  metav1.ConditionTrue,
+				Reason:  api.VersionUpgradeNotAcceptedReason,
+				Message: "VersionNotFound: ",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctx := utils.ContextWithLogger(context.Background(), logr.Discard())
+			ctrl := gomock.NewController(t)
+			mockDB := databasetesting.NewMockDBClient()
+			mockCS := ocm.NewMockClusterServiceClientSpec(ctrl)
+
+			createTestHCPClusterWithCustomerVersion(t, ctx, mockDB, tt.customerVersion, testChannelGroup)
+			createServiceProviderClusterWithVersion(t, ctx, mockDB, tt.controlPlaneVersion)
+
+			mockCincinnati := cincinatti.NewMockClient(ctrl)
+			tt.setupCincinnati(mockCincinnati)
+
+			syncer := &controlPlaneDesiredVersionSyncer{
+				cooldownChecker:                       &alwaysSyncCooldownChecker{},
+				clusterManagementClusterContentLister: newValidHostedClusterContentLister(t),
+				cosmosClient:                          mockDB,
+				clusterServiceClient:                  mockCS,
+				subscriptionLister:                    subscriptionLister,
+				clusterToCincinnatiClient:             lru.New(1),
+			}
+			syncer.clusterToCincinnatiClient.Add(clusterKey, mockCincinnati)
+
+			err := syncer.SyncOnce(ctx, clusterKey)
+			if tt.wantSyncErr {
+				require.Error(t, err)
+				require.NotEmpty(t, tt.wantErrContains, "when wantSyncErr is true, wantErrContains must be set to a substring of the expected error")
+				assert.ErrorContains(t, err, tt.wantErrContains)
+			} else {
+				require.NoError(t, err)
+				assert.Empty(t, tt.wantErrContains, "when wantSyncErr is false, wantErrContains must be empty")
+			}
+
+			serviceProviderCluster, getServiceProviderClusterErr := mockDB.ServiceProviderClusters(testSubscriptionID, testResourceGroupName, testClusterName).Get(ctx, api.ServiceProviderClusterResourceName)
+			require.NoError(t, getServiceProviderClusterErr)
+			gotDesired := serviceProviderCluster.Spec.ControlPlaneVersion.DesiredVersion
+			if tt.wantDesiredVersion != nil {
+				require.NotNil(t, gotDesired)
+				assert.True(t, gotDesired.EQ(*tt.wantDesiredVersion), "wanted desired version %s, got %s", tt.wantDesiredVersion.String(), gotDesired.String())
+			} else {
+				assert.Nil(t, gotDesired)
+			}
+
+			controlPlaneDesiredVersionControllerDoc, getControllerDocErr := mockDB.HCPClusters(testSubscriptionID, testResourceGroupName).
+				Controllers(testClusterName).Get(ctx, controlPlaneDesiredVersionControllerName)
+			if tt.wantIntentFailed != nil {
+				require.NoError(t, getControllerDocErr)
+				require.NotNil(t, controlPlaneDesiredVersionControllerDoc)
+				intentFailedCondition := apimeta.FindStatusCondition(controlPlaneDesiredVersionControllerDoc.Status.Conditions,
+					api.ControllerConditionTypeIntentFailed)
+				require.NotNil(t, intentFailedCondition)
+				assert.Equal(t, tt.wantIntentFailed.Type, intentFailedCondition.Type)
+				assert.Equal(t, tt.wantIntentFailed.Status, intentFailedCondition.Status)
+				assert.Equal(t, tt.wantIntentFailed.Reason, intentFailedCondition.Reason)
+				if tt.wantIntentFailed.Status == metav1.ConditionTrue {
+					require.NotEmpty(t, tt.wantIntentFailed.Message, "set wantIntentFailed.Message to the exact persisted IntentFailed message")
+					assert.Equal(t, tt.wantIntentFailed.Message, intentFailedCondition.Message)
+				} else {
+					assert.Empty(t, intentFailedCondition.Message, "when wantIntentFailed.Status is false, intentFailedCondition.Message must be empty")
+				}
+			}
+		})
 	}
 }

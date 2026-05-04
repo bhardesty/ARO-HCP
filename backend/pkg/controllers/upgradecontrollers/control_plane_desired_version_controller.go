@@ -27,7 +27,9 @@ import (
 	"github.com/golang/groupcache/lru"
 	"github.com/google/uuid"
 
+	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/operation"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	azcorearm "github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 
@@ -45,6 +47,9 @@ import (
 	"github.com/Azure/ARO-HCP/internal/utils"
 	"github.com/Azure/ARO-HCP/internal/validation"
 )
+
+// controlPlaneDesiredVersionControllerName is the Cosmos controller document ID for this syncer.
+const controlPlaneDesiredVersionControllerName = "ControlPlaneDesiredVersion"
 
 // controlPlaneDesiredVersionSyncer is a Cluster syncer that manages control plane desired version.
 // It handles automated (managed) z-stream (patch) upgrades and assists with y-stream (minor)
@@ -65,7 +70,6 @@ var _ controllerutils.ClusterSyncer = (*controlPlaneDesiredVersionSyncer)(nil)
 // NewControlPlaneDesiredVersionController creates a new controller that manages the desired
 // control plane version. It periodically checks each cluster and sets the desired version
 // based on the OCPVersion logic documented in the ServiceProviderCluster type.
-// The controller name remains "ControlPlaneVersion" for compatibility.
 func NewControlPlaneDesiredVersionController(
 	cosmosClient database.DBClient,
 	clusterServiceClient ocm.ClusterServiceClientSpec,
@@ -84,7 +88,7 @@ func NewControlPlaneDesiredVersionController(
 	}
 
 	controller := controllerutils.NewClusterWatchingController(
-		"ControlPlaneDesiredVersion",
+		controlPlaneDesiredVersionControllerName,
 		cosmosClient,
 		informers,
 		5*time.Minute, // Check for upgrades every 5 minutes
@@ -150,30 +154,63 @@ func (c *controlPlaneDesiredVersionSyncer) SyncOnce(ctx context.Context, key con
 	}
 	desiredVersion, err := c.desiredControlPlaneZVersion(ctx, cincinnatiClient, key.GetResourceID(), customerDesiredMinor, channelGroup, activeVersions,
 		operation.HasOption(api.FeatureExperimentalReleaseFeatures))
-	if err != nil {
-		return utils.TrackError(fmt.Errorf("failed to determine desired control plane version: %w", err))
-	}
-
-	// Check if there's a new desired version to set
-	if desiredVersion == nil {
-		return nil
-	}
-
-	// Check if it's the same as the previously set desired version
-	previousDesiredVersion := existingServiceProviderCluster.Spec.ControlPlaneVersion.DesiredVersion
-	if previousDesiredVersion != nil && desiredVersion.EQ(*previousDesiredVersion) {
-		return nil
-	}
-
 	logger := utils.LoggerFromContext(ctx)
-	logger.Info("Selected desired version", "desiredVersion", desiredVersion, "previousDesiredVersion", previousDesiredVersion)
-	existingServiceProviderCluster.Spec.ControlPlaneVersion.DesiredVersion = desiredVersion
-	serviceProviderClustersCosmosClient := c.cosmosClient.ServiceProviderClusters(key.SubscriptionID, key.ResourceGroupName, key.HCPClusterName)
-	_, err = serviceProviderClustersCosmosClient.Replace(ctx, existingServiceProviderCluster, nil)
+
 	if err != nil {
-		return utils.TrackError(fmt.Errorf("failed to replace ServiceProviderCluster: %w", err))
+		// Persist IntentFailed on the controller document for Cincinnati VersionNotFound or any non-Cincinnati resolution error.
+		// Other Cincinnati errors are treated as transient graph or transport issues.
+		var cincinnatiErr *cincinnati.Error
+		persistIntentFailed := cincinatti.IsCincinnatiVersionNotFoundError(err) || !errors.As(err, &cincinnatiErr)
+		if persistIntentFailed {
+			logger.Error(err, "desired version resolution failed, persisting IntentFailed condition")
+			controllerCRUD := c.cosmosClient.HCPClusters(key.SubscriptionID, key.ResourceGroupName).Controllers(key.HCPClusterName)
+			if writeErr := controllerutils.WriteController(ctx, controllerCRUD, controlPlaneDesiredVersionControllerName, key.InitialController,
+				func(ctrl *api.Controller) {
+					apimeta.SetStatusCondition(&ctrl.Status.Conditions, metav1.Condition{
+						Type:    api.ControllerConditionTypeIntentFailed,
+						Status:  metav1.ConditionTrue,
+						Reason:  api.VersionUpgradeNotAcceptedReason,
+						Message: utils.ErrorMessageWithoutLineTracking(err),
+					})
+				}); writeErr != nil {
+				return utils.TrackError(writeErr)
+			}
+			return nil
+		}
+		return utils.TrackError(err)
 	}
 
+	previousDesiredVersion := existingServiceProviderCluster.Spec.ControlPlaneVersion.DesiredVersion
+	desiredVersionUpdated := false
+	if desiredVersion != nil && (previousDesiredVersion == nil || !desiredVersion.EQ(*previousDesiredVersion)) {
+		logger.Info("Selected desired version", "desiredVersion", desiredVersion, "previousDesiredVersion", previousDesiredVersion)
+		existingServiceProviderCluster.Spec.ControlPlaneVersion.DesiredVersion = desiredVersion
+		desiredVersionUpdated = true
+	}
+
+	// on successful resolution of the desired version.
+	// update the ServiceProviderCluster first and only afterwards
+	// clear the IntentFailed condition
+	if desiredVersionUpdated {
+		serviceProviderClustersCosmosClient := c.cosmosClient.ServiceProviderClusters(key.SubscriptionID, key.ResourceGroupName, key.HCPClusterName)
+		_, err := serviceProviderClustersCosmosClient.Replace(ctx, existingServiceProviderCluster, nil)
+		if err != nil {
+			return utils.TrackError(fmt.Errorf("failed to replace ServiceProviderCluster: %w", err))
+		}
+	}
+
+	controllerCRUD := c.cosmosClient.HCPClusters(key.SubscriptionID, key.ResourceGroupName).Controllers(key.HCPClusterName)
+	if err = controllerutils.WriteController(ctx, controllerCRUD, controlPlaneDesiredVersionControllerName, key.InitialController,
+		func(ctrl *api.Controller) {
+			apimeta.SetStatusCondition(&ctrl.Status.Conditions, metav1.Condition{
+				Type:    api.ControllerConditionTypeIntentFailed,
+				Status:  metav1.ConditionFalse,
+				Reason:  api.ControllerConditionReasonAsExpected,
+				Message: "",
+			})
+		}); err != nil {
+		return utils.TrackError(err)
+	}
 	return nil
 }
 
