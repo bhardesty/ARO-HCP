@@ -119,6 +119,37 @@ func testDeleteOrphanedCosmosResourcesController(t *testing.T, withMock bool) {
 				require.NoError(t, allItems.GetError())
 			},
 		},
+		{
+			Name: "pipe_style_ids_deleted",
+			ControllerKey: controllerutils.HCPClusterKey{
+				SubscriptionID:    "a433a095-1277-44f1-8453-8d61a4d848c2",
+				ResourceGroupName: "unimportantPostponement",
+				HCPClusterName:    "monstrousPrecinct",
+			},
+			ArtifactDir: api.Must(fs.Sub(artifacts, path.Join("artifacts/delete_orphaned_cosmos"))),
+			ControllerInitializerFn: func(ctx context.Context, t *testing.T, input *controllertesthelpers.ControllerInitializationInput) (controller controllerutils.Controller, testMemory map[string]any) {
+				return newSubscriptionKeyWrapper(
+					mismatchcontrollers.NewDeleteOrphanedCosmosResourcesController(input.CosmosClient, input.SubscriptionLister),
+				), map[string]any{}
+			},
+			ControllerVerifierFn: func(ctx context.Context, t *testing.T, controller controllerutils.Controller, testMemory map[string]any, input *controllertesthelpers.ControllerInitializationInput) {
+				// The old-style ID document should be deleted
+				subscriptionResourceID := api.Must(azcorearm.ParseResourceID("/subscriptions/a433a095-1277-44f1-8453-8d61a4d848c2"))
+				crud, err := input.CosmosClient.UntypedCRUD(*subscriptionResourceID)
+				require.NoError(t, err)
+
+				allItems, err := crud.ListRecursive(ctx, nil)
+				require.NoError(t, err)
+
+				for _, item := range allItems.Items(ctx) {
+					if item.ID == "b1e87a41-1eeb-51ba-8155-cd118688d9d2" {
+						continue
+					}
+					t.Errorf("unexpected resource found: %v", item.ID)
+				}
+				require.NoError(t, allItems.GetError())
+			},
+		},
 	}
 
 	for _, tc := range testCases {
