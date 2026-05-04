@@ -652,6 +652,8 @@ mgmt:
         - name: AllowBringYourOwnPublicIpAddress
           poll: true
         poll: true
+      Microsoft.Quota:
+        poll: true
       Microsoft.Storage:
         poll: true
     usePlannedQuota: true
@@ -961,6 +963,8 @@ svc:
         features:
         - name: AllowBringYourOwnPublicIpAddress
           poll: true
+        poll: true
+      Microsoft.Quota:
         poll: true
     usePlannedQuota: true
 tenantId: 64dc69e4-d083-49fc-9569-ebece1dd1408
