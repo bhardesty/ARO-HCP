@@ -89,10 +89,9 @@ func (f *Frontend) ArmResourceListClusters(writer http.ResponseWriter, request *
 
 	pagedResponse := arm.NewPagedResponse()
 
-	// Even though the bulk of the list content comes from Cluster Service,
-	// we start by querying Cosmos DB because its continuation token meets
-	// the requirements of a skipToken for ARM pagination. We then query
-	// Cluster Service for the exact set of IDs returned by Cosmos.
+	// Cluster list is served entirely from Cosmos DB. Cosmos's continuation token also meets
+	// the requirements of a skipToken for ARM pagination, so it is used directly as the
+	// nextLink token below.
 
 	internalClusterIterator, err := f.dbClient.HCPClusters(subscriptionID, resourceGroupName).List(ctx, dbListOptionsFromRequest(request))
 	if err != nil {
@@ -913,7 +912,10 @@ func completeClusterIdentity(cluster *api.HCPOpenShiftCluster, existingUserAssig
 		}
 
 		if val, ok := cluster.Identity.UserAssignedIdentities[operatorIdentityResourceID.String()]; !ok || val == nil {
-			if existingValue, hasExisting := existingUserAssignedIdentity[operatorIdentityResourceID.String()]; hasExisting {
+			// existing entries can be present-but-nil (older Cosmos records that stored only
+			// the keys), so a nil existingValue is treated as "no existing details" instead of
+			// being copied through to a nil map entry that would serialize as `null`.
+			if existingValue := existingUserAssignedIdentity[operatorIdentityResourceID.String()]; existingValue != nil {
 				cluster.Identity.UserAssignedIdentities[operatorIdentityResourceID.String()] = existingValue.DeepCopy()
 			} else {
 				cluster.Identity.UserAssignedIdentities[operatorIdentityResourceID.String()] = &arm.UserAssignedIdentity{}
@@ -931,7 +933,8 @@ func completeClusterIdentity(cluster *api.HCPOpenShiftCluster, existingUserAssig
 		}
 
 		if val, ok := cluster.Identity.UserAssignedIdentities[serviceManagedIdentity.String()]; !ok || val == nil {
-			if existingValue, hasExisting := existingUserAssignedIdentity[serviceManagedIdentity.String()]; hasExisting {
+			// Same nil-existing handling as the control plane operators path above.
+			if existingValue := existingUserAssignedIdentity[serviceManagedIdentity.String()]; existingValue != nil {
 				cluster.Identity.UserAssignedIdentities[serviceManagedIdentity.String()] = existingValue.DeepCopy()
 			} else {
 				cluster.Identity.UserAssignedIdentities[serviceManagedIdentity.String()] = &arm.UserAssignedIdentity{}

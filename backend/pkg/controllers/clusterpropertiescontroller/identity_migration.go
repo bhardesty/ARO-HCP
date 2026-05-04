@@ -120,15 +120,29 @@ func (c *identityMigrationSyncer) NeedsWork(ctx context.Context, existingCluster
 		if operatorIdentityResourceID == nil {
 			return true
 		}
-		userAssignedIdentity, ok := existingCluster.Identity.UserAssignedIdentities[operatorIdentityResourceID.String()]
-		if !ok {
+		if needsWorkForIdentityKey(existingCluster.Identity.UserAssignedIdentities, operatorIdentityResourceID.String()) {
 			return true
 		}
-		if len(ptr.Deref(userAssignedIdentity.ClientID, "")) == 0 || len(ptr.Deref(userAssignedIdentity.PrincipalID, "")) == 0 {
+	}
+	if serviceManagedIdentity := existingCluster.CustomerProperties.Platform.OperatorsAuthentication.UserAssignedIdentities.ServiceManagedIdentity; serviceManagedIdentity != nil {
+		if needsWorkForIdentityKey(existingCluster.Identity.UserAssignedIdentities, serviceManagedIdentity.String()) {
 			return true
 		}
 	}
 
+	return false
+}
+
+// needsWorkForIdentityKey returns true when the identity at key is missing or has empty
+// client/principal IDs, signalling that the migration controller should fill it in.
+func needsWorkForIdentityKey(userAssignedIdentities map[string]*arm.UserAssignedIdentity, key string) bool {
+	identity, ok := userAssignedIdentities[key]
+	if !ok || identity == nil {
+		return true
+	}
+	if len(ptr.Deref(identity.ClientID, "")) == 0 || len(ptr.Deref(identity.PrincipalID, "")) == 0 {
+		return true
+	}
 	return false
 }
 
