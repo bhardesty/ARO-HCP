@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/blang/semver/v4"
 	"github.com/go-logr/logr/testr"
@@ -26,6 +27,8 @@ import (
 	"go.uber.org/mock/gomock"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	clocktesting "k8s.io/utils/clock/testing"
+	"k8s.io/utils/lru"
 	"k8s.io/utils/ptr"
 
 	azcorearm "github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
@@ -41,20 +44,20 @@ import (
 )
 
 func TestOperationClusterUpdate_SynchronizeOperation(t *testing.T) {
+	t.Parallel()
+	testClockNow := mustParseTime("2024-06-01T12:00:00Z")
 	tests := []struct {
 		name                                           string
 		clusterState                                   arohcpv1alpha1.ClusterState
-		expectError                                    bool
-		wantErrContains                                string
 		customerVersionID                              string
 		serviceProviderClusterStatusConditions         []metav1.Condition
 		controlPlaneDesiredVersionControllerConditions []metav1.Condition
+		seedMismatchFirstSeenAt                        time.Time
 		verify                                         func(t *testing.T, ctx context.Context, db *databasetesting.MockDBClient, fixture *clusterTestFixture)
 	}{
 		{
 			name:              "cluster ready transitions operation to succeeded",
 			clusterState:      arohcpv1alpha1.ClusterStateReady,
-			expectError:       false,
 			customerVersionID: "4.19",
 			verify: func(t *testing.T, ctx context.Context, db *databasetesting.MockDBClient, fixture *clusterTestFixture) {
 				op, err := db.Operations(testSubscriptionID).Get(ctx, testOperationName)
@@ -70,7 +73,6 @@ func TestOperationClusterUpdate_SynchronizeOperation(t *testing.T) {
 		{
 			name:              "cluster updating transitions operation to updating",
 			clusterState:      arohcpv1alpha1.ClusterStateUpdating,
-			expectError:       false,
 			customerVersionID: "4.19",
 			verify: func(t *testing.T, ctx context.Context, db *databasetesting.MockDBClient, fixture *clusterTestFixture) {
 				op, err := db.Operations(testSubscriptionID).Get(ctx, testOperationName)
@@ -86,7 +88,6 @@ func TestOperationClusterUpdate_SynchronizeOperation(t *testing.T) {
 		{
 			name:              "cluster error transitions operation to failed",
 			clusterState:      arohcpv1alpha1.ClusterStateError,
-			expectError:       false,
 			customerVersionID: "4.19",
 			verify: func(t *testing.T, ctx context.Context, db *databasetesting.MockDBClient, fixture *clusterTestFixture) {
 				op, err := db.Operations(testSubscriptionID).Get(ctx, testOperationName)
@@ -103,7 +104,6 @@ func TestOperationClusterUpdate_SynchronizeOperation(t *testing.T) {
 		{
 			name:              "cluster pending keeps operation accepted",
 			clusterState:      arohcpv1alpha1.ClusterStatePending,
-			expectError:       false,
 			customerVersionID: "4.19",
 			verify: func(t *testing.T, ctx context.Context, db *databasetesting.MockDBClient, fixture *clusterTestFixture) {
 				op, err := db.Operations(testSubscriptionID).Get(ctx, testOperationName)
@@ -140,8 +140,6 @@ func TestOperationClusterUpdate_SynchronizeOperation(t *testing.T) {
 		{
 			name:              "customer minor mismatch without ControlPlaneDesiredVersion IntentFailed leaves operation accepted",
 			clusterState:      arohcpv1alpha1.ClusterStateReady,
-			expectError:       true,
-			wantErrContains:   "customer desired version does not match resolved desired version",
 			customerVersionID: "4.20",
 			verify: func(t *testing.T, ctx context.Context, db *databasetesting.MockDBClient, fixture *clusterTestFixture) {
 				op, err := db.Operations(testSubscriptionID).Get(ctx, testOperationName)
@@ -155,10 +153,52 @@ func TestOperationClusterUpdate_SynchronizeOperation(t *testing.T) {
 				assert.Empty(t, cluster.ServiceProviderProperties.ProvisioningState)
 			},
 		},
+		{
+			name:                    "customer minor mismatch without ControlPlaneDesiredVersion IntentFailed leaves operation accepted when first seen within 29s",
+			clusterState:            arohcpv1alpha1.ClusterStateReady,
+			customerVersionID:       "4.20",
+			seedMismatchFirstSeenAt: testClockNow.Add(-20 * time.Second),
+			verify: func(t *testing.T, ctx context.Context, db *databasetesting.MockDBClient, fixture *clusterTestFixture) {
+				op, err := db.Operations(testSubscriptionID).Get(ctx, testOperationName)
+				require.NoError(t, err)
+				assert.Equal(t, arm.ProvisioningStateAccepted, op.Status)
+				assert.Nil(t, op.Error)
+
+				cluster, err := db.HCPClusters(testSubscriptionID, testResourceGroupName).Get(ctx, testClusterName)
+				require.NoError(t, err)
+				assert.Equal(t, testOperationName, cluster.ServiceProviderProperties.ActiveOperationID)
+				assert.Empty(t, cluster.ServiceProviderProperties.ProvisioningState)
+			},
+		},
+		{
+			name:                    "customer minor mismatch without IntentFailed fails when mismatch first seen exceeds 29s",
+			clusterState:            arohcpv1alpha1.ClusterStateReady,
+			customerVersionID:       "4.20",
+			seedMismatchFirstSeenAt: testClockNow.Add(-30 * time.Second),
+			verify: func(t *testing.T, ctx context.Context, db *databasetesting.MockDBClient, fixture *clusterTestFixture) {
+				op, err := db.Operations(testSubscriptionID).Get(ctx, testOperationName)
+				require.NoError(t, err)
+				assert.Equal(t, arm.ProvisioningStateFailed, op.Status)
+				require.NotNil(t, op.Error)
+				assert.Equal(t, arm.CloudErrorCodeInvalidRequestContent, op.Error.Code)
+
+				cluster, err := db.HCPClusters(testSubscriptionID, testResourceGroupName).Get(ctx, testClusterName)
+				require.NoError(t, err)
+				wantMsg := fmt.Sprintf(
+					"timed out after 29s waiting for resolution of desired version from '%s' cluster version",
+					cluster.CustomerProperties.Version.ID,
+				)
+				assert.Equal(t, wantMsg, op.Error.Message)
+
+				assert.Equal(t, arm.ProvisioningStateFailed, cluster.ServiceProviderProperties.ProvisioningState)
+				assert.Empty(t, cluster.ServiceProviderProperties.ActiveOperationID)
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			ctx := context.Background()
 			ctx = utils.ContextWithLogger(ctx, testr.New(t))
 			ctrl := gomock.NewController(t)
@@ -212,21 +252,20 @@ func TestOperationClusterUpdate_SynchronizeOperation(t *testing.T) {
 				GetClusterStatus(gomock.Any(), fixture.clusterInternalID).
 				Return(clusterStatus, nil)
 
+			fakeClock := clocktesting.NewFakeClock(testClockNow)
 			controller := &operationClusterUpdate{
-				cosmosClient:         mockDB,
-				clusterServiceClient: mockCSClient,
-				notificationClient:   nil,
+				cosmosClient:                    mockDB,
+				clusterServiceClient:            mockCSClient,
+				notificationClient:              nil,
+				clock:                           fakeClock,
+				desiredVersionMismatchFirstSeen: lru.New(100000),
+			}
+			if !tt.seedMismatchFirstSeenAt.IsZero() {
+				controller.desiredVersionMismatchFirstSeen.Add(operation.ResourceID.String(), tt.seedMismatchFirstSeenAt)
 			}
 
 			err = controller.SynchronizeOperation(ctx, fixture.operationKey())
-
-			if tt.expectError {
-				require.Error(t, err)
-				require.NotEmpty(t, tt.wantErrContains, "wantErrContains must be set when expectError is true")
-				assert.Contains(t, err.Error(), tt.wantErrContains)
-			} else {
-				require.NoError(t, err)
-			}
+			require.NoError(t, err)
 
 			if tt.verify != nil {
 				tt.verify(t, ctx, mockDB, fixture)

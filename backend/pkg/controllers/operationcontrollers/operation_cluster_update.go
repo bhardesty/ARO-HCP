@@ -28,6 +28,8 @@ import (
 	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/utils/clock"
+	"k8s.io/utils/lru"
 
 	"github.com/Azure/ARO-HCP/backend/pkg/controllers/controllerutils"
 	"github.com/Azure/ARO-HCP/internal/api"
@@ -38,9 +40,11 @@ import (
 )
 
 type operationClusterUpdate struct {
-	cosmosClient         database.DBClient
-	clusterServiceClient ocm.ClusterServiceClientSpec
-	notificationClient   *http.Client
+	cosmosClient                    database.DBClient
+	clusterServiceClient            ocm.ClusterServiceClientSpec
+	notificationClient              *http.Client
+	clock                           clock.PassiveClock
+	desiredVersionMismatchFirstSeen *lru.Cache
 }
 
 // NewOperationClusterUpdateController periodically lists all clusters and for each out when the cluster was created and its state.
@@ -51,9 +55,11 @@ func NewOperationClusterUpdateController(
 	activeOperationInformer cache.SharedIndexInformer,
 ) controllerutils.Controller {
 	syncer := &operationClusterUpdate{
-		cosmosClient:         cosmosClient,
-		clusterServiceClient: clusterServiceClient,
-		notificationClient:   notificationClient,
+		cosmosClient:                    cosmosClient,
+		clusterServiceClient:            clusterServiceClient,
+		notificationClient:              notificationClient,
+		clock:                           clock.RealClock{},
+		desiredVersionMismatchFirstSeen: lru.New(100000),
 	}
 
 	controller := NewGenericOperationController(
@@ -176,6 +182,7 @@ func (c *operationClusterUpdate) desiredVersionResolutionOperationState(ctx cont
 
 	if customerDesiredVersion.Major == resultingDesiredVersion.Major &&
 		customerDesiredVersion.Minor == resultingDesiredVersion.Minor {
+		c.desiredVersionMismatchFirstSeen.Remove(operation.ResourceID.String())
 		return newOperationState(arm.ProvisioningStateSucceeded, ""), nil
 	}
 	clusterKey := controllerutils.HCPClusterKey{
@@ -195,8 +202,28 @@ func (c *operationClusterUpdate) desiredVersionResolutionOperationState(ctx cont
 	}
 	intentFailedCondition := apimeta.FindStatusCondition(controllerDoc.Status.Conditions, api.ControllerConditionTypeIntentFailed)
 	if intentFailedCondition == nil || intentFailedCondition.Status != metav1.ConditionTrue || intentFailedCondition.Reason != api.VersionUpgradeNotAcceptedReason {
-		return nil, utils.TrackError(fmt.Errorf("customer desired version does not match resolved desired version"))
+		// Customer desired minor differs from the service provider resolved version, and the
+		// ControlPlaneDesiredVersion controller has not yet set IntentFailed (VersionUpgradeNotAccepted).
+		// Stay Accepted while resolution runs; fail once elapsed exceeds 29s from the first
+		// time this process observed the mismatch for this operation, so a
+		// controller restart does not immediately fail long-running operations.
+		pending := newOperationState(arm.ProvisioningStateAccepted, "customer desired version does not match resolved desired version")
+		firstSeen, ok := c.desiredVersionMismatchFirstSeen.Get(operation.ResourceID.String())
+		if !ok {
+			c.desiredVersionMismatchFirstSeen.Add(operation.ResourceID.String(), c.clock.Now())
+			return pending, nil
+		}
+		if c.clock.Since(firstSeen.(time.Time)) <= 29*time.Second {
+			return pending, nil
+		}
+		msg := fmt.Sprintf(
+			"timed out after 29s waiting for resolution of desired version from '%s' cluster version",
+			existingCluster.CustomerProperties.Version.ID,
+		)
+		c.desiredVersionMismatchFirstSeen.Remove(operation.ResourceID.String())
+		return newOperationState(arm.ProvisioningStateFailed, msg), nil
 	}
+	c.desiredVersionMismatchFirstSeen.Remove(operation.ResourceID.String())
 	return newOperationState(arm.ProvisioningStateFailed, intentFailedCondition.Message), nil
 }
 
