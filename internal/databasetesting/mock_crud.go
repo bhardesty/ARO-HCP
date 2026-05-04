@@ -762,7 +762,7 @@ func (m *mockUntypedCRUD) listInternal(ctx context.Context, opts *database.DBCli
 			continue
 		}
 
-		if !strings.HasPrefix(strings.ToLower(typedDoc.ResourceID.String()), strings.ToLower(prefix)) {
+		if typedDoc.ResourceID != nil && !strings.HasPrefix(strings.ToLower(typedDoc.ResourceID.String()), strings.ToLower(prefix)) {
 			continue
 		}
 
