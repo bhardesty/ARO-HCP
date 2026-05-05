@@ -685,8 +685,8 @@
         "sourceEnvironmentIdentifier": {
           "type": "string",
           "maxLength": 10,
-          "pattern": "^[a-z][a-z0-9]*$",
-          "description": "The source environment identifier must be between 1 and 10 characters, start with a lowercase letter, and can contain only lowercase letters and digits"
+          "pattern": "^[a-z]+$",
+          "description": "The source environment identifier must be between 1 and 10 characters and can contain only lowercase letters"
         }
       },
       "required": [
@@ -2892,9 +2892,6 @@
         },
         "tagKey": {
           "type": "string"
-        },
-        "subscription": {
-          "$ref": "#/definitions/subscriptionMetadata"
         },
         "tagValue": {
           "type": "string"

@@ -30,16 +30,7 @@ environments:
     regionShortSuffix: "${USER:0:4}"
 - name: prow
   description: |
-    CI infra shard0 - PR end-to-end tests.
-  defaults:
-    region: westus3
-    cloud: dev
-    ev2Cloud: public
-    cxStamp: 1
-    regionShortOverride: "j${BUILD_ID: -7}"
-- name: ci01
-  description: |
-    CI infra shard1 - PR end-to-end tests.
+    Used for PR end-to-end tests in Prow.
   defaults:
     region: westus3
     cloud: dev
