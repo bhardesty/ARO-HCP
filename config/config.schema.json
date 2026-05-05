@@ -2566,6 +2566,9 @@
         "applyKubeletFixes": {
           "type": "boolean"
         },
+        "defaultStorageClassSkuName": {
+          "type": "string"
+        },
         "hcpBackups": {
           "$ref": "#/definitions/hcpBackups"
         },
