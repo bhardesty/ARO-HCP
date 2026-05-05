@@ -725,8 +725,8 @@ github.com/openshift-eng/openshift-tests-extension v0.0.0-20260408205138-ec501c2
 github.com/openshift-eng/openshift-tests-extension v0.0.0-20260408205138-ec501c2bf4a5/go.mod h1:6gkP5f2HL0meusT0Aim8icAspcD1cG055xxBZ9yC68M=
 github.com/openshift-online/ocm-api-model/clientapi v0.0.453 h1:2KwHcetQzaCNFykGnLnn69SqTEkHldFRNB3fIsWalLw=
 github.com/openshift-online/ocm-api-model/clientapi v0.0.453/go.mod h1:fZwy5HY2URG9nrExvQeXrDU/08TGqZ16f8oymVEN5lo=
-github.com/openshift-online/ocm-sdk-go v0.1.498 h1:XOPq5eh2UZpv/21jlULAZ3oh7xCHv8wf7Sl3T3wsRUs=
-github.com/openshift-online/ocm-sdk-go v0.1.498/go.mod h1:V1upeXpkgHmyRy0cA2e+i9X/kUBEnv7sBYC6UdRXfzE=
+github.com/openshift-online/ocm-sdk-go v0.1.499 h1:QDr980dOSV0tFNrvOGiorno4l7iMq8lNxU7PY2rVqzY=
+github.com/openshift-online/ocm-sdk-go v0.1.499/go.mod h1:eKqLMWEeZ6vadCHjlRPsePdqap6c34aM8TGxjMgZwKY=
 github.com/openshift/api v0.0.0-20260304122341-cf5d8996109f h1:M8y0oBq/KRkuSNFlUMQRAn2MrXJh1mzTCFgbLpPWQbM=
 github.com/openshift/api v0.0.0-20260304122341-cf5d8996109f/go.mod h1:d5uzF0YN2nQQFA0jIEWzzOZ+edmo6wzlGLvx5Fhz4uY=
 github.com/openshift/client-go v0.0.0-20260108185524-48f4ccfc4e13 h1:6rd4zSo2UaWQcAPZfHK9yzKVqH0BnMv1hqMzqXZyTds=

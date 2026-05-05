@@ -219,7 +219,7 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/openshift-online/ocm-api-model/clientapi v0.0.453 // indirect
-	github.com/openshift-online/ocm-sdk-go v0.1.498 // indirect
+	github.com/openshift-online/ocm-sdk-go v0.1.499 // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/pkg/errors v0.9.1 // indirect
