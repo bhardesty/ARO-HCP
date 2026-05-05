@@ -26,7 +26,7 @@ import (
 	"github.com/Azure/ARO-HCP/internal/utils"
 )
 
-func DumpDataToLogger(ctx context.Context, cosmosClient database.DBClient, resourceID *azcorearm.ResourceID) error {
+func DumpDataToLogger(ctx context.Context, cosmosClient database.ARMResourcesDBClient, resourceID *azcorearm.ResourceID) error {
 	logger := utils.LoggerFromContext(ctx)
 
 	// load the HCP from the cosmos DB
@@ -82,7 +82,7 @@ func DumpDataToLogger(ctx context.Context, cosmosClient database.DBClient, resou
 }
 
 // DumpBillingToLogger dumps active billing documents for the given cluster resource ID to the logger.
-func DumpBillingToLogger(ctx context.Context, cosmosClient database.DBClient, resourceID *azcorearm.ResourceID) error {
+func DumpBillingToLogger(ctx context.Context, cosmosClient database.ARMResourcesDBClient, resourceID *azcorearm.ResourceID) error {
 	logger := utils.LoggerFromContext(ctx)
 
 	clusterCRUD := cosmosClient.HCPClusters(resourceID.SubscriptionID, resourceID.ResourceGroupName)

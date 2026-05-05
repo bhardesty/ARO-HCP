@@ -234,7 +234,7 @@ func DegradedControllerPanicHandler(ctx context.Context, controllerCRUD database
 	}
 }
 
-func controllerCRUDForParent(dbClient database.DBClient, parentResourceID *azcorearm.ResourceID) (database.ResourceCRUD[api.Controller], error) {
+func controllerCRUDForParent(dbClient database.ARMResourcesDBClient, parentResourceID *azcorearm.ResourceID) (database.ResourceCRUD[api.Controller], error) {
 	subscriptionID := parentResourceID.SubscriptionID
 	resourceGroupName := parentResourceID.ResourceGroupName
 	hcp := dbClient.HCPClusters(subscriptionID, resourceGroupName)
@@ -312,7 +312,7 @@ func getOrCreateControllerDocument(
 // On create conflict (HTTP 409), it re-reads and returns the existing document (same pattern as
 // database.GetOrCreateServiceProviderCluster).
 func GetOrCreateController(
-	ctx context.Context, dbClient database.DBClient, parentResourceID *azcorearm.ResourceID,
+	ctx context.Context, dbClient database.ARMResourcesDBClient, parentResourceID *azcorearm.ResourceID,
 	controllerName string, initialControllerFn InitialControllerFunc,
 ) (*api.Controller, error) {
 	controllerCRUD, err := controllerCRUDForParent(dbClient, parentResourceID)

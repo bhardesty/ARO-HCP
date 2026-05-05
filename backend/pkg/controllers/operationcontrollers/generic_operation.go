@@ -44,7 +44,7 @@ type genericOperation struct {
 
 	cooldownChecker controllerutils.CooldownChecker
 	synchronizer    OperationSynchronizer
-	cosmosClient    database.DBClient
+	cosmosClient    database.ARMResourcesDBClient
 
 	// queue is where incoming work is placed to de-dup and to allow "easy"
 	// rate limited requeues on errors
@@ -60,7 +60,7 @@ func NewGenericOperationController(
 	synchronizer OperationSynchronizer,
 	activeOperationScanInterval time.Duration,
 	activeOperationInformer cache.SharedIndexInformer,
-	cosmosClient database.DBClient,
+	cosmosClient database.ARMResourcesDBClient,
 ) controllerutils.Controller {
 	c := &genericOperation{
 		name:            name,

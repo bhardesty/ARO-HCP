@@ -77,7 +77,7 @@ const (
 //
 // In all of these cases the operation document is still persisted and ARM is
 // notified, so the operation reaches its terminal state and does not get stuck.
-func UpdateOperationStatus(ctx context.Context, cosmosClient database.DBClient, existingOperation *api.Operation, newOperationStatus arm.ProvisioningState, newOperationError *arm.CloudErrorBody, postAsyncNotificationFn PostAsyncNotificationFunc) error {
+func UpdateOperationStatus(ctx context.Context, cosmosClient database.ARMResourcesDBClient, existingOperation *api.Operation, newOperationStatus arm.ProvisioningState, newOperationError *arm.CloudErrorBody, postAsyncNotificationFn PostAsyncNotificationFunc) error {
 	logger := utils.LoggerFromContext(ctx)
 	if existingOperation == nil {
 		return nil
@@ -283,7 +283,7 @@ func needToPatchOperation(oldOperation *api.Operation, newOperationStatus arm.Pr
 }
 
 // patchOperation patches the status and error fields of an OperationDocument.
-func patchOperation(ctx context.Context, dbClient database.DBClient, oldOperation *api.Operation, newOperationStatus arm.ProvisioningState, newOperationError *arm.CloudErrorBody, postAsyncNotificationFn PostAsyncNotificationFunc) error {
+func patchOperation(ctx context.Context, dbClient database.ARMResourcesDBClient, oldOperation *api.Operation, newOperationStatus arm.ProvisioningState, newOperationError *arm.CloudErrorBody, postAsyncNotificationFn PostAsyncNotificationFunc) error {
 	logger := utils.LoggerFromContext(ctx)
 
 	if !needToPatchOperation(oldOperation, newOperationStatus, newOperationError) {
@@ -318,7 +318,7 @@ func patchOperation(ctx context.Context, dbClient database.DBClient, oldOperatio
 // The notification URI is cleared in a separate write after the notification is
 // sent successfully. If the process crashes between sending the notification and
 // clearing the URI, the notification may be sent again on the next reconcile.
-func notifyOperationOwner(ctx context.Context, cosmosClient database.DBClient, operation *api.Operation, postAsyncNotificationFn PostAsyncNotificationFunc) {
+func notifyOperationOwner(ctx context.Context, cosmosClient database.ARMResourcesDBClient, operation *api.Operation, postAsyncNotificationFn PostAsyncNotificationFunc) {
 	logger := utils.LoggerFromContext(ctx)
 
 	message := fmt.Sprintf("Updated status to '%s'", operation.Status)
@@ -483,7 +483,7 @@ func convertClusterStatus(ctx context.Context, clusterServiceClient ocm.ClusterS
 // Service to info for an Azure async operation status endpoint.
 func pollNodePoolStatus(
 	ctx context.Context,
-	cosmosClient database.DBClient,
+	cosmosClient database.ARMResourcesDBClient,
 	clusterServiceClient ocm.ClusterServiceClientSpec,
 	operation *api.Operation,
 	notificationClient *http.Client) error {
@@ -565,7 +565,7 @@ func convertNodePoolStatus(operation *api.Operation, nodePoolStatus *arohcpv1alp
 // Service to info for an Azure async operation status endpoint.
 func pollExternalAuthStatus(
 	ctx context.Context,
-	cosmosClient database.DBClient,
+	cosmosClient database.ARMResourcesDBClient,
 	clusterServiceClient ocm.ClusterServiceClientSpec,
 	operation *api.Operation,
 	notificationClient *http.Client) error {
@@ -659,7 +659,7 @@ func convertInflightCheckDetails(inflightCheck *arohcpv1alpha1.InflightCheck) (s
 }
 
 // setDeleteOperationAsCompleted updates Cosmos DB to reflect a completed resource deletion.
-func SetDeleteOperationAsCompleted(ctx context.Context, cosmosClient database.DBClient, operation *api.Operation, postAsyncNotificationFn PostAsyncNotificationFunc) error {
+func SetDeleteOperationAsCompleted(ctx context.Context, cosmosClient database.ARMResourcesDBClient, operation *api.Operation, postAsyncNotificationFn PostAsyncNotificationFunc) error {
 	// Delete the resource document first. If it fails the backend will retry
 	// by virtue of the operation document still having a non-terminal status.
 	untypedCRUD, err := cosmosClient.UntypedCRUD(*operation.ExternalID)

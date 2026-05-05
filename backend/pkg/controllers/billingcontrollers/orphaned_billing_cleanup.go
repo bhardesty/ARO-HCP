@@ -36,7 +36,7 @@ type orphanedBillingCleanup struct {
 	clock         utilsclock.PassiveClock
 	clusterLister listers.ClusterLister
 	billingLister listers.BillingLister
-	cosmosClient  database.DBClient
+	cosmosClient  database.ARMResourcesDBClient
 
 	// queue is where incoming work is placed to de-dup and to allow "easy"
 	// rate limited requeues on errors
@@ -45,7 +45,7 @@ type orphanedBillingCleanup struct {
 
 // NewOrphanedBillingCleanupController creates a controller that marks billing documents
 // as deleted when their corresponding cluster no longer exists in Cosmos DB.
-func NewOrphanedBillingCleanupController(clock utilsclock.PassiveClock, cosmosClient database.DBClient, clusterLister listers.ClusterLister, billingLister listers.BillingLister) controllerutils.Controller {
+func NewOrphanedBillingCleanupController(clock utilsclock.PassiveClock, cosmosClient database.ARMResourcesDBClient, clusterLister listers.ClusterLister, billingLister listers.BillingLister) controllerutils.Controller {
 	c := &orphanedBillingCleanup{
 		name:          "OrphanedBillingCleanup",
 		clock:         clock,

@@ -124,7 +124,7 @@ func AdmitClusterOnCreate(ctx context.Context, newVersion *api.HCPOpenShiftClust
 
 // AdmitClusterOnUpdate performs non-static checks of cluster. Checks that
 // require more information than is contained inside of the cluster instance itself.
-func AdmitClusterOnUpdate(ctx context.Context, op operation.Operation, dbClient database.DBClient, oldCluster, newCluster *api.HCPOpenShiftCluster) field.ErrorList {
+func AdmitClusterOnUpdate(ctx context.Context, op operation.Operation, dbClient database.ARMResourcesDBClient, oldCluster, newCluster *api.HCPOpenShiftCluster) field.ErrorList {
 	var errs field.ErrorList
 
 	// Version                 VersionProfile              `json:"version,omitempty"`
@@ -135,7 +135,7 @@ func AdmitClusterOnUpdate(ctx context.Context, op operation.Operation, dbClient 
 
 // admitVersionProfileOnClusterUpdate runs admission checks when properties.version changes
 // (skew against active control-plane versions and existing node pool minor skew).
-func admitVersionProfileOnClusterUpdate(ctx context.Context, op operation.Operation, dbClient database.DBClient, oldCluster, newCluster *api.HCPOpenShiftCluster) field.ErrorList {
+func admitVersionProfileOnClusterUpdate(ctx context.Context, op operation.Operation, dbClient database.ARMResourcesDBClient, oldCluster, newCluster *api.HCPOpenShiftCluster) field.ErrorList {
 	if len(newCluster.CustomerProperties.Version.ID) == 0 ||
 		oldCluster.CustomerProperties.Version.ID == newCluster.CustomerProperties.Version.ID {
 		return nil

@@ -34,12 +34,12 @@ type backfillClusterUID struct {
 	clock           utilsclock.PassiveClock
 	cooldownChecker controllerutils.CooldownChecker
 	clusterLister   listers.ClusterLister
-	cosmosClient    database.DBClient
+	cosmosClient    database.ARMResourcesDBClient
 }
 
 // NewBackfillClusterUIDController creates a controller that populates ClusterUID
 // for existing clusters that don't have it set.
-func NewBackfillClusterUIDController(clock utilsclock.PassiveClock, cosmosClient database.DBClient, clusterLister listers.ClusterLister) controllerutils.ClusterSyncer {
+func NewBackfillClusterUIDController(clock utilsclock.PassiveClock, cosmosClient database.ARMResourcesDBClient, clusterLister listers.ClusterLister) controllerutils.ClusterSyncer {
 	c := &backfillClusterUID{
 		clock:           clock,
 		cooldownChecker: controllerutils.NewTimeBasedCooldownChecker(60 * time.Minute),

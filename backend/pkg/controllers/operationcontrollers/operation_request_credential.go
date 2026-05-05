@@ -33,7 +33,7 @@ import (
 )
 
 type operationRequestCredential struct {
-	cosmosClient          database.DBClient
+	cosmosClient          database.ARMResourcesDBClient
 	clustersServiceClient ocm.ClusterServiceClientSpec
 	notificationClient    *http.Client
 }
@@ -54,7 +54,7 @@ type operationRequestCredential struct {
 // any of "Succeeded", "Failed", or "Canceled". Once the operation status reaches
 // a terminal value, there will be no further updates to the operation document.
 func NewOperationRequestCredentialController(
-	cosmosClient database.DBClient,
+	cosmosClient database.ARMResourcesDBClient,
 	clustersServiceClient ocm.ClusterServiceClientSpec,
 	notificationClient *http.Client,
 	activeOperationInformer cache.SharedIndexInformer,

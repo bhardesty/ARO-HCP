@@ -30,7 +30,7 @@ import (
 type ResourceCRUD[InternalAPIType any] interface {
 	GetByID(ctx context.Context, cosmosID string) (*InternalAPIType, error)
 	Get(ctx context.Context, resourceID string) (*InternalAPIType, error)
-	List(ctx context.Context, opts *DBClientListResourceDocsOptions) (DBClientIterator[InternalAPIType], error)
+	List(ctx context.Context, opts *ARMResourcesDBClientListResourceDocsOptions) (ARMResourcesDBClientIterator[InternalAPIType], error)
 	Create(ctx context.Context, newObj *InternalAPIType, options *azcosmos.ItemOptions) (*InternalAPIType, error)
 	Replace(ctx context.Context, newObj *InternalAPIType, options *azcosmos.ItemOptions) (*InternalAPIType, error)
 	Delete(ctx context.Context, resourceID string) error
@@ -123,7 +123,7 @@ func (d *nestedCosmosResourceCRUD[InternalAPIType, CosmosAPIType]) Get(ctx conte
 	return get[InternalAPIType, CosmosAPIType](ctx, d.containerClient, partitionKey, completeResourceID)
 }
 
-func (d *nestedCosmosResourceCRUD[InternalAPIType, CosmosAPIType]) List(ctx context.Context, options *DBClientListResourceDocsOptions) (DBClientIterator[InternalAPIType], error) {
+func (d *nestedCosmosResourceCRUD[InternalAPIType, CosmosAPIType]) List(ctx context.Context, options *ARMResourcesDBClientListResourceDocsOptions) (ARMResourcesDBClientIterator[InternalAPIType], error) {
 	if d.parentResourceID == nil {
 		return list[InternalAPIType, CosmosAPIType](ctx, d.containerClient, "", &azcorearm.SubscriptionResourceType, nil, options, false)
 	}

@@ -28,7 +28,7 @@ import (
 
 type billingDump struct {
 	cooldownChecker controllerutils.CooldownChecker
-	cosmosClient    database.DBClient
+	cosmosClient    database.ARMResourcesDBClient
 
 	// nextDumpChecker ensures we don't hotloop from any source.
 	nextDumpChecker controllerutils.CooldownChecker
@@ -36,7 +36,7 @@ type billingDump struct {
 
 // NewBillingDumpController periodically dumps billing documents for each cluster.
 func NewBillingDumpController(
-	cosmosClient database.DBClient,
+	cosmosClient database.ARMResourcesDBClient,
 	activeOperationLister listers.ActiveOperationLister,
 	backendInformers informers.BackendInformers,
 ) controllerutils.Controller {

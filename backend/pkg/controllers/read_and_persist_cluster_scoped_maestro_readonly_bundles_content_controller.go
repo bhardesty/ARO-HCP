@@ -41,7 +41,7 @@ type readAndPersistClusterScopedMaestroReadonlyBundlesContentSyncer struct {
 
 	activeOperationLister listers.ActiveOperationLister
 
-	cosmosClient database.DBClient
+	cosmosClient database.ARMResourcesDBClient
 
 	clusterServiceClient ocm.ClusterServiceClientSpec
 
@@ -53,7 +53,7 @@ var _ controllerutils.ClusterSyncer = (*readAndPersistClusterScopedMaestroReadon
 
 func NewReadAndPersistClusterScopedMaestroReadonlyBundlesContentController(
 	activeOperationLister listers.ActiveOperationLister,
-	cosmosClient database.DBClient,
+	cosmosClient database.ARMResourcesDBClient,
 	clusterServiceClient ocm.ClusterServiceClientSpec,
 	informers informers.BackendInformers,
 	maestroSourceEnvironmentIdentifier string,

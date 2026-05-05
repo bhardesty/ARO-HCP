@@ -37,7 +37,7 @@ type nodePoolWatchingController struct {
 	name   string
 	syncer NodePoolSyncer
 
-	cosmosClient database.DBClient
+	cosmosClient database.ARMResourcesDBClient
 }
 
 // NewNodePoolWatchingController periodically looks up all NodePools and queues them
@@ -47,7 +47,7 @@ type nodePoolWatchingController struct {
 // This does NOT prevent us from re-executing on errors, so errors will continue to trigger fast checks as expected.
 func NewNodePoolWatchingController(
 	name string,
-	cosmosClient database.DBClient,
+	cosmosClient database.ARMResourcesDBClient,
 	informers informers.BackendInformers,
 	resyncDuration time.Duration,
 	syncer NodePoolSyncer,

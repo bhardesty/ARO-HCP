@@ -176,7 +176,7 @@ func NewIntegrationTestInfoFromEnv(ctx context.Context, t *testing.T, withMock b
 	return testInfo, nil
 }
 
-func MarkOperationsCompleteForName(ctx context.Context, dbClient database.DBClient, subscriptionID, resourceName string) error {
+func MarkOperationsCompleteForName(ctx context.Context, dbClient database.ARMResourcesDBClient, subscriptionID, resourceName string) error {
 	operationsIterator := dbClient.Operations(subscriptionID).ListActiveOperations(nil)
 	for _, operation := range operationsIterator.Items(ctx) {
 		if operation.ExternalID.Name != resourceName {

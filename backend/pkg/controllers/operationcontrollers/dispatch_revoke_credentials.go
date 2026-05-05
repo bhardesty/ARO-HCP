@@ -38,7 +38,7 @@ import (
 
 type dispatchRevokeCredentials struct {
 	clock                 utilsclock.PassiveClock
-	cosmosClient          database.DBClient
+	cosmosClient          database.ARMResourcesDBClient
 	clustersServiceClient ocm.ClusterServiceClientSpec
 }
 
@@ -52,7 +52,7 @@ type dispatchRevokeCredentials struct {
 //	      Status: Accepted
 func NewDispatchRevokeCredentialsController(
 	clock utilsclock.PassiveClock,
-	cosmosClient database.DBClient,
+	cosmosClient database.ARMResourcesDBClient,
 	clustersServiceClient ocm.ClusterServiceClientSpec,
 	activeOperationInformer cache.SharedIndexInformer,
 ) controllerutils.Controller {

@@ -29,10 +29,10 @@ type OperationAccessor interface {
 }
 
 type operationAccessor struct {
-	dbClient database.DBClient
+	dbClient database.ARMResourcesDBClient
 }
 
-func newOperationAccessor(dbClient database.DBClient) *operationAccessor {
+func newOperationAccessor(dbClient database.ARMResourcesDBClient) *operationAccessor {
 	return &operationAccessor{dbClient: dbClient}
 }
 

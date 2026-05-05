@@ -35,7 +35,7 @@ type BillingDocCRUD interface {
 
 	// List returns an iterator for all billing documents in the given subscription partition.
 	// This includes both active and deleted billing documents.
-	List(ctx context.Context) (DBClientIterator[BillingDocument], error)
+	List(ctx context.Context) (ARMResourcesDBClientIterator[BillingDocument], error)
 
 	// ListActive lists all active billing documents (without deletion time) for the subscription
 	ListActive(ctx context.Context) ([]*BillingDocument, error)
@@ -65,7 +65,7 @@ func NewBillingDocCRUD(containerClient *azcosmos.ContainerClient, subscriptionID
 
 var _ BillingDocCRUD = &billingDocCRUD{}
 
-func (b *billingDocCRUD) List(ctx context.Context) (DBClientIterator[BillingDocument], error) {
+func (b *billingDocCRUD) List(ctx context.Context) (ARMResourcesDBClientIterator[BillingDocument], error) {
 	pk := NewPartitionKey(b.subscriptionID)
 	query := "SELECT * FROM c"
 	pager := b.containerClient.NewQueryItemsPager(query, pk, nil)

@@ -745,7 +745,7 @@ func (f *Frontend) addDeleteClusterToTransaction(ctx context.Context, writer htt
 	// Cluster Service will take care of canceling any ongoing operations
 	// on the resource or child resources, but we need to do some database
 	// bookkeeping to reflect that.
-	_, err = database.CancelActiveOperations(ctx, f.dbClient, transaction, &database.DBClientListActiveOperationDocsOptions{
+	_, err = database.CancelActiveOperations(ctx, f.dbClient, transaction, &database.ARMResourcesDBClientListActiveOperationDocsOptions{
 		ExternalID: cluster.ID,
 		// We don't include operations for resources below clusters (eg. nodepools) because, as part of the deletion flow,
 		// we will process each nested resource directly, delete it and cancel its operations then. If we handle resources

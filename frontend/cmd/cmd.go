@@ -203,7 +203,7 @@ func (opts *FrontendOpts) Run() error {
 		return fmt.Errorf("failed to create the CosmosDB client: %w", err)
 	}
 
-	dbClient, err := database.NewDBClient(ctx, cosmosDatabaseClient)
+	dbClient, err := database.NewARMResourcesDBClient(ctx, cosmosDatabaseClient)
 	if err != nil {
 		return fmt.Errorf("failed to create the database client: %w", err)
 	}

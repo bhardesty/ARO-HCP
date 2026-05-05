@@ -71,7 +71,7 @@ func TestDumpBillingToLogger(t *testing.T) {
 	}
 
 	// Create mock DB with clusters
-	mockDB, err := databasetesting.NewMockDBClientWithResources(ctx, []any{cluster1, cluster2})
+	mockDB, err := databasetesting.NewMockARMResourcesDBClientWithResources(ctx, []any{cluster1, cluster2})
 	require.NoError(t, err)
 
 	// Create billing doc for cluster-1 (active)
@@ -160,7 +160,7 @@ func TestDumpBillingToLogger_PartitionScoping(t *testing.T) {
 		},
 	}
 
-	mockDB, err := databasetesting.NewMockDBClientWithResources(ctx, []any{cluster1, cluster2, cluster3})
+	mockDB, err := databasetesting.NewMockARMResourcesDBClientWithResources(ctx, []any{cluster1, cluster2, cluster3})
 	require.NoError(t, err)
 
 	// Create billing docs for all three clusters

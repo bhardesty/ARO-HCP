@@ -53,7 +53,7 @@ const controlPlaneDesiredVersionControllerName = "ControlPlaneDesiredVersion"
 type controlPlaneDesiredVersionSyncer struct {
 	cooldownChecker                       controllerutils.CooldownChecker
 	clusterManagementClusterContentLister listers.ManagementClusterContentLister
-	cosmosClient                          database.DBClient
+	cosmosClient                          database.ARMResourcesDBClient
 	clusterServiceClient                  ocm.ClusterServiceClientSpec
 	subscriptionLister                    listers.SubscriptionLister
 
@@ -66,7 +66,7 @@ var _ controllerutils.ClusterSyncer = (*controlPlaneDesiredVersionSyncer)(nil)
 // control plane version. It periodically checks each cluster and sets the desired version
 // based on the OCPVersion logic documented in the ServiceProviderCluster type.
 func NewControlPlaneDesiredVersionController(
-	cosmosClient database.DBClient,
+	cosmosClient database.ARMResourcesDBClient,
 	clusterServiceClient ocm.ClusterServiceClientSpec,
 	activeOperationLister listers.ActiveOperationLister,
 	informers informers.BackendInformers,

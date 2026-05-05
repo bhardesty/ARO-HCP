@@ -28,7 +28,7 @@ import (
 
 type clusterRecursiveDataDump struct {
 	cooldownChecker controllerutils.CooldownChecker
-	cosmosClient    database.DBClient
+	cosmosClient    database.ARMResourcesDBClient
 
 	// nextDataDumpChecker ensures we don't hotloop from any source.
 	nextDataDumpChecker controllerutils.CooldownChecker
@@ -36,7 +36,7 @@ type clusterRecursiveDataDump struct {
 
 // NewClusterRecursiveDataDumpController periodically lists all clusters and logs when the cluster was created and its state.
 func NewClusterRecursiveDataDumpController(
-	cosmosClient database.DBClient,
+	cosmosClient database.ARMResourcesDBClient,
 	activeOperationLister listers.ActiveOperationLister,
 	backendInformers informers.BackendInformers,
 ) controllerutils.Controller {

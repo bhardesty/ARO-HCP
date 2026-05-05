@@ -35,7 +35,7 @@ import (
 // validation.
 type clusterValidationSyncer struct {
 	cooldownChecker controllerutils.CooldownChecker
-	cosmosClient    database.DBClient
+	cosmosClient    database.ARMResourcesDBClient
 
 	// validation is the validation to perform on the cluster.
 	validation validations.ClusterValidation
@@ -48,7 +48,7 @@ var _ controllerutils.ClusterSyncer = (*clusterValidationSyncer)(nil)
 func NewClusterValidationController(
 	validation validations.ClusterValidation,
 	activeOperationLister listers.ActiveOperationLister,
-	cosmosClient database.DBClient,
+	cosmosClient database.ARMResourcesDBClient,
 	informers informers.BackendInformers,
 ) controllerutils.Controller {
 

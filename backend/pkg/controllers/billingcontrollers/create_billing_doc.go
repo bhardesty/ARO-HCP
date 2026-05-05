@@ -37,12 +37,12 @@ type createBillingDoc struct {
 	azureLocation   string
 	clusterLister   listers.ClusterLister
 	billingLister   listers.BillingLister
-	cosmosClient    database.DBClient
+	cosmosClient    database.ARMResourcesDBClient
 }
 
 // NewCreateBillingDocController creates a controller that ensures a billing document
 // exists for clusters that have a ClusterUID and are in the Succeeded provisioning state.
-func NewCreateBillingDocController(clock utilsclock.PassiveClock, azureLocation string, cosmosClient database.DBClient, clusterLister listers.ClusterLister, billingLister listers.BillingLister) controllerutils.ClusterSyncer {
+func NewCreateBillingDocController(clock utilsclock.PassiveClock, azureLocation string, cosmosClient database.ARMResourcesDBClient, clusterLister listers.ClusterLister, billingLister listers.BillingLister) controllerutils.ClusterSyncer {
 	return &createBillingDoc{
 		clock:           clock,
 		cooldownChecker: controllerutils.NewTimeBasedCooldownChecker(60 * time.Second),

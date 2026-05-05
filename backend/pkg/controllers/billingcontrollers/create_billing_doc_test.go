@@ -117,13 +117,13 @@ func TestCreateBillingDoc_SyncOnce(t *testing.T) {
 		name        string
 		cluster     *api.HCPOpenShiftCluster
 		expectError bool
-		verify      func(t *testing.T, db *databasetesting.MockDBClient)
+		verify      func(t *testing.T, db *databasetesting.MockARMResourcesDBClient)
 	}{
 		{
 			name:        "creates billing document for succeeded cluster with ClusterUID",
 			cluster:     newTestCluster(t, testClusterUID, arm.ProvisioningStateSucceeded, &createdAt),
 			expectError: false,
-			verify: func(t *testing.T, db *databasetesting.MockDBClient) {
+			verify: func(t *testing.T, db *databasetesting.MockARMResourcesDBClient) {
 				billingDocs := db.GetBillingDocuments()
 				require.Len(t, billingDocs, 1)
 				doc := billingDocs[testClusterUID]
@@ -138,7 +138,7 @@ func TestCreateBillingDoc_SyncOnce(t *testing.T) {
 			name:        "uses fallback time when CreatedAt is nil",
 			cluster:     newTestCluster(t, testClusterUID, arm.ProvisioningStateSucceeded, nil),
 			expectError: false,
-			verify: func(t *testing.T, db *databasetesting.MockDBClient) {
+			verify: func(t *testing.T, db *databasetesting.MockARMResourcesDBClient) {
 				billingDocs := db.GetBillingDocuments()
 				require.Len(t, billingDocs, 1)
 				doc := billingDocs[testClusterUID]
@@ -150,7 +150,7 @@ func TestCreateBillingDoc_SyncOnce(t *testing.T) {
 			name:        "skips cluster without ClusterUID",
 			cluster:     newTestCluster(t, "", arm.ProvisioningStateSucceeded, &createdAt),
 			expectError: false,
-			verify: func(t *testing.T, db *databasetesting.MockDBClient) {
+			verify: func(t *testing.T, db *databasetesting.MockARMResourcesDBClient) {
 				billingDocs := db.GetBillingDocuments()
 				assert.Empty(t, billingDocs, "no billing document should be created when ClusterUID is empty")
 			},
@@ -159,7 +159,7 @@ func TestCreateBillingDoc_SyncOnce(t *testing.T) {
 			name:        "skips cluster not in Succeeded state",
 			cluster:     newTestCluster(t, testClusterUID, arm.ProvisioningStateProvisioning, &createdAt),
 			expectError: false,
-			verify: func(t *testing.T, db *databasetesting.MockDBClient) {
+			verify: func(t *testing.T, db *databasetesting.MockARMResourcesDBClient) {
 				billingDocs := db.GetBillingDocuments()
 				assert.Empty(t, billingDocs, "no billing document should be created for non-succeeded cluster")
 			},
@@ -168,7 +168,7 @@ func TestCreateBillingDoc_SyncOnce(t *testing.T) {
 			name:        "skips cluster in Failed state",
 			cluster:     newTestCluster(t, testClusterUID, arm.ProvisioningStateFailed, &createdAt),
 			expectError: false,
-			verify: func(t *testing.T, db *databasetesting.MockDBClient) {
+			verify: func(t *testing.T, db *databasetesting.MockARMResourcesDBClient) {
 				billingDocs := db.GetBillingDocuments()
 				assert.Empty(t, billingDocs, "no billing document should be created for failed cluster")
 			},
@@ -189,7 +189,7 @@ func TestCreateBillingDoc_SyncOnce(t *testing.T) {
 			subscription := newTestSubscription()
 			resources := []any{tt.cluster, subscription}
 
-			mockDB, err := databasetesting.NewMockDBClientWithResources(ctx, resources)
+			mockDB, err := databasetesting.NewMockARMResourcesDBClientWithResources(ctx, resources)
 			require.NoError(t, err)
 
 			controller := &createBillingDoc{
@@ -229,7 +229,7 @@ func TestCreateBillingDoc_Idempotent(t *testing.T) {
 	cluster := newTestCluster(t, testClusterUID, arm.ProvisioningStateSucceeded, &createdAt)
 	subscription := newTestSubscription()
 
-	mockDB, err := databasetesting.NewMockDBClientWithResources(ctx, []any{cluster, subscription})
+	mockDB, err := databasetesting.NewMockARMResourcesDBClientWithResources(ctx, []any{cluster, subscription})
 	require.NoError(t, err)
 
 	// Setup slice cluster lister (cache)
@@ -303,7 +303,7 @@ func TestCreateBillingDoc_ExistingBillingDocButMissingClusterRef(t *testing.T) {
 
 			subscription := newTestSubscription()
 
-			mockDB, err := databasetesting.NewMockDBClientWithResources(ctx, []any{cluster, subscription})
+			mockDB, err := databasetesting.NewMockARMResourcesDBClientWithResources(ctx, []any{cluster, subscription})
 			require.NoError(t, err)
 
 			if tt.seedInDB {

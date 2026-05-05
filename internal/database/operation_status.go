@@ -30,7 +30,7 @@ var localClock clock.Clock = clock.RealClock{}
 // status using the filters specified in opts. For every document returned in
 // the query result, CancelActiveOperations adds patch operations to the given
 // DBTransaction to mark the document as canceled.
-func CancelActiveOperations(ctx context.Context, dbClient DBClient, transaction DBTransaction, opts *DBClientListActiveOperationDocsOptions) ([]string, error) {
+func CancelActiveOperations(ctx context.Context, dbClient ARMResourcesDBClient, transaction DBTransaction, opts *ARMResourcesDBClientListActiveOperationDocsOptions) ([]string, error) {
 	var now = localClock.Now()
 	var operationsToCancel []string
 

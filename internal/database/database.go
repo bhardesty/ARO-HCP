@@ -73,18 +73,18 @@ func NewPartitionKey(subscriptionID string) azcosmos.PartitionKey {
 	return azcosmos.NewPartitionKeyString(strings.ToLower(subscriptionID))
 }
 
-type DBClientIteratorItem[T any] iter.Seq2[string, *T]
+type ARMResourcesDBClientIteratorItem[T any] iter.Seq2[string, *T]
 
-type DBClientIterator[T any] interface {
-	Items(ctx context.Context) DBClientIteratorItem[T]
+type ARMResourcesDBClientIterator[T any] interface {
+	Items(ctx context.Context) ARMResourcesDBClientIteratorItem[T]
 	GetContinuationToken() string
 	GetError() error
 }
 
-// DBClientListResourceDocsOptions allows for limiting the results of DBClient.ListResourceDocs.
-type DBClientListResourceDocsOptions struct {
+// ARMResourcesDBClientListResourceDocsOptions allows for limiting the results of ARMResourcesDBClient.ListResourceDocs.
+type ARMResourcesDBClientListResourceDocsOptions struct {
 	// ResourceType matches (case-insensitively) the Azure resource type. If unspecified,
-	// DBClient.ListResourceDocs will match resource documents for any resource type.
+	// ARMResourcesDBClient.ListResourceDocs will match resource documents for any resource type.
 	ResourceType *azcorearm.ResourceType
 
 	// PageSizeHint can limit the number of items returned at once. A negative value will cause
@@ -98,8 +98,8 @@ type DBClientListResourceDocsOptions struct {
 	ContinuationToken *string
 }
 
-// DBClientListActiveOperationDocsOptions allows for limiting the results of DBClient.ListActiveOperationDocs.
-type DBClientListActiveOperationDocsOptions struct {
+// ARMResourcesDBClientListActiveOperationDocsOptions allows for limiting the results of ARMResourcesDBClient.ListActiveOperationDocs.
+type ARMResourcesDBClientListActiveOperationDocsOptions struct {
 	// Request matches the type of asynchronous operation requested
 	Request *OperationRequest
 	// ExternalID matches (case-insensitively) the Azure resource ID of the cluster or node pool
@@ -108,10 +108,10 @@ type DBClientListActiveOperationDocsOptions struct {
 	IncludeNestedResources bool
 }
 
-// DBClient provides a customized interface to the Cosmos DB containers used by the
+// ARMResourcesDBClient provides a customized interface to the Cosmos DB containers used by the
 // ARO-HCP resource provider.
-type DBClient interface {
-	// GetLockClient returns a LockClient, or nil if the DBClient does not support a LockClient.
+type ARMResourcesDBClient interface {
+	// GetLockClient returns a LockClient, or nil if the ARMResourcesDBClient does not support a LockClient.
 	GetLockClient() LockClientInterface
 
 	// NewTransaction initiates a new transactional batch for the given partition key.
@@ -134,26 +134,26 @@ type DBClient interface {
 
 	ServiceProviderClusters(subscriptionID, resourceGroupName, clusterName string) ServiceProviderClusterCRUD
 
-	// GlobalListers returns interfaces for listing all resources of a particular
+	// ARMResourcesGlobalListers returns interfaces for listing all resources of a particular
 	// type across all partitions, intended for feeding SharedInformers.
-	GlobalListers() GlobalListers
+	ARMResourcesGlobalListers() ARMResourcesGlobalListers
 
 	ServiceProviderNodePools(subscriptionID, resourceGroupName, clusterName, nodePoolName string) ServiceProviderNodePoolCRUD
 }
 
-var _ DBClient = &cosmosDBClient{}
+var _ ARMResourcesDBClient = &armResourcesCosmosDBClient{}
 
-// cosmosDBClient defines the needed values to perform CRUD operations against Cosmos DB.
-type cosmosDBClient struct {
+// armResourcesCosmosDBClient defines the needed values to perform CRUD operations against Cosmos DB.
+type armResourcesCosmosDBClient struct {
 	database   *azcosmos.DatabaseClient
 	billing    *azcosmos.ContainerClient
 	resources  *azcosmos.ContainerClient
 	lockClient *LockClient
 }
 
-// NewDBClient instantiates a DBClient from a Cosmos DatabaseClient instance
+// NewARMResourcesDBClient instantiates an ARMResourcesDBClient from a Cosmos DatabaseClient instance
 // targeting the Frontends async database.
-func NewDBClient(ctx context.Context, database *azcosmos.DatabaseClient) (DBClient, error) {
+func NewARMResourcesDBClient(ctx context.Context, database *azcosmos.DatabaseClient) (ARMResourcesDBClient, error) {
 	resources, err := database.NewContainer(resourcesContainer)
 	if err != nil {
 		return nil, utils.TrackError(err)
@@ -174,7 +174,7 @@ func NewDBClient(ctx context.Context, database *azcosmos.DatabaseClient) (DBClie
 		return nil, utils.TrackError(err)
 	}
 
-	return &cosmosDBClient{
+	return &armResourcesCosmosDBClient{
 		database:   database,
 		billing:    billing,
 		resources:  resources,
@@ -182,49 +182,49 @@ func NewDBClient(ctx context.Context, database *azcosmos.DatabaseClient) (DBClie
 	}, nil
 }
 
-func (d *cosmosDBClient) GetLockClient() LockClientInterface {
+func (d *armResourcesCosmosDBClient) GetLockClient() LockClientInterface {
 	return d.lockClient
 }
 
-func (d *cosmosDBClient) NewTransaction(pk string) DBTransaction {
+func (d *armResourcesCosmosDBClient) NewTransaction(pk string) DBTransaction {
 	return newCosmosDBTransaction(pk, d.resources)
 }
 
-func (d *cosmosDBClient) HCPClusters(subscriptionID, resourceGroupName string) HCPClusterCRUD {
+func (d *armResourcesCosmosDBClient) HCPClusters(subscriptionID, resourceGroupName string) HCPClusterCRUD {
 	return NewHCPClusterCRUD(d.resources, subscriptionID, resourceGroupName)
 }
 
-func (d *cosmosDBClient) Operations(subscriptionID string) OperationCRUD {
+func (d *armResourcesCosmosDBClient) Operations(subscriptionID string) OperationCRUD {
 	return NewOperationCRUD(d.resources, subscriptionID)
 }
 
-func (d *cosmosDBClient) Subscriptions() SubscriptionCRUD {
+func (d *armResourcesCosmosDBClient) Subscriptions() SubscriptionCRUD {
 	return NewCosmosResourceCRUD[arm.Subscription, GenericDocument[arm.Subscription]](
 		d.resources, nil, azcorearm.SubscriptionResourceType)
 }
 
-func (d *cosmosDBClient) BillingDocs(subscriptionID string) BillingDocCRUD {
+func (d *armResourcesCosmosDBClient) BillingDocs(subscriptionID string) BillingDocCRUD {
 	return NewBillingDocCRUD(d.billing, subscriptionID)
 }
 
-func (d *cosmosDBClient) ServiceProviderClusters(subscriptionID, resourceGroupName, clusterName string) ServiceProviderClusterCRUD {
+func (d *armResourcesCosmosDBClient) ServiceProviderClusters(subscriptionID, resourceGroupName, clusterName string) ServiceProviderClusterCRUD {
 	clusterResourceID := NewClusterResourceID(subscriptionID, resourceGroupName, clusterName)
 	return NewCosmosResourceCRUD[api.ServiceProviderCluster, GenericDocument[api.ServiceProviderCluster]](
 		d.resources, clusterResourceID, api.ServiceProviderClusterResourceType)
 }
 
-func (d *cosmosDBClient) ServiceProviderNodePools(subscriptionID, resourceGroupName, clusterName, nodePoolName string) ServiceProviderNodePoolCRUD {
+func (d *armResourcesCosmosDBClient) ServiceProviderNodePools(subscriptionID, resourceGroupName, clusterName, nodePoolName string) ServiceProviderNodePoolCRUD {
 	nodePoolResourceID := NewNodePoolResourceID(subscriptionID, resourceGroupName, clusterName, nodePoolName)
 	return NewCosmosResourceCRUD[api.ServiceProviderNodePool, GenericDocument[api.ServiceProviderNodePool]](
 		d.resources, nodePoolResourceID, api.ServiceProviderNodePoolResourceType)
 }
 
-func (d *cosmosDBClient) UntypedCRUD(parentResourceID azcorearm.ResourceID) (UntypedResourceCRUD, error) {
+func (d *armResourcesCosmosDBClient) UntypedCRUD(parentResourceID azcorearm.ResourceID) (UntypedResourceCRUD, error) {
 	return NewUntypedCRUD(d.resources, parentResourceID), nil
 }
 
-func (d *cosmosDBClient) GlobalListers() GlobalListers {
-	return NewCosmosGlobalListers(d.resources, d.billing)
+func (d *armResourcesCosmosDBClient) ARMResourcesGlobalListers() ARMResourcesGlobalListers {
+	return NewCosmosARMResourcesGlobalListers(d.resources, d.billing)
 }
 
 // NewCosmosDatabaseClient instantiates a generic Cosmos database client.

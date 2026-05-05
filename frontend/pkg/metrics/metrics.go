@@ -35,7 +35,7 @@ type subscription struct {
 }
 
 type SubscriptionCollector struct {
-	dbClient database.DBClient
+	dbClient database.ARMResourcesDBClient
 	location string
 
 	errCounter               prometheus.Counter
@@ -58,7 +58,7 @@ const (
 	subscriptionLastUpdatedName  = "frontend_lifecycle_last_update_timestamp_seconds"
 )
 
-func NewSubscriptionCollector(r prometheus.Registerer, dbClient database.DBClient, location string) *SubscriptionCollector {
+func NewSubscriptionCollector(r prometheus.Registerer, dbClient database.ARMResourcesDBClient, location string) *SubscriptionCollector {
 	sc := &SubscriptionCollector{
 		dbClient: dbClient,
 		location: location,

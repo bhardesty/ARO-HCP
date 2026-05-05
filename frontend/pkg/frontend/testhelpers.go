@@ -35,7 +35,7 @@ func newNoopAuditClient(t *testing.T) *audit.AuditClient {
 }
 
 func NewTestFrontend(t *testing.T) *Frontend {
-	mockDBClient := databasetesting.NewMockDBClient()
+	mockARMResourcesDBClient := databasetesting.NewMockARMResourcesDBClient()
 	reg := prometheus.NewRegistry()
 
 	f := NewFrontend(
@@ -44,7 +44,7 @@ func NewTestFrontend(t *testing.T) *Frontend {
 		nil,
 		reg,
 		reg,
-		mockDBClient,
+		mockARMResourcesDBClient,
 		nil,
 		newNoopAuditClient(t),
 		api.TestLocation,

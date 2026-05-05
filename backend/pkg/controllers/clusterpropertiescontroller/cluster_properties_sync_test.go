@@ -278,7 +278,7 @@ func TestClusterPropertiesSyncer_SyncOnce(t *testing.T) {
 			defer ctrl.Finish()
 
 			// Setup mock DB with the existing cluster
-			mockDB, err := databasetesting.NewMockDBClientWithResources(ctx, []any{tc.existingCluster})
+			mockDB, err := databasetesting.NewMockARMResourcesDBClientWithResources(ctx, []any{tc.existingCluster})
 			require.NoError(t, err)
 
 			// Setup mock CS client

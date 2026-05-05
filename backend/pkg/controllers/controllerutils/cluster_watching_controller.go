@@ -37,7 +37,7 @@ type clusterWatchingController struct {
 	name   string
 	syncer ClusterSyncer
 
-	cosmosClient database.DBClient
+	cosmosClient database.ARMResourcesDBClient
 }
 
 // NewClusterWatchingController periodically looks up all clusters and queues them
@@ -47,7 +47,7 @@ type clusterWatchingController struct {
 // This does NOT prevent us from re-executing on errors, so errors will continue to trigger fast checks as expected.
 func NewClusterWatchingController(
 	name string,
-	cosmosClient database.DBClient,
+	cosmosClient database.ARMResourcesDBClient,
 	informers informers.BackendInformers,
 	resyncDuration time.Duration,
 	syncer ClusterSyncer,

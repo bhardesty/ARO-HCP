@@ -30,11 +30,11 @@ import (
 type UntypedResourceCRUD interface {
 	Get(ctx context.Context, resourceID *azcorearm.ResourceID) (*TypedDocument, error)
 	// List returns back only direct descendents from the parent.
-	List(ctx context.Context, opts *DBClientListResourceDocsOptions) (DBClientIterator[TypedDocument], error)
+	List(ctx context.Context, opts *ARMResourcesDBClientListResourceDocsOptions) (ARMResourcesDBClientIterator[TypedDocument], error)
 	// ListRecursive returns back every descendent from the parent.  For instance, if you ListRecursive on a cluster,
 	// you will get the controllers for the cluster, the nodepools, the controllers for each nodepool, the external auths,
 	// the controllers for the external auths, etc.
-	ListRecursive(ctx context.Context, opts *DBClientListResourceDocsOptions) (DBClientIterator[TypedDocument], error)
+	ListRecursive(ctx context.Context, opts *ARMResourcesDBClientListResourceDocsOptions) (ARMResourcesDBClientIterator[TypedDocument], error)
 	Delete(ctx context.Context, resourceID *azcorearm.ResourceID) error
 	DeleteByCosmosID(ctx context.Context, partitionKey, cosmosID string) error
 
@@ -73,12 +73,12 @@ func (d *untypedCRUD) Get(ctx context.Context, resourceID *azcorearm.ResourceID)
 	return get[TypedDocument, TypedDocument](ctx, d.containerClient, partitionKey, resourceID)
 }
 
-func (d *untypedCRUD) List(ctx context.Context, options *DBClientListResourceDocsOptions) (DBClientIterator[TypedDocument], error) {
+func (d *untypedCRUD) List(ctx context.Context, options *ARMResourcesDBClientListResourceDocsOptions) (ARMResourcesDBClientIterator[TypedDocument], error) {
 	partitionKey := strings.ToLower(d.parentResourceID.SubscriptionID)
 	return list[TypedDocument, TypedDocument](ctx, d.containerClient, partitionKey, nil, &d.parentResourceID, options, true)
 }
 
-func (d *untypedCRUD) ListRecursive(ctx context.Context, options *DBClientListResourceDocsOptions) (DBClientIterator[TypedDocument], error) {
+func (d *untypedCRUD) ListRecursive(ctx context.Context, options *ARMResourcesDBClientListResourceDocsOptions) (ARMResourcesDBClientIterator[TypedDocument], error) {
 	partitionKey := strings.ToLower(d.parentResourceID.SubscriptionID)
 	return list[TypedDocument, TypedDocument](ctx, d.containerClient, partitionKey, nil, &d.parentResourceID, options, false)
 }

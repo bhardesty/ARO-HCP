@@ -29,7 +29,7 @@ type fakeIteratorEntry[T any] struct {
 	item *T
 }
 
-// fakeIterator is a test implementation of DBClientIterator[T] that yields a
+// fakeIterator is a test implementation of ARMResourcesDBClientIterator[T] that yields a
 // fixed set of items, optionally returning a continuation token and/or an error.
 type fakeIterator[T any] struct {
 	entries []fakeIteratorEntry[T]
@@ -37,7 +37,7 @@ type fakeIterator[T any] struct {
 	err     error
 }
 
-func (f *fakeIterator[T]) Items(_ context.Context) DBClientIteratorItem[T] {
+func (f *fakeIterator[T]) Items(_ context.Context) ARMResourcesDBClientIteratorItem[T] {
 	return func(yield func(string, *T) bool) {
 		for _, e := range f.entries {
 			if !yield(e.id, e.item) {
@@ -54,7 +54,7 @@ func TestListAll(t *testing.T) {
 	// testListItem is a minimal type used as the ListAll type parameter in tests.
 	type testListItem struct{ value string }
 
-	type listFn = func(context.Context, *DBClientListResourceDocsOptions) (DBClientIterator[testListItem], error)
+	type listFn = func(context.Context, *ARMResourcesDBClientListResourceDocsOptions) (ARMResourcesDBClientIterator[testListItem], error)
 
 	type testCase struct {
 		name      string
@@ -70,7 +70,7 @@ func TestListAll(t *testing.T) {
 	// multi-page: verify the continuation token is forwarded on the second call
 	var mpCallCount int
 	var mpReceivedTokens []*string
-	mpListFn := func(_ context.Context, opts *DBClientListResourceDocsOptions) (DBClientIterator[testListItem], error) {
+	mpListFn := func(_ context.Context, opts *ARMResourcesDBClientListResourceDocsOptions) (ARMResourcesDBClientIterator[testListItem], error) {
 		mpCallCount++
 		mpReceivedTokens = append(mpReceivedTokens, opts.ContinuationToken)
 		if mpCallCount == 1 {
@@ -91,7 +91,7 @@ func TestListAll(t *testing.T) {
 
 	// three-page: verify listFn is called exactly three times
 	var threeCallCount int
-	threeListFn := func(_ context.Context, _ *DBClientListResourceDocsOptions) (DBClientIterator[testListItem], error) {
+	threeListFn := func(_ context.Context, _ *ARMResourcesDBClientListResourceDocsOptions) (ARMResourcesDBClientIterator[testListItem], error) {
 		threeCallCount++
 		switch threeCallCount {
 		case 1:
@@ -113,7 +113,7 @@ func TestListAll(t *testing.T) {
 
 	// error on second page: verify listFn is called exactly twice
 	var secondPageCallCount int
-	secondPageListFn := func(_ context.Context, _ *DBClientListResourceDocsOptions) (DBClientIterator[testListItem], error) {
+	secondPageListFn := func(_ context.Context, _ *ARMResourcesDBClientListResourceDocsOptions) (ARMResourcesDBClientIterator[testListItem], error) {
 		secondPageCallCount++
 		if secondPageCallCount == 1 {
 			return &fakeIterator[testListItem]{
@@ -126,7 +126,7 @@ func TestListAll(t *testing.T) {
 
 	// page-size hint: capture the PageSizeHint seen by listFn
 	var capturedPageSize *int32
-	pageSizeListFn := func(_ context.Context, opts *DBClientListResourceDocsOptions) (DBClientIterator[testListItem], error) {
+	pageSizeListFn := func(_ context.Context, opts *ARMResourcesDBClientListResourceDocsOptions) (ARMResourcesDBClientIterator[testListItem], error) {
 		capturedPageSize = opts.PageSizeHint
 		return &fakeIterator[testListItem]{}, nil
 	}
@@ -137,7 +137,7 @@ func TestListAll(t *testing.T) {
 		{
 			name:     "empty result",
 			pageSize: 10,
-			listFn: func(_ context.Context, _ *DBClientListResourceDocsOptions) (DBClientIterator[testListItem], error) {
+			listFn: func(_ context.Context, _ *ARMResourcesDBClientListResourceDocsOptions) (ARMResourcesDBClientIterator[testListItem], error) {
 				return &fakeIterator[testListItem]{}, nil
 			},
 		},
@@ -145,7 +145,7 @@ func TestListAll(t *testing.T) {
 			name:      "single page returns all items",
 			pageSize:  10,
 			wantItems: []string{"a", "b", "c"},
-			listFn: func(_ context.Context, _ *DBClientListResourceDocsOptions) (DBClientIterator[testListItem], error) {
+			listFn: func(_ context.Context, _ *ARMResourcesDBClientListResourceDocsOptions) (ARMResourcesDBClientIterator[testListItem], error) {
 				return &fakeIterator[testListItem]{
 					entries: []fakeIteratorEntry[testListItem]{
 						{id: "id-0", item: &testListItem{value: "a"}},
@@ -188,7 +188,7 @@ func TestListAll(t *testing.T) {
 		{
 			name:     "listFn error on first call",
 			pageSize: 10,
-			listFn: func(_ context.Context, _ *DBClientListResourceDocsOptions) (DBClientIterator[testListItem], error) {
+			listFn: func(_ context.Context, _ *ARMResourcesDBClientListResourceDocsOptions) (ARMResourcesDBClientIterator[testListItem], error) {
 				return nil, fmt.Errorf("connection refused")
 			},
 			wantErr: "failed to list: connection refused",
@@ -205,7 +205,7 @@ func TestListAll(t *testing.T) {
 		{
 			name:     "iterator error",
 			pageSize: 10,
-			listFn: func(_ context.Context, _ *DBClientListResourceDocsOptions) (DBClientIterator[testListItem], error) {
+			listFn: func(_ context.Context, _ *ARMResourcesDBClientListResourceDocsOptions) (ARMResourcesDBClientIterator[testListItem], error) {
 				return &fakeIterator[testListItem]{err: fmt.Errorf("unmarshal error")}, nil
 			},
 			wantErr: "failed iterating: unmarshal error",

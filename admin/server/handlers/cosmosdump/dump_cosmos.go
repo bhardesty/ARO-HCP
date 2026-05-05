@@ -24,10 +24,10 @@ import (
 )
 
 type CosmosDumpHandler struct {
-	cosmosClient database.DBClient
+	cosmosClient database.ARMResourcesDBClient
 }
 
-func NewCosmosDumpHandler(cosmosClient database.DBClient) *CosmosDumpHandler {
+func NewCosmosDumpHandler(cosmosClient database.ARMResourcesDBClient) *CosmosDumpHandler {
 	return &CosmosDumpHandler{cosmosClient: cosmosClient}
 }
 
@@ -49,10 +49,10 @@ func (h *CosmosDumpHandler) ServeHTTP(w http.ResponseWriter, request *http.Reque
 }
 
 type BillingDumpHandler struct {
-	cosmosClient database.DBClient
+	cosmosClient database.ARMResourcesDBClient
 }
 
-func NewBillingDumpHandler(cosmosClient database.DBClient) *BillingDumpHandler {
+func NewBillingDumpHandler(cosmosClient database.ARMResourcesDBClient) *BillingDumpHandler {
 	return &BillingDumpHandler{cosmosClient: cosmosClient}
 }
 

@@ -136,7 +136,7 @@ type completedOptions struct {
 	Port                    int
 	MetricsPort             int
 	Location                string
-	DBClient                database.DBClient
+	ARMResourcesDBClient    database.ARMResourcesDBClient
 	ClusterServiceClient    ocm.ClusterServiceClientSpec
 	KustoClient             *kusto.Client
 	FpaCredentialRetriever  fpa.FirstPartyApplicationTokenCredentialRetriever
@@ -212,7 +212,7 @@ func (o *ValidatedOptions) Complete(ctx context.Context) (*Options, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create the CosmosDB client: %w", err)
 	}
-	dbClient, err := database.NewDBClient(ctx, cosmosDatabaseClient)
+	dbClient, err := database.NewARMResourcesDBClient(ctx, cosmosDatabaseClient)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create the database client: %w", err)
 	}
@@ -283,7 +283,7 @@ func (o *ValidatedOptions) Complete(ctx context.Context) (*Options, error) {
 			Port:                    o.Port,
 			MetricsPort:             o.MetricsPort,
 			Location:                o.Location,
-			DBClient:                dbClient,
+			ARMResourcesDBClient:    dbClient,
 			ClusterServiceClient:    csClient,
 			KustoClient:             kustoClient,
 			FpaCredentialRetriever:  fpaCredentialRetriever,
@@ -337,7 +337,7 @@ func (opts *Options) Run(ctx context.Context) error {
 		opts.Location,
 		listener,
 		metricsListener,
-		opts.DBClient,
+		opts.ARMResourcesDBClient,
 		opts.ClusterServiceClient,
 		opts.KustoClient,
 		opts.FpaCredentialRetriever,

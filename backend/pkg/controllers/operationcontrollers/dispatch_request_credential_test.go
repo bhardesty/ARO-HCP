@@ -40,12 +40,12 @@ func TestDispatchRequestCredential_SyncrhonizeOperation(t *testing.T) {
 		name                         string
 		revokeCredentialsOperationID string
 		expectError                  bool
-		verify                       func(t *testing.T, ctx context.Context, db *databasetesting.MockDBClient, fixture *clusterTestFixture)
+		verify                       func(t *testing.T, ctx context.Context, db *databasetesting.MockARMResourcesDBClient, fixture *clusterTestFixture)
 	}{
 		{
 			name:        "successful dispatch records a break-glass credential ID",
 			expectError: false,
-			verify: func(t *testing.T, ctx context.Context, db *databasetesting.MockDBClient, fixture *clusterTestFixture) {
+			verify: func(t *testing.T, ctx context.Context, db *databasetesting.MockARMResourcesDBClient, fixture *clusterTestFixture) {
 				op, err := db.Operations(testSubscriptionID).Get(ctx, testOperationName)
 				require.NoError(t, err)
 				assert.Equal(t, testBreakGlassCredentialIDStr, op.InternalID.String())
@@ -55,7 +55,7 @@ func TestDispatchRequestCredential_SyncrhonizeOperation(t *testing.T) {
 			name:                         "in-progress revocation cancels operation",
 			revokeCredentialsOperationID: "test-revoke-operation-id",
 			expectError:                  false,
-			verify: func(t *testing.T, ctx context.Context, db *databasetesting.MockDBClient, fixture *clusterTestFixture) {
+			verify: func(t *testing.T, ctx context.Context, db *databasetesting.MockARMResourcesDBClient, fixture *clusterTestFixture) {
 				op, err := db.Operations(testSubscriptionID).Get(ctx, testOperationName)
 				require.NoError(t, err)
 				assert.Equal(t, arm.ProvisioningStateCanceled, op.Status)
@@ -76,7 +76,7 @@ func TestDispatchRequestCredential_SyncrhonizeOperation(t *testing.T) {
 			operation := fixture.newOperation(database.OperationRequestRequestCredential)
 			operation.InternalID = api.InternalID{}
 
-			mockDB, err := databasetesting.NewMockDBClientWithResources(ctx, []any{cluster, operation})
+			mockDB, err := databasetesting.NewMockARMResourcesDBClientWithResources(ctx, []any{cluster, operation})
 			require.NoError(t, err)
 
 			mockCSClient := ocm.NewMockClusterServiceClientSpec(ctrl)

@@ -55,7 +55,7 @@ type createNodePoolScopedMaestroReadonlyBundlesSyncer struct {
 
 	activeOperationLister listers.ActiveOperationLister
 
-	cosmosClient database.DBClient
+	cosmosClient database.ARMResourcesDBClient
 
 	clusterServiceClient ocm.ClusterServiceClientSpec
 
@@ -70,7 +70,7 @@ var _ controllerutils.NodePoolSyncer = (*createNodePoolScopedMaestroReadonlyBund
 
 func NewCreateNodePoolScopedMaestroReadonlyBundlesController(
 	activeOperationLister listers.ActiveOperationLister,
-	cosmosClient database.DBClient,
+	cosmosClient database.ARMResourcesDBClient,
 	clusterServiceClient ocm.ClusterServiceClientSpec,
 	informers informers.BackendInformers,
 	maestroSourceEnvironmentIdentifier string,
@@ -148,7 +148,7 @@ func (c *createNodePoolScopedMaestroReadonlyBundlesSyncer) SyncOnce(ctx context.
 		return nil
 	}
 
-	serviceProviderNodePoolsDBClient := c.cosmosClient.ServiceProviderNodePools(
+	serviceProviderClustersDBClient := c.cosmosClient.ServiceProviderNodePools(
 		key.SubscriptionID,
 		key.ResourceGroupName,
 		key.HCPClusterName,
@@ -193,7 +193,7 @@ func (c *createNodePoolScopedMaestroReadonlyBundlesSyncer) SyncOnce(ctx context.
 	for _, maestroBundleInternalName := range maestroBundlesToSync {
 		updatedSPNP, syncErr := c.syncMaestroBundle(
 			ctx, maestroBundleInternalName, existingServiceProviderNodePool, existingNodePool, maestroClient,
-			serviceProviderNodePoolsDBClient, clusterProvisionShard, csClusterDomainPrefix,
+			serviceProviderClustersDBClient, clusterProvisionShard, csClusterDomainPrefix,
 		)
 		existingServiceProviderNodePool = updatedSPNP
 		if syncErr != nil {

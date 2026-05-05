@@ -38,13 +38,13 @@ const (
 // for debugging purposes. This endpoint allows SREs to access boot diagnostics
 // and console output from VMs in the HCP cluster's managed resource group.
 type HCPSerialConsoleHandler struct {
-	dbClient               database.DBClient
+	dbClient               database.ARMResourcesDBClient
 	fpaCredentialRetriever fpa.FirstPartyApplicationTokenCredentialRetriever
 }
 
 // NewHCPSerialConsoleHandler creates a new serial console handler with the required dependencies
 func NewHCPSerialConsoleHandler(
-	dbClient database.DBClient,
+	dbClient database.ARMResourcesDBClient,
 	fpaCredentialRetriever fpa.FirstPartyApplicationTokenCredentialRetriever,
 ) *HCPSerialConsoleHandler {
 	return &HCPSerialConsoleHandler{

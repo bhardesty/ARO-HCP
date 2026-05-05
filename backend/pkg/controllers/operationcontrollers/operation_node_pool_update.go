@@ -31,7 +31,7 @@ import (
 )
 
 type operationNodePoolUpdate struct {
-	cosmosClient         database.DBClient
+	cosmosClient         database.ARMResourcesDBClient
 	clusterServiceClient ocm.ClusterServiceClientSpec
 	notificationClient   *http.Client
 }
@@ -51,7 +51,7 @@ type operationNodePoolUpdate struct {
 // any of "Succeeded", "Failed", or "Canceled". Once the operation status reaches
 // a terminal value, there will be no further updates to the operation document.
 func NewOperationNodePoolUpdateController(
-	cosmosClient database.DBClient,
+	cosmosClient database.ARMResourcesDBClient,
 	clusterServiceClient ocm.ClusterServiceClientSpec,
 	notificationClient *http.Client,
 	activeOperationInformer cache.SharedIndexInformer,

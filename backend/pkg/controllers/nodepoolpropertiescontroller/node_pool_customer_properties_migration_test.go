@@ -100,7 +100,7 @@ func TestNodePoolCustomerPropertiesMigrationController_SyncOnce(t *testing.T) {
 			ctrl := gomock.NewController(t)
 
 			// Setup mock DB
-			mockDB := databasetesting.NewMockDBClient()
+			mockDB := databasetesting.NewMockARMResourcesDBClient()
 
 			// Create the nodePool in the mock DB (cosmos)
 			nodePoolCRUD := mockDB.HCPClusters(testSubscriptionID, testResourceGroupName).NodePools(testClusterName)

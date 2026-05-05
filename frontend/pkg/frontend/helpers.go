@@ -54,7 +54,7 @@ func addOperationResponseHeaders(writer http.ResponseWriter, request *http.Reque
 // TODO we will collapse onto this function entirely once we complete the migration.  Creating a separate method now to avoid having to have a big bang
 func checkForProvisioningStateConflict(
 	ctx context.Context,
-	cosmosClient database.DBClient,
+	cosmosClient database.ARMResourcesDBClient,
 	operationRequest database.OperationRequest,
 	resourceID *azcorearm.ResourceID,
 	provisioningState arm.ProvisioningState,

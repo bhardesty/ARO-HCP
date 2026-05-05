@@ -38,7 +38,7 @@ func TestOperationExternalAuthCreate_SynchronizeOperation(t *testing.T) {
 		name        string
 		setupMock   func(ctrl *gomock.Controller, fixture *externalAuthTestFixture) ocm.ClusterServiceClientSpec
 		expectError bool
-		verify      func(t *testing.T, ctx context.Context, db *databasetesting.MockDBClient, fixture *externalAuthTestFixture)
+		verify      func(t *testing.T, ctx context.Context, db *databasetesting.MockARMResourcesDBClient, fixture *externalAuthTestFixture)
 	}{
 		{
 			name: "external auth exists transitions to succeeded",
@@ -53,7 +53,7 @@ func TestOperationExternalAuthCreate_SynchronizeOperation(t *testing.T) {
 				return mockCSClient
 			},
 			expectError: false,
-			verify: func(t *testing.T, ctx context.Context, db *databasetesting.MockDBClient, fixture *externalAuthTestFixture) {
+			verify: func(t *testing.T, ctx context.Context, db *databasetesting.MockARMResourcesDBClient, fixture *externalAuthTestFixture) {
 				op, err := db.Operations(testSubscriptionID).Get(ctx, testOperationName)
 				require.NoError(t, err)
 				assert.Equal(t, arm.ProvisioningStateSucceeded, op.Status)
@@ -91,7 +91,7 @@ func TestOperationExternalAuthCreate_SynchronizeOperation(t *testing.T) {
 			externalAuth := fixture.newExternalAuth()
 			operation := fixture.newOperation(database.OperationRequestCreate)
 
-			mockDB, err := databasetesting.NewMockDBClientWithResources(ctx, []any{cluster, externalAuth, operation})
+			mockDB, err := databasetesting.NewMockARMResourcesDBClientWithResources(ctx, []any{cluster, externalAuth, operation})
 			require.NoError(t, err)
 
 			mockCSClient := tt.setupMock(ctrl, fixture)

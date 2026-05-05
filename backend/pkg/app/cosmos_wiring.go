@@ -24,7 +24,7 @@ import (
 	"github.com/Azure/ARO-HCP/internal/utils"
 )
 
-func NewCosmosDBClient(ctx context.Context, cosmosDBURL string, cosmosDBName string, azCoreClientOptions azcore.ClientOptions) (database.DBClient, error) {
+func NewARMResourcesDBClient(ctx context.Context, cosmosDBURL string, cosmosDBName string, azCoreClientOptions azcore.ClientOptions) (database.ARMResourcesDBClient, error) {
 	cosmosDatabaseClient, err := database.NewCosmosDatabaseClient(
 		cosmosDBURL,
 		cosmosDBName,
@@ -34,9 +34,9 @@ func NewCosmosDBClient(ctx context.Context, cosmosDBURL string, cosmosDBName str
 		return nil, utils.TrackError(fmt.Errorf("failed to create Azure Cosmos database client: %w", err))
 	}
 
-	dbClient, err := database.NewDBClient(ctx, cosmosDatabaseClient)
+	dbClient, err := database.NewARMResourcesDBClient(ctx, cosmosDatabaseClient)
 	if err != nil {
-		return nil, utils.TrackError(fmt.Errorf("failed to create Cosmos DBClient: %w", err))
+		return nil, utils.TrackError(fmt.Errorf("failed to create ARM resources DB client: %w", err))
 	}
 
 	return dbClient, nil

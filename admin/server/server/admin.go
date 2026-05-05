@@ -48,7 +48,7 @@ import (
 
 type AdminAPI struct {
 	clustersServiceClient  ocm.ClusterServiceClientSpec
-	dbClient               database.DBClient
+	dbClient               database.ARMResourcesDBClient
 	kustoClient            *kusto.Client
 	fpaCredentialRetriever fpa.FirstPartyApplicationTokenCredentialRetriever
 
@@ -65,7 +65,7 @@ func NewAdminAPI(
 	location string,
 	listener net.Listener,
 	metricsListener net.Listener,
-	dbClient database.DBClient,
+	dbClient database.ARMResourcesDBClient,
 	clustersServiceClient ocm.ClusterServiceClientSpec,
 	kustoClient *kusto.Client,
 	fpaCredentialRetriever fpa.FirstPartyApplicationTokenCredentialRetriever,

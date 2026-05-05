@@ -34,7 +34,7 @@ import (
 )
 
 type operationExternalAuthDelete struct {
-	cosmosClient         database.DBClient
+	cosmosClient         database.ARMResourcesDBClient
 	clusterServiceClient ocm.ClusterServiceClientSpec
 	notificationClient   *http.Client
 }
@@ -54,7 +54,7 @@ type operationExternalAuthDelete struct {
 // any of "Succeeded", "Failed", or "Canceled". Once the operation status reaches
 // a terminal value, there will be no further updates to the operation document.
 func NewOperationExternalAuthDeleteController(
-	cosmosClient database.DBClient,
+	cosmosClient database.ARMResourcesDBClient,
 	clusterServiceClient ocm.ClusterServiceClientSpec,
 	notificationClient *http.Client,
 	activeOperationInformer cache.SharedIndexInformer,

@@ -31,12 +31,12 @@ import (
 
 type cosmosNodePoolMatching struct {
 	cooldownChecker      controllerutils.CooldownChecker
-	cosmosClient         database.DBClient
+	cosmosClient         database.ARMResourcesDBClient
 	clusterServiceClient ocm.ClusterServiceClientSpec
 }
 
 // NewCosmosNodePoolMatchingController periodically looks for mismatched cluster-service and cosmos nodepool
-func NewCosmosNodePoolMatchingController(cosmosClient database.DBClient, clusterServiceClient ocm.ClusterServiceClientSpec, informers informers.BackendInformers) controllerutils.Controller {
+func NewCosmosNodePoolMatchingController(cosmosClient database.ARMResourcesDBClient, clusterServiceClient ocm.ClusterServiceClientSpec, informers informers.BackendInformers) controllerutils.Controller {
 	syncer := &cosmosNodePoolMatching{
 		cooldownChecker:      controllerutils.NewTimeBasedCooldownChecker(1 * time.Hour),
 		cosmosClient:         cosmosClient,

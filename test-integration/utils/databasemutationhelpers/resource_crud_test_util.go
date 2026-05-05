@@ -380,7 +380,7 @@ type StepInput struct {
 	CosmosContainer        *azcosmos.ContainerClient
 	ContentLoader          integrationutils.ContentLoader
 	DocumentLister         integrationutils.DocumentLister
-	DBClient               database.DBClient
+	ARMResourcesDBClient   database.ARMResourcesDBClient
 	FrontendURL            string
 	AdminURL               string
 	APIVersion             string
@@ -421,8 +421,8 @@ func (s StepInput) HTTPTestAccessor(key ResourceKey) HTTPTestAccessor {
 
 func NewCosmosStepInput(storageInfo integrationutils.StorageIntegrationTestInfo) *StepInput {
 	return &StepInput{
-		ContentLoader:  storageInfo,
-		DocumentLister: storageInfo,
-		DBClient:       storageInfo.CosmosClient(),
+		ContentLoader:        storageInfo,
+		DocumentLister:       storageInfo,
+		ARMResourcesDBClient: storageInfo.CosmosClient(),
 	}
 }

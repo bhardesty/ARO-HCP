@@ -58,7 +58,7 @@ type Frontend struct {
 	metricsListener      net.Listener
 	server               http.Server
 	metricsServer        http.Server
-	dbClient             database.DBClient
+	dbClient             database.ARMResourcesDBClient
 	auditClient          audit.Client
 	collector            *metrics.SubscriptionCollector
 	healthGauge          prometheus.Gauge
@@ -86,7 +86,7 @@ func NewFrontend(
 	metricsListener net.Listener,
 	registerer prometheus.Registerer,
 	gatherer prometheus.Gatherer,
-	dbClient database.DBClient,
+	dbClient database.ARMResourcesDBClient,
 	csClient ocm.ClusterServiceClientSpec,
 	auditClient audit.Client,
 	azureLocation string,
@@ -232,12 +232,12 @@ func (f *Frontend) Location(writer http.ResponseWriter, request *http.Request) {
 	_, _ = writer.Write([]byte(f.azureLocation))
 }
 
-func dbListOptionsFromRequest(request *http.Request) *database.DBClientListResourceDocsOptions {
+func dbListOptionsFromRequest(request *http.Request) *database.ARMResourcesDBClientListResourceDocsOptions {
 	// FIXME We may want to cap pageSizeHint. If we get a large enough
 	//       $top argument (and there's enough actual clusters to reach
 	//       that), we could potentially hit the 8MB response size limit.
 
-	options := &database.DBClientListResourceDocsOptions{
+	options := &database.ARMResourcesDBClientListResourceDocsOptions{
 		PageSizeHint: api.Ptr(int32(20)),
 	}
 
@@ -453,7 +453,7 @@ func (f *Frontend) ArmResourceActionRevokeCredentials(writer http.ResponseWriter
 
 	// Just as deleting an ARM resource cancels any other operations on the resource,
 	// revoking credentials cancels any credential requests in progress.
-	operationsToCancel, err := database.CancelActiveOperations(ctx, f.dbClient, transaction, &database.DBClientListActiveOperationDocsOptions{
+	operationsToCancel, err := database.CancelActiveOperations(ctx, f.dbClient, transaction, &database.ARMResourcesDBClientListActiveOperationDocsOptions{
 		Request:    api.Ptr(database.OperationRequestRequestCredential),
 		ExternalID: clusterResourceID,
 	})

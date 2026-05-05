@@ -109,10 +109,10 @@ func TestCheckForProvisioningStateConflict(t *testing.T) {
 			name = fmt.Sprintf("%s (provisioningState=%s)", tt.name, provisioningState)
 			t.Run(name, func(t *testing.T) {
 				ctx := utils.ContextWithLogger(context.Background(), testr.New(t))
-				mockDBClient := databasetesting.NewMockDBClient()
+				mockARMResourcesDBClient := databasetesting.NewMockARMResourcesDBClient()
 
 				frontend := &Frontend{
-					dbClient: mockDBClient,
+					dbClient: mockARMResourcesDBClient,
 				}
 
 				doc := database.NewResourceDocument(resourceID)
@@ -133,7 +133,7 @@ func TestCheckForProvisioningStateConflict(t *testing.T) {
 							ClusterServiceID:  &clusterInternalID,
 						},
 					}
-					_, _ = mockDBClient.HCPClusters(parentResourceID.SubscriptionID, parentResourceID.ResourceGroupName).Create(ctx, parentCluster, nil)
+					_, _ = mockARMResourcesDBClient.HCPClusters(parentResourceID.SubscriptionID, parentResourceID.ResourceGroupName).Create(ctx, parentCluster, nil)
 				}
 
 				cloudError := checkForProvisioningStateConflict(ctx, frontend.dbClient, tt.operationRequest, doc.ResourceID, doc.ProvisioningState)
@@ -155,10 +155,10 @@ func TestCheckForProvisioningStateConflict(t *testing.T) {
 				name = fmt.Sprintf("%s (parent provisioningState=%s)", tt.name, provisioningState)
 				t.Run(name, func(t *testing.T) {
 					ctx := utils.ContextWithLogger(context.Background(), testr.New(t))
-					mockDBClient := databasetesting.NewMockDBClient()
+					mockARMResourcesDBClient := databasetesting.NewMockARMResourcesDBClient()
 
 					frontend := &Frontend{
-						dbClient: mockDBClient,
+						dbClient: mockARMResourcesDBClient,
 					}
 
 					doc := database.NewResourceDocument(resourceID)
@@ -180,7 +180,7 @@ func TestCheckForProvisioningStateConflict(t *testing.T) {
 								ClusterServiceID:  &clusterInternalID,
 							},
 						}
-						_, _ = mockDBClient.HCPClusters(parentResourceID.SubscriptionID, parentResourceID.ResourceGroupName).Create(ctx, parentCluster, nil)
+						_, _ = mockARMResourcesDBClient.HCPClusters(parentResourceID.SubscriptionID, parentResourceID.ResourceGroupName).Create(ctx, parentCluster, nil)
 					} else {
 						t.Fatalf("Parent resource type namespace (%s) differs from child namespace (%s)",
 							parentResourceID.ResourceType.Namespace,

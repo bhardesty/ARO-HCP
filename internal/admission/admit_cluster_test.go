@@ -538,7 +538,7 @@ func TestAdmitClusterOnUpdate(t *testing.T) {
 			for _, serviceProviderNodePool := range tt.serviceProviderNodePools {
 				resources = append(resources, serviceProviderNodePool)
 			}
-			mockDB, err := databasetesting.NewMockDBClientWithResources(ctx, resources)
+			mockDB, err := databasetesting.NewMockARMResourcesDBClientWithResources(ctx, resources)
 			assert.NoError(t, err)
 
 			oldCluster := &api.HCPOpenShiftCluster{

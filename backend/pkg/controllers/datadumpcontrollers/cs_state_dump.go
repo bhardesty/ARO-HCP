@@ -34,7 +34,7 @@ import (
 
 type csStateDump struct {
 	cooldownChecker controllerutils.CooldownChecker
-	cosmosClient    database.DBClient
+	cosmosClient    database.ARMResourcesDBClient
 	csClient        ocm.ClusterServiceClientSpec
 
 	// nextDumpChecker ensures we don't hotloop from any source.
@@ -43,7 +43,7 @@ type csStateDump struct {
 
 // NewCSStateDumpController periodically fetches cluster-service state for each cluster and dumps it to logs.
 func NewCSStateDumpController(
-	cosmosClient database.DBClient,
+	cosmosClient database.ARMResourcesDBClient,
 	activeOperationLister listers.ActiveOperationLister,
 	backendInformers informers.BackendInformers,
 	csClient ocm.ClusterServiceClientSpec,

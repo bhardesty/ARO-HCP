@@ -32,10 +32,10 @@ const (
 )
 
 type middlewareValidateSubscriptionState struct {
-	dbClient database.DBClient
+	dbClient database.ARMResourcesDBClient
 }
 
-func newMiddlewareValidateSubscriptionState(dbClient database.DBClient) *middlewareValidateSubscriptionState {
+func newMiddlewareValidateSubscriptionState(dbClient database.ARMResourcesDBClient) *middlewareValidateSubscriptionState {
 	return &middlewareValidateSubscriptionState{
 		dbClient: dbClient,
 	}

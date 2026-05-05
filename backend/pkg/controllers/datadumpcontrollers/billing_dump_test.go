@@ -33,7 +33,7 @@ func TestBillingDumpController_SyncOnce(t *testing.T) {
 	clusterResourceID, err := azcorearm.ParseResourceID("/subscriptions/sub-1/resourceGroups/rg-1/providers/Microsoft.RedHatOpenShift/hcpOpenShiftClusters/cluster-1")
 	require.NoError(t, err)
 
-	mockDB := databasetesting.NewMockDBClient()
+	mockDB := databasetesting.NewMockARMResourcesDBClient()
 
 	syncer := &billingDump{
 		cooldownChecker: &alwaysSyncCooldownChecker{},
@@ -53,7 +53,7 @@ func TestBillingDumpController_SyncOnce(t *testing.T) {
 }
 
 func TestBillingDumpController_CooldownChecker(t *testing.T) {
-	mockDB := databasetesting.NewMockDBClient()
+	mockDB := databasetesting.NewMockARMResourcesDBClient()
 
 	syncer := &billingDump{
 		cooldownChecker: &alwaysSyncCooldownChecker{},
@@ -71,7 +71,7 @@ func TestNewBillingDumpController(t *testing.T) {
 	// Note: We can't easily test the wrapped controller without backendInformers,
 	// so we just verify the syncer directly in other tests
 	require.NotPanics(t, func() {
-		// The constructor would require backendInformers which needs GlobalListers
+		// The constructor would require backendInformers which needs ARMResourcesGlobalListers
 		// This is tested indirectly through other tests
 	})
 }
@@ -82,7 +82,7 @@ func TestBillingDumpController_SyncOnce_WithBillingDoc(t *testing.T) {
 	clusterResourceID, err := azcorearm.ParseResourceID("/subscriptions/sub-1/resourceGroups/rg-1/providers/Microsoft.RedHatOpenShift/hcpOpenShiftClusters/cluster-1")
 	require.NoError(t, err)
 
-	mockDB := databasetesting.NewMockDBClient()
+	mockDB := databasetesting.NewMockARMResourcesDBClient()
 
 	// Create billing document
 	billingDoc := database.NewBillingDocument("billing-doc-1", clusterResourceID)
@@ -112,7 +112,7 @@ func TestBillingDumpController_CooldownRespected(t *testing.T) {
 	clusterResourceID, err := azcorearm.ParseResourceID("/subscriptions/sub-1/resourceGroups/rg-1/providers/Microsoft.RedHatOpenShift/hcpOpenShiftClusters/cluster-1")
 	require.NoError(t, err)
 
-	mockDB := databasetesting.NewMockDBClient()
+	mockDB := databasetesting.NewMockARMResourcesDBClient()
 
 	// neverSyncChecker prevents sync
 	neverSyncChecker := cooldownCheckerFunc(func(ctx context.Context, key any) bool {

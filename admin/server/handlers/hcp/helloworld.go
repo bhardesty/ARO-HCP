@@ -37,11 +37,11 @@ import (
 //
 
 type HCPHelloWorldHandler struct {
-	dbClient database.DBClient
+	dbClient database.ARMResourcesDBClient
 	csClient ocm.ClusterServiceClientSpec
 }
 
-func NewHCPHelloWorldHandler(dbClient database.DBClient, csClient ocm.ClusterServiceClientSpec) *HCPHelloWorldHandler {
+func NewHCPHelloWorldHandler(dbClient database.ARMResourcesDBClient, csClient ocm.ClusterServiceClientSpec) *HCPHelloWorldHandler {
 	return &HCPHelloWorldHandler{dbClient: dbClient, csClient: csClient}
 }
 
@@ -87,12 +87,12 @@ func (h *HCPHelloWorldHandler) ServeHTTP(writer http.ResponseWriter, request *ht
 }
 
 type HCPDemoListLoadbalancersHandler struct {
-	dbClient               database.DBClient
+	dbClient               database.ARMResourcesDBClient
 	csClient               ocm.ClusterServiceClientSpec
 	fpaCredentialRetriever fpa.FirstPartyApplicationTokenCredentialRetriever
 }
 
-func NewHCPDemoListLoadbalancersHandler(dbClient database.DBClient, csClient ocm.ClusterServiceClientSpec, fpaCredentialRetriever fpa.FirstPartyApplicationTokenCredentialRetriever) *HCPDemoListLoadbalancersHandler {
+func NewHCPDemoListLoadbalancersHandler(dbClient database.ARMResourcesDBClient, csClient ocm.ClusterServiceClientSpec, fpaCredentialRetriever fpa.FirstPartyApplicationTokenCredentialRetriever) *HCPDemoListLoadbalancersHandler {
 	return &HCPDemoListLoadbalancersHandler{dbClient: dbClient, csClient: csClient, fpaCredentialRetriever: fpaCredentialRetriever}
 }
 

@@ -38,7 +38,7 @@ type identityMigrationSyncer struct {
 	cooldownChecker controllerutils.CooldownChecker
 
 	clusterLister        listers.ClusterLister
-	cosmosClient         database.DBClient
+	cosmosClient         database.ARMResourcesDBClient
 	clusterServiceClient ocm.ClusterServiceClientSpec
 }
 
@@ -49,7 +49,7 @@ var _ controllerutils.ClusterSyncer = (*identityMigrationSyncer)(nil)
 // It periodically checks each cluster and populates the Identity.UserAssignedIdentities
 // field if it is not set, using GetClusterServiceUserAssignedIdentities to extract the identity data.
 func NewIdentityMigrationController(
-	cosmosClient database.DBClient,
+	cosmosClient database.ARMResourcesDBClient,
 	clusterServiceClient ocm.ClusterServiceClientSpec,
 	activeOperationLister listers.ActiveOperationLister,
 	informers informers.BackendInformers,

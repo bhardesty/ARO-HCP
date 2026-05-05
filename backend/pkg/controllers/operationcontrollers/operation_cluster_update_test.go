@@ -53,13 +53,13 @@ func TestOperationClusterUpdate_SynchronizeOperation(t *testing.T) {
 		serviceProviderClusterStatusConditions         []metav1.Condition
 		controlPlaneDesiredVersionControllerConditions []metav1.Condition
 		seedMismatchFirstSeenAt                        time.Time
-		verify                                         func(t *testing.T, ctx context.Context, db *databasetesting.MockDBClient, fixture *clusterTestFixture)
+		verify                                         func(t *testing.T, ctx context.Context, db *databasetesting.MockARMResourcesDBClient, fixture *clusterTestFixture)
 	}{
 		{
 			name:              "cluster ready transitions operation to succeeded",
 			clusterState:      arohcpv1alpha1.ClusterStateReady,
 			customerVersionID: "4.19",
-			verify: func(t *testing.T, ctx context.Context, db *databasetesting.MockDBClient, fixture *clusterTestFixture) {
+			verify: func(t *testing.T, ctx context.Context, db *databasetesting.MockARMResourcesDBClient, fixture *clusterTestFixture) {
 				op, err := db.Operations(testSubscriptionID).Get(ctx, testOperationName)
 				require.NoError(t, err)
 				assert.Equal(t, arm.ProvisioningStateSucceeded, op.Status)
@@ -74,7 +74,7 @@ func TestOperationClusterUpdate_SynchronizeOperation(t *testing.T) {
 			name:              "cluster updating transitions operation to updating",
 			clusterState:      arohcpv1alpha1.ClusterStateUpdating,
 			customerVersionID: "4.19",
-			verify: func(t *testing.T, ctx context.Context, db *databasetesting.MockDBClient, fixture *clusterTestFixture) {
+			verify: func(t *testing.T, ctx context.Context, db *databasetesting.MockARMResourcesDBClient, fixture *clusterTestFixture) {
 				op, err := db.Operations(testSubscriptionID).Get(ctx, testOperationName)
 				require.NoError(t, err)
 				assert.Equal(t, arm.ProvisioningStateUpdating, op.Status)
@@ -89,7 +89,7 @@ func TestOperationClusterUpdate_SynchronizeOperation(t *testing.T) {
 			name:              "cluster error transitions operation to failed",
 			clusterState:      arohcpv1alpha1.ClusterStateError,
 			customerVersionID: "4.19",
-			verify: func(t *testing.T, ctx context.Context, db *databasetesting.MockDBClient, fixture *clusterTestFixture) {
+			verify: func(t *testing.T, ctx context.Context, db *databasetesting.MockARMResourcesDBClient, fixture *clusterTestFixture) {
 				op, err := db.Operations(testSubscriptionID).Get(ctx, testOperationName)
 				require.NoError(t, err)
 				assert.Equal(t, arm.ProvisioningStateFailed, op.Status)
@@ -105,7 +105,7 @@ func TestOperationClusterUpdate_SynchronizeOperation(t *testing.T) {
 			name:              "cluster pending keeps operation accepted",
 			clusterState:      arohcpv1alpha1.ClusterStatePending,
 			customerVersionID: "4.19",
-			verify: func(t *testing.T, ctx context.Context, db *databasetesting.MockDBClient, fixture *clusterTestFixture) {
+			verify: func(t *testing.T, ctx context.Context, db *databasetesting.MockARMResourcesDBClient, fixture *clusterTestFixture) {
 				op, err := db.Operations(testSubscriptionID).Get(ctx, testOperationName)
 				require.NoError(t, err)
 				assert.Equal(t, arm.ProvisioningStateAccepted, op.Status)
@@ -123,7 +123,7 @@ func TestOperationClusterUpdate_SynchronizeOperation(t *testing.T) {
 					Message: "no downgrades allowed",
 				},
 			},
-			verify: func(t *testing.T, ctx context.Context, db *databasetesting.MockDBClient, fixture *clusterTestFixture) {
+			verify: func(t *testing.T, ctx context.Context, db *databasetesting.MockARMResourcesDBClient, fixture *clusterTestFixture) {
 				op, err := db.Operations(testSubscriptionID).Get(ctx, testOperationName)
 				require.NoError(t, err)
 				assert.Equal(t, arm.ProvisioningStateFailed, op.Status)
@@ -141,7 +141,7 @@ func TestOperationClusterUpdate_SynchronizeOperation(t *testing.T) {
 			name:              "customer minor mismatch without ControlPlaneDesiredVersion IntentFailed leaves operation accepted",
 			clusterState:      arohcpv1alpha1.ClusterStateReady,
 			customerVersionID: "4.20",
-			verify: func(t *testing.T, ctx context.Context, db *databasetesting.MockDBClient, fixture *clusterTestFixture) {
+			verify: func(t *testing.T, ctx context.Context, db *databasetesting.MockARMResourcesDBClient, fixture *clusterTestFixture) {
 				op, err := db.Operations(testSubscriptionID).Get(ctx, testOperationName)
 				require.NoError(t, err)
 				assert.Equal(t, arm.ProvisioningStateAccepted, op.Status)
@@ -158,7 +158,7 @@ func TestOperationClusterUpdate_SynchronizeOperation(t *testing.T) {
 			clusterState:            arohcpv1alpha1.ClusterStateReady,
 			customerVersionID:       "4.20",
 			seedMismatchFirstSeenAt: testClockNow.Add(-20 * time.Second),
-			verify: func(t *testing.T, ctx context.Context, db *databasetesting.MockDBClient, fixture *clusterTestFixture) {
+			verify: func(t *testing.T, ctx context.Context, db *databasetesting.MockARMResourcesDBClient, fixture *clusterTestFixture) {
 				op, err := db.Operations(testSubscriptionID).Get(ctx, testOperationName)
 				require.NoError(t, err)
 				assert.Equal(t, arm.ProvisioningStateAccepted, op.Status)
@@ -175,7 +175,7 @@ func TestOperationClusterUpdate_SynchronizeOperation(t *testing.T) {
 			clusterState:            arohcpv1alpha1.ClusterStateReady,
 			customerVersionID:       "4.20",
 			seedMismatchFirstSeenAt: testClockNow.Add(-30 * time.Second),
-			verify: func(t *testing.T, ctx context.Context, db *databasetesting.MockDBClient, fixture *clusterTestFixture) {
+			verify: func(t *testing.T, ctx context.Context, db *databasetesting.MockARMResourcesDBClient, fixture *clusterTestFixture) {
 				op, err := db.Operations(testSubscriptionID).Get(ctx, testOperationName)
 				require.NoError(t, err)
 				assert.Equal(t, arm.ProvisioningStateFailed, op.Status)
@@ -208,7 +208,7 @@ func TestOperationClusterUpdate_SynchronizeOperation(t *testing.T) {
 			cluster.CustomerProperties.Version.ID = tt.customerVersionID
 			operation := fixture.newOperation(database.OperationRequestUpdate)
 
-			mockDB, err := databasetesting.NewMockDBClientWithResources(ctx, []any{cluster, operation})
+			mockDB, err := databasetesting.NewMockARMResourcesDBClientWithResources(ctx, []any{cluster, operation})
 			require.NoError(t, err)
 			resourceId := api.Must(azcorearm.ParseResourceID(fmt.Sprintf("%s/%s/%s",
 				fixture.clusterResourceID.String(),

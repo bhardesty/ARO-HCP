@@ -25,10 +25,10 @@ import (
 )
 
 type middlewareLockSubscription struct {
-	dbClient database.DBClient
+	dbClient database.ARMResourcesDBClient
 }
 
-func newMiddlewareLockSubscription(dbClient database.DBClient) *middlewareLockSubscription {
+func newMiddlewareLockSubscription(dbClient database.ARMResourcesDBClient) *middlewareLockSubscription {
 	return &middlewareLockSubscription{
 		dbClient: dbClient,
 	}

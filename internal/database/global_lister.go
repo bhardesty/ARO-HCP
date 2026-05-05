@@ -30,12 +30,12 @@ import (
 
 // GlobalLister lists all resources of a particular type across all partitions.
 type GlobalLister[T any] interface {
-	List(ctx context.Context, options *DBClientListResourceDocsOptions) (DBClientIterator[T], error)
+	List(ctx context.Context, options *ARMResourcesDBClientListResourceDocsOptions) (ARMResourcesDBClientIterator[T], error)
 }
 
-// GlobalListers provides access to global listers for each resource type.
+// ARMResourcesGlobalListers provides access to global listers for each resource type.
 // These are intended to feed SharedInformers via ListerWatchers.
-type GlobalListers interface {
+type ARMResourcesGlobalListers interface {
 	Subscriptions() GlobalLister[arm.Subscription]
 	Clusters() GlobalLister[api.HCPOpenShiftCluster]
 	NodePools() GlobalLister[api.HCPOpenShiftClusterNodePool]
@@ -52,64 +52,64 @@ type GlobalListers interface {
 	BillingDocs() GlobalLister[BillingDocument]
 }
 
-// cosmosGlobalListers implements GlobalListers using a Cosmos DB container client.
-type cosmosGlobalListers struct {
+// cosmosARMResourcesGlobalListers implements ARMResourcesGlobalListers using a Cosmos DB container client.
+type cosmosARMResourcesGlobalListers struct {
 	resources *azcosmos.ContainerClient
 	billing   *azcosmos.ContainerClient
 }
 
-var _ GlobalListers = &cosmosGlobalListers{}
+var _ ARMResourcesGlobalListers = &cosmosARMResourcesGlobalListers{}
 
-func NewCosmosGlobalListers(resources *azcosmos.ContainerClient, billing *azcosmos.ContainerClient) GlobalListers {
-	return &cosmosGlobalListers{
+func NewCosmosARMResourcesGlobalListers(resources *azcosmos.ContainerClient, billing *azcosmos.ContainerClient) ARMResourcesGlobalListers {
+	return &cosmosARMResourcesGlobalListers{
 		resources: resources,
 		billing:   billing,
 	}
 }
 
-func (g *cosmosGlobalListers) Subscriptions() GlobalLister[arm.Subscription] {
+func (g *cosmosARMResourcesGlobalListers) Subscriptions() GlobalLister[arm.Subscription] {
 	return &cosmosGlobalLister[arm.Subscription, GenericDocument[arm.Subscription]]{
 		containerClient: g.resources,
 		resourceType:    azcorearm.SubscriptionResourceType,
 	}
 }
 
-func (g *cosmosGlobalListers) Clusters() GlobalLister[api.HCPOpenShiftCluster] {
+func (g *cosmosARMResourcesGlobalListers) Clusters() GlobalLister[api.HCPOpenShiftCluster] {
 	return &cosmosGlobalLister[api.HCPOpenShiftCluster, HCPCluster]{
 		containerClient: g.resources,
 		resourceType:    api.ClusterResourceType,
 	}
 }
 
-func (g *cosmosGlobalListers) NodePools() GlobalLister[api.HCPOpenShiftClusterNodePool] {
+func (g *cosmosARMResourcesGlobalListers) NodePools() GlobalLister[api.HCPOpenShiftClusterNodePool] {
 	return &cosmosGlobalLister[api.HCPOpenShiftClusterNodePool, NodePool]{
 		containerClient: g.resources,
 		resourceType:    api.NodePoolResourceType,
 	}
 }
 
-func (g *cosmosGlobalListers) ExternalAuths() GlobalLister[api.HCPOpenShiftClusterExternalAuth] {
+func (g *cosmosARMResourcesGlobalListers) ExternalAuths() GlobalLister[api.HCPOpenShiftClusterExternalAuth] {
 	return &cosmosGlobalLister[api.HCPOpenShiftClusterExternalAuth, ExternalAuth]{
 		containerClient: g.resources,
 		resourceType:    api.ExternalAuthResourceType,
 	}
 }
 
-func (g *cosmosGlobalListers) ServiceProviderClusters() GlobalLister[api.ServiceProviderCluster] {
+func (g *cosmosARMResourcesGlobalListers) ServiceProviderClusters() GlobalLister[api.ServiceProviderCluster] {
 	return &cosmosGlobalLister[api.ServiceProviderCluster, GenericDocument[api.ServiceProviderCluster]]{
 		containerClient: g.resources,
 		resourceType:    api.ServiceProviderClusterResourceType,
 	}
 }
 
-func (g *cosmosGlobalListers) ServiceProviderNodePools() GlobalLister[api.ServiceProviderNodePool] {
+func (g *cosmosARMResourcesGlobalListers) ServiceProviderNodePools() GlobalLister[api.ServiceProviderNodePool] {
 	return &cosmosGlobalLister[api.ServiceProviderNodePool, GenericDocument[api.ServiceProviderNodePool]]{
 		containerClient: g.resources,
 		resourceType:    api.ServiceProviderNodePoolResourceType,
 	}
 }
 
-func (g *cosmosGlobalListers) Controllers() GlobalLister[api.Controller] {
+func (g *cosmosARMResourcesGlobalListers) Controllers() GlobalLister[api.Controller] {
 	return &cosmosControllerGlobalLister{
 		containerClient: g.resources,
 		controllerResourceTypes: []azcorearm.ResourceType{
@@ -120,7 +120,7 @@ func (g *cosmosGlobalListers) Controllers() GlobalLister[api.Controller] {
 	}
 }
 
-func (g *cosmosGlobalListers) ManagementClusterContents() GlobalLister[api.ManagementClusterContent] {
+func (g *cosmosARMResourcesGlobalListers) ManagementClusterContents() GlobalLister[api.ManagementClusterContent] {
 	return &cosmosManagementClusterContentGlobalLister{
 		containerClient: g.resources,
 		managementClusterContentResourceTypes: []azcorearm.ResourceType{
@@ -130,20 +130,20 @@ func (g *cosmosGlobalListers) ManagementClusterContents() GlobalLister[api.Manag
 	}
 }
 
-func (g *cosmosGlobalListers) Operations() GlobalLister[api.Operation] {
+func (g *cosmosARMResourcesGlobalListers) Operations() GlobalLister[api.Operation] {
 	return &cosmosGlobalLister[api.Operation, GenericDocument[api.Operation]]{
 		containerClient: g.resources,
 		resourceType:    api.OperationStatusResourceType,
 	}
 }
 
-func (g *cosmosGlobalListers) ActiveOperations() GlobalLister[api.Operation] {
+func (g *cosmosARMResourcesGlobalListers) ActiveOperations() GlobalLister[api.Operation] {
 	return &cosmosActiveOperationsGlobalLister{
 		containerClient: g.resources,
 	}
 }
 
-func (g *cosmosGlobalListers) BillingDocs() GlobalLister[BillingDocument] {
+func (g *cosmosARMResourcesGlobalListers) BillingDocs() GlobalLister[BillingDocument] {
 	return &cosmosBillingGlobalLister{
 		containerClient: g.billing,
 	}
@@ -155,7 +155,7 @@ type cosmosGlobalLister[InternalAPIType, CosmosAPIType any] struct {
 	resourceType    azcorearm.ResourceType
 }
 
-func (l *cosmosGlobalLister[InternalAPIType, CosmosAPIType]) List(ctx context.Context, options *DBClientListResourceDocsOptions) (DBClientIterator[InternalAPIType], error) {
+func (l *cosmosGlobalLister[InternalAPIType, CosmosAPIType]) List(ctx context.Context, options *ARMResourcesDBClientListResourceDocsOptions) (ARMResourcesDBClientIterator[InternalAPIType], error) {
 	// Empty partition key string triggers cross-partition query, nil prefix lists all.
 	return list[InternalAPIType, CosmosAPIType](ctx, l.containerClient, "", &l.resourceType, nil, options, false)
 }
@@ -166,7 +166,7 @@ type cosmosActiveOperationsGlobalLister struct {
 	containerClient *azcosmos.ContainerClient
 }
 
-func (l *cosmosActiveOperationsGlobalLister) List(ctx context.Context, options *DBClientListResourceDocsOptions) (DBClientIterator[api.Operation], error) {
+func (l *cosmosActiveOperationsGlobalLister) List(ctx context.Context, options *ARMResourcesDBClientListResourceDocsOptions) (ARMResourcesDBClientIterator[api.Operation], error) {
 	query := fmt.Sprintf(
 		"SELECT * FROM c WHERE STRINGEQUALS(c.resourceType, %q, true) "+
 			"AND NOT ARRAYCONTAINS([%q, %q, %q], c.properties.status)",
@@ -189,7 +189,7 @@ func (l *cosmosActiveOperationsGlobalLister) List(ctx context.Context, options *
 	pager := l.containerClient.NewQueryItemsPager(query, partitionKey, &queryOptions)
 
 	if options != nil && ptr.Deref(options.PageSizeHint, -1) > 0 {
-		return newQueryResourcesSinglePageIterator[api.Operation, GenericDocument[api.Operation]](pager), nil
+		return newQueryItemsSinglePageIterator[api.Operation, GenericDocument[api.Operation]](pager), nil
 	}
 	return newQueryResourcesIterator[api.Operation, GenericDocument[api.Operation]](pager), nil
 }
@@ -200,7 +200,7 @@ type cosmosControllerGlobalLister struct {
 	controllerResourceTypes []azcorearm.ResourceType
 }
 
-func (l *cosmosControllerGlobalLister) List(ctx context.Context, options *DBClientListResourceDocsOptions) (DBClientIterator[api.Controller], error) {
+func (l *cosmosControllerGlobalLister) List(ctx context.Context, options *ARMResourcesDBClientListResourceDocsOptions) (ARMResourcesDBClientIterator[api.Controller], error) {
 	var resourceTypeConditions []string
 	for _, resourceType := range l.controllerResourceTypes {
 		resourceTypeConditions = append(resourceTypeConditions, fmt.Sprintf("STRINGEQUALS(c.resourceType, %q, true)", resourceType.String()))
@@ -222,7 +222,7 @@ func (l *cosmosControllerGlobalLister) List(ctx context.Context, options *DBClie
 	pager := l.containerClient.NewQueryItemsPager(query, partitionKey, &queryOptions)
 
 	if options != nil && ptr.Deref(options.PageSizeHint, -1) > 0 {
-		return newQueryResourcesSinglePageIterator[api.Controller, GenericDocument[api.Controller]](pager), nil
+		return newQueryItemsSinglePageIterator[api.Controller, GenericDocument[api.Controller]](pager), nil
 	}
 	return newQueryResourcesIterator[api.Controller, GenericDocument[api.Controller]](pager), nil
 }
@@ -232,7 +232,7 @@ type cosmosBillingGlobalLister struct {
 	containerClient *azcosmos.ContainerClient
 }
 
-func (l *cosmosBillingGlobalLister) List(ctx context.Context, options *DBClientListResourceDocsOptions) (DBClientIterator[BillingDocument], error) {
+func (l *cosmosBillingGlobalLister) List(ctx context.Context, options *ARMResourcesDBClientListResourceDocsOptions) (ARMResourcesDBClientIterator[BillingDocument], error) {
 	query := "SELECT * FROM c"
 
 	queryOptions := azcosmos.QueryOptions{
@@ -261,7 +261,7 @@ type cosmosManagementClusterContentGlobalLister struct {
 	managementClusterContentResourceTypes []azcorearm.ResourceType
 }
 
-func (l *cosmosManagementClusterContentGlobalLister) List(ctx context.Context, options *DBClientListResourceDocsOptions) (DBClientIterator[api.ManagementClusterContent], error) {
+func (l *cosmosManagementClusterContentGlobalLister) List(ctx context.Context, options *ARMResourcesDBClientListResourceDocsOptions) (ARMResourcesDBClientIterator[api.ManagementClusterContent], error) {
 	var resourceTypeConditions []string
 	for _, resourceType := range l.managementClusterContentResourceTypes {
 		resourceTypeConditions = append(resourceTypeConditions, fmt.Sprintf("STRINGEQUALS(c.resourceType, %q, true)", resourceType.String()))
@@ -283,7 +283,7 @@ func (l *cosmosManagementClusterContentGlobalLister) List(ctx context.Context, o
 	pager := l.containerClient.NewQueryItemsPager(query, partitionKey, &queryOptions)
 
 	if options != nil && ptr.Deref(options.PageSizeHint, -1) > 0 {
-		return newQueryResourcesSinglePageIterator[api.ManagementClusterContent, GenericDocument[api.ManagementClusterContent]](pager), nil
+		return newQueryItemsSinglePageIterator[api.ManagementClusterContent, GenericDocument[api.ManagementClusterContent]](pager), nil
 	}
 	return newQueryResourcesIterator[api.ManagementClusterContent, GenericDocument[api.ManagementClusterContent]](pager), nil
 }

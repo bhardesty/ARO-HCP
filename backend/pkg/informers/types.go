@@ -121,11 +121,11 @@ func (b *backendInformers) BillingDocs() (cache.SharedIndexInformer, listers.Bil
 	return b.billingInformer, b.billingLister
 }
 
-func NewBackendInformers(ctx context.Context, globalListers database.GlobalListers) BackendInformers {
+func NewBackendInformers(ctx context.Context, globalListers database.ARMResourcesGlobalListers) BackendInformers {
 	return NewBackendInformersWithRelistDuration(ctx, globalListers, nil)
 }
 
-func NewBackendInformersWithRelistDuration(ctx context.Context, globalListers database.GlobalListers, relistDuration *time.Duration) BackendInformers {
+func NewBackendInformersWithRelistDuration(ctx context.Context, globalListers database.ARMResourcesGlobalListers, relistDuration *time.Duration) BackendInformers {
 	subscriptionRelistDuration := SubscriptionRelistDuration
 	clusterRelistDuration := ClusterRelistDuration
 	nodePoolRelistDuration := NodePoolRelistDuration

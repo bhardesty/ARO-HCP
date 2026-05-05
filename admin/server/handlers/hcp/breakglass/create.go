@@ -45,7 +45,7 @@ var groupRewriteMap = map[string]string{
 // HCPBreakglassSessionCreationHandler handles requests to create breakglass sessions.
 // This endpoint is accessed exclusively via Geneva Actions. See package documentation for security model.
 type HCPBreakglassSessionCreationHandler struct {
-	dbClient                database.DBClient
+	dbClient                database.ARMResourcesDBClient
 	csClient                ocm.ClusterServiceClientSpec
 	sessionClient           sessiongatev1alpha1.SessionInterface
 	AllowedBreakglassGroups set.Set[string]
@@ -53,7 +53,7 @@ type HCPBreakglassSessionCreationHandler struct {
 	MaxSessionTTL           time.Duration
 }
 
-func NewHCPBreakglassSessionCreationHandler(dbClient database.DBClient, csClient ocm.ClusterServiceClientSpec, sessionClient sessiongatev1alpha1.SessionInterface, allowedBreakglassGroups set.Set[string], minSessionTTL time.Duration, maxSessionTTL time.Duration) *HCPBreakglassSessionCreationHandler {
+func NewHCPBreakglassSessionCreationHandler(dbClient database.ARMResourcesDBClient, csClient ocm.ClusterServiceClientSpec, sessionClient sessiongatev1alpha1.SessionInterface, allowedBreakglassGroups set.Set[string], minSessionTTL time.Duration, maxSessionTTL time.Duration) *HCPBreakglassSessionCreationHandler {
 	return &HCPBreakglassSessionCreationHandler{
 		dbClient:                dbClient,
 		csClient:                csClient,

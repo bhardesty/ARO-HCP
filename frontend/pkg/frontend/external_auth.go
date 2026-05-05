@@ -607,7 +607,7 @@ func (f *Frontend) addDeleteExternalAuthToTransaction(ctx context.Context, write
 	// Cluster Service will take care of canceling any ongoing operations
 	// on the resource or child resources, but we need to do some database
 	// bookkeeping to reflect that.
-	_, err = database.CancelActiveOperations(ctx, f.dbClient, transaction, &database.DBClientListActiveOperationDocsOptions{
+	_, err = database.CancelActiveOperations(ctx, f.dbClient, transaction, &database.ARMResourcesDBClientListActiveOperationDocsOptions{
 		ExternalID:             externalAuth.ID,
 		IncludeNestedResources: true,
 	})

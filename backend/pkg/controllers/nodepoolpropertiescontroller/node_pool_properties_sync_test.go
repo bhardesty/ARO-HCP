@@ -208,7 +208,7 @@ func TestNodePoolPropertiesSyncer_SyncOnce(t *testing.T) {
 			if tc.existingNodePool != nil {
 				resources = append(resources, tc.existingNodePool)
 			}
-			mockDB, err := databasetesting.NewMockDBClientWithResources(ctx, resources)
+			mockDB, err := databasetesting.NewMockARMResourcesDBClientWithResources(ctx, resources)
 			require.NoError(t, err)
 
 			mockCSClient := ocm.NewMockClusterServiceClientSpec(ctrl)

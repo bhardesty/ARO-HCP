@@ -35,7 +35,7 @@ import (
 // triggerControlPlaneUpgradeSyncer is a Cluster syncer that triggers control plane upgrades
 type triggerControlPlaneUpgradeSyncer struct {
 	cooldownChecker      controllerutils.CooldownChecker
-	cosmosClient         database.DBClient
+	cosmosClient         database.ARMResourcesDBClient
 	clusterServiceClient ocm.ClusterServiceClientSpec
 }
 
@@ -49,7 +49,7 @@ var _ controllerutils.ClusterSyncer = (*triggerControlPlaneUpgradeSyncer)(nil)
 //   - If desiredVersion == current cluster version: NOOP
 //   - Otherwise: Initiate the upgrade to desiredVersion
 func NewTriggerControlPlaneUpgradeController(
-	cosmosClient database.DBClient,
+	cosmosClient database.ARMResourcesDBClient,
 	clusterServiceClient ocm.ClusterServiceClientSpec,
 	activeOperationLister listers.ActiveOperationLister,
 	informers informers.BackendInformers,

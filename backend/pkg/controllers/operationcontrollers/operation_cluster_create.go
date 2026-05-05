@@ -45,7 +45,7 @@ import (
 type operationClusterCreate struct {
 	clusterLister                         listers.ClusterLister
 	clusterManagementClusterContentLister listers.ManagementClusterContentLister
-	cosmosClient                          database.DBClient
+	cosmosClient                          database.ARMResourcesDBClient
 	clusterServiceClient                  ocm.ClusterServiceClientSpec
 	notificationClient                    *http.Client
 }
@@ -65,7 +65,7 @@ type operationClusterCreate struct {
 // any of "Succeeded", "Failed", or "Canceled". Once the operation status reaches
 // a terminal value, there will be no further updates to the operation document.
 func NewOperationClusterCreateController(
-	cosmosClient database.DBClient,
+	cosmosClient database.ARMResourcesDBClient,
 	clusterServiceClient ocm.ClusterServiceClientSpec,
 	notificationClient *http.Client,
 	activeOperationInformer cache.SharedIndexInformer,

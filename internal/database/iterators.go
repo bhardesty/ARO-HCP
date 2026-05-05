@@ -31,20 +31,20 @@ type queryResourcesIterator[InternalAPIType, CosmosAPIType any] struct {
 }
 
 // newQueryResourcesIterator is a failable push iterator for a paged query response.
-func newQueryResourcesIterator[InternalAPIType, CosmosAPIType any](pager *runtime.Pager[azcosmos.QueryItemsResponse]) DBClientIterator[InternalAPIType] {
+func newQueryResourcesIterator[InternalAPIType, CosmosAPIType any](pager *runtime.Pager[azcosmos.QueryItemsResponse]) ARMResourcesDBClientIterator[InternalAPIType] {
 	return &queryResourcesIterator[InternalAPIType, CosmosAPIType]{pager: pager}
 }
 
 // newQueryItemsSinglePageIterator is a failable push iterator for a paged
 // query response that stops at the end of the first page and includes a
 // continuation token if additional items are available.
-func newQueryResourcesSinglePageIterator[InternalAPIType, CosmosAPIType any](pager *runtime.Pager[azcosmos.QueryItemsResponse]) DBClientIterator[InternalAPIType] {
+func newQueryItemsSinglePageIterator[InternalAPIType, CosmosAPIType any](pager *runtime.Pager[azcosmos.QueryItemsResponse]) ARMResourcesDBClientIterator[InternalAPIType] {
 	return &queryResourcesIterator[InternalAPIType, CosmosAPIType]{pager: pager, singlePage: true}
 }
 
 // Items returns a push iterator that can be used directly in for/range loops.
 // If an error occurs during paging, iteration stops and the error is recorded.
-func (iter *queryResourcesIterator[InternalAPIType, CosmosAPIType]) Items(ctx context.Context) DBClientIteratorItem[InternalAPIType] {
+func (iter *queryResourcesIterator[InternalAPIType, CosmosAPIType]) Items(ctx context.Context) ARMResourcesDBClientIteratorItem[InternalAPIType] {
 	return func(yield func(string, *InternalAPIType) bool) {
 		for iter.pager.More() {
 			response, err := iter.pager.NextPage(ctx)
@@ -107,19 +107,19 @@ type queryBillingIterator struct {
 }
 
 // newQueryBillingIterator is a failable push iterator for billing document queries.
-func newQueryBillingIterator(pager *runtime.Pager[azcosmos.QueryItemsResponse]) DBClientIterator[BillingDocument] {
+func newQueryBillingIterator(pager *runtime.Pager[azcosmos.QueryItemsResponse]) ARMResourcesDBClientIterator[BillingDocument] {
 	return &queryBillingIterator{pager: pager}
 }
 
 // newQueryBillingSinglePageIterator is a failable push iterator for billing documents
 // that stops at the end of the first page and includes a continuation token if
 // additional items are available.
-func newQueryBillingSinglePageIterator(pager *runtime.Pager[azcosmos.QueryItemsResponse]) DBClientIterator[BillingDocument] {
+func newQueryBillingSinglePageIterator(pager *runtime.Pager[azcosmos.QueryItemsResponse]) ARMResourcesDBClientIterator[BillingDocument] {
 	return &queryBillingIterator{pager: pager, singlePage: true}
 }
 
 // Items returns a push iterator that can be used directly in for/range loops.
-func (iter *queryBillingIterator) Items(ctx context.Context) DBClientIteratorItem[BillingDocument] {
+func (iter *queryBillingIterator) Items(ctx context.Context) ARMResourcesDBClientIteratorItem[BillingDocument] {
 	return func(yield func(string, *BillingDocument) bool) {
 		for iter.pager.More() {
 			response, err := iter.pager.NextPage(ctx)
@@ -163,7 +163,7 @@ func (iter *queryBillingIterator) GetError() error {
 // until all items have been collected.
 // Any failure to list or iterate causes an early return because the caller needs the complete
 // set of data to make correct decisions.
-// listFn is expected to accept a opts *DBClientListResourceDocsOptions that supports
+// listFn is expected to accept a opts *ARMResourcesDBClientListResourceDocsOptions that supports
 // paging via the PageSizeHint attribute.
 // ListAll assists client code in breaking large list queries into multiple smaller chunks of pageSize or smaller. This
 // helps reduce the load on the database at the cost of more round trips.
@@ -172,9 +172,9 @@ func (iter *queryBillingIterator) GetError() error {
 func ListAll[InternalAPIType any](
 	ctx context.Context,
 	pageSize int32,
-	listFn func(ctx context.Context, opts *DBClientListResourceDocsOptions) (DBClientIterator[InternalAPIType], error),
+	listFn func(ctx context.Context, opts *ARMResourcesDBClientListResourceDocsOptions) (ARMResourcesDBClientIterator[InternalAPIType], error),
 ) ([]*InternalAPIType, error) {
-	opts := &DBClientListResourceDocsOptions{
+	opts := &ARMResourcesDBClientListResourceDocsOptions{
 		PageSizeHint: &pageSize,
 	}
 	all := make([]*InternalAPIType, 0)

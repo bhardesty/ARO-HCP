@@ -88,7 +88,7 @@ func get[InternalAPIType, CosmosAPIType any](ctx context.Context, containerClien
 	return getByItemID[InternalAPIType, CosmosAPIType](ctx, containerClient, partitionKeyString, newExactCosmosID)
 }
 
-func list[InternalAPIType, CosmosAPIType any](ctx context.Context, containerClient *azcosmos.ContainerClient, partitionKeyString string, resourceType *azcorearm.ResourceType, prefix *azcorearm.ResourceID, options *DBClientListResourceDocsOptions, untypedNonRecursive bool) (DBClientIterator[InternalAPIType], error) {
+func list[InternalAPIType, CosmosAPIType any](ctx context.Context, containerClient *azcosmos.ContainerClient, partitionKeyString string, resourceType *azcorearm.ResourceType, prefix *azcorearm.ResourceID, options *ARMResourcesDBClientListResourceDocsOptions, untypedNonRecursive bool) (ARMResourcesDBClientIterator[InternalAPIType], error) {
 	if strings.ToLower(partitionKeyString) != partitionKeyString {
 		return nil, fmt.Errorf("partitionKeyString must be lowercase, not: %q", partitionKeyString)
 	}
@@ -161,7 +161,7 @@ func list[InternalAPIType, CosmosAPIType any](ctx context.Context, containerClie
 	pager := containerClient.NewQueryItemsPager(query, partitionKey, &queryOptions)
 
 	if options != nil && ptr.Deref(options.PageSizeHint, -1) > 0 {
-		return newQueryResourcesSinglePageIterator[InternalAPIType, CosmosAPIType](pager), nil
+		return newQueryItemsSinglePageIterator[InternalAPIType, CosmosAPIType](pager), nil
 	} else {
 		return newQueryResourcesIterator[InternalAPIType, CosmosAPIType](pager), nil
 	}

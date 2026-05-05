@@ -21,7 +21,7 @@ import (
 )
 
 // MigrateCosmosOrDie if migration fails, we panic and exit the process.  This makes it very detectable.
-func MigrateCosmosOrDie(ctx context.Context, cosmosClient database.DBClient) {
+func MigrateCosmosOrDie(ctx context.Context, cosmosClient database.ARMResourcesDBClient) {
 	// This is a temporary change. Once deployed to production, we will remove this content and leave it empty
 	// for the next small migration we need to do.  Once datasets are large, we will start doing this inside of the backend.
 
