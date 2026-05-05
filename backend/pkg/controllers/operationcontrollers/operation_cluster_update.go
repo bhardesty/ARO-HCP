@@ -47,7 +47,20 @@ type operationClusterUpdate struct {
 	desiredVersionMismatchFirstSeen *lru.Cache
 }
 
-// NewOperationClusterUpdateController periodically lists all clusters and for each out when the cluster was created and its state.
+// NewOperationClusterUpdateController returns a new Controller instance that
+// follows an asynchronous cluster update operation to completion and updates
+// the corresponding operation document in Cosmos DB.
+//
+// Operation documents relevant to this controller will have the following values:
+//
+//	ResourceType: Microsoft.RedHatOpenShift/hcpOpenShiftClusters
+//	     Request: Update
+//	      Status: any non-terminal value
+//
+// Note that "to completion" does not imply success. An operation is considered
+// complete when its status field reaches what Azure defines as a terminal value;
+// any of "Succeeded", "Failed", or "Canceled". Once the operation status reaches
+// a terminal value, there will be no further updates to the operation document.
 func NewOperationClusterUpdateController(
 	cosmosClient database.DBClient,
 	clusterServiceClient ocm.ClusterServiceClientSpec,

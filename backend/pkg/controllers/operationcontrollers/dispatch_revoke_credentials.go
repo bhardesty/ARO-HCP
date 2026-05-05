@@ -42,6 +42,14 @@ type dispatchRevokeCredentials struct {
 	clustersServiceClient ocm.ClusterServiceClientSpec
 }
 
+// NewDispatchRevokeCredentialsController returns a new Controller instance that
+// initiates an asynchronous credential revocation operation in Clusters Service.
+//
+// Operation documents relevant to this controller will have the following values:
+//
+//	ResourceType: Microsoft.RedHatOpenShift/hcpOpenShiftClusters
+//	     Request: RevokeCredentials
+//	      Status: Accepted
 func NewDispatchRevokeCredentialsController(
 	clock utilsclock.PassiveClock,
 	cosmosClient database.DBClient,

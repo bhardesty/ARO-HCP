@@ -39,7 +39,20 @@ type operationExternalAuthDelete struct {
 	notificationClient   *http.Client
 }
 
-// NewOperationExternalAuthDeleteController periodically lists all clusters and for each out when the cluster was deleted and its state.
+// NewOperationExternalAuthDeleteController returns a new Controller instance that
+// follows an asynchronous external auth deletion operation to completion and updates
+// the corresponding operation document in Cosmos DB.
+//
+// Operation documents relevant to this controller will have the following values:
+//
+//	ResourceType: Microsoft.RedHatOpenShift/hcpOpenShiftClusters/externalAuths
+//	     Request: Delete
+//	      Status: any non-terminal value
+//
+// Note that "to completion" does not imply success. An operation is considered
+// complete when its status field reaches what Azure defines as a terminal value;
+// any of "Succeeded", "Failed", or "Canceled". Once the operation status reaches
+// a terminal value, there will be no further updates to the operation document.
 func NewOperationExternalAuthDeleteController(
 	cosmosClient database.DBClient,
 	clusterServiceClient ocm.ClusterServiceClientSpec,
