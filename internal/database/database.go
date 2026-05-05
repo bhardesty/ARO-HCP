@@ -129,13 +129,10 @@ type ARMResourcesDBClient interface {
 
 	Subscriptions() SubscriptionCRUD
 
-	// BillingDocs retrieves a CRUD interface for managing billing documents within a subscription.
-	BillingDocs(subscriptionID string) BillingDocCRUD
-
 	ServiceProviderClusters(subscriptionID, resourceGroupName, clusterName string) ServiceProviderClusterCRUD
 
-	// ARMResourcesGlobalListers returns interfaces for listing all resources of a particular
-	// type across all partitions, intended for feeding SharedInformers.
+	// ARMResourcesGlobalListers returns interfaces for listing ARM resource documents across all partitions
+	// (Resources container only), intended for feeding SharedInformers.
 	ARMResourcesGlobalListers() ARMResourcesGlobalListers
 
 	ServiceProviderNodePools(subscriptionID, resourceGroupName, clusterName, nodePoolName string) ServiceProviderNodePoolCRUD
@@ -146,20 +143,14 @@ var _ ARMResourcesDBClient = &armResourcesCosmosDBClient{}
 // armResourcesCosmosDBClient defines the needed values to perform CRUD operations against Cosmos DB.
 type armResourcesCosmosDBClient struct {
 	database   *azcosmos.DatabaseClient
-	billing    *azcosmos.ContainerClient
 	resources  *azcosmos.ContainerClient
 	lockClient *LockClient
 }
 
 // NewARMResourcesDBClient instantiates an ARMResourcesDBClient from a Cosmos DatabaseClient instance
-// targeting the Frontends async database.
+// targeting the Frontends async database (Resources and Locks containers).
 func NewARMResourcesDBClient(ctx context.Context, database *azcosmos.DatabaseClient) (ARMResourcesDBClient, error) {
 	resources, err := database.NewContainer(resourcesContainer)
-	if err != nil {
-		return nil, utils.TrackError(err)
-	}
-
-	billing, err := database.NewContainer(billingContainer)
 	if err != nil {
 		return nil, utils.TrackError(err)
 	}
@@ -176,7 +167,6 @@ func NewARMResourcesDBClient(ctx context.Context, database *azcosmos.DatabaseCli
 
 	return &armResourcesCosmosDBClient{
 		database:   database,
-		billing:    billing,
 		resources:  resources,
 		lockClient: lockClient,
 	}, nil
@@ -203,10 +193,6 @@ func (d *armResourcesCosmosDBClient) Subscriptions() SubscriptionCRUD {
 		d.resources, nil, azcorearm.SubscriptionResourceType)
 }
 
-func (d *armResourcesCosmosDBClient) BillingDocs(subscriptionID string) BillingDocCRUD {
-	return NewBillingDocCRUD(d.billing, subscriptionID)
-}
-
 func (d *armResourcesCosmosDBClient) ServiceProviderClusters(subscriptionID, resourceGroupName, clusterName string) ServiceProviderClusterCRUD {
 	clusterResourceID := NewClusterResourceID(subscriptionID, resourceGroupName, clusterName)
 	return NewCosmosResourceCRUD[api.ServiceProviderCluster, GenericDocument[api.ServiceProviderCluster]](
@@ -224,7 +210,7 @@ func (d *armResourcesCosmosDBClient) UntypedCRUD(parentResourceID azcorearm.Reso
 }
 
 func (d *armResourcesCosmosDBClient) ARMResourcesGlobalListers() ARMResourcesGlobalListers {
-	return NewCosmosARMResourcesGlobalListers(d.resources, d.billing)
+	return NewCosmosARMResourcesGlobalListers(d.resources)
 }
 
 // NewCosmosDatabaseClient instantiates a generic Cosmos database client.

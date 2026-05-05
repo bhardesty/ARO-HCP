@@ -24,20 +24,23 @@ import (
 	"github.com/Azure/ARO-HCP/internal/utils"
 )
 
-func NewARMResourcesDBClient(ctx context.Context, cosmosDBURL string, cosmosDBName string, azCoreClientOptions azcore.ClientOptions) (database.ARMResourcesDBClient, error) {
-	cosmosDatabaseClient, err := database.NewCosmosDatabaseClient(
-		cosmosDBURL,
-		cosmosDBName,
-		azCoreClientOptions,
-	)
+// NewCosmosDBClients opens the shared async Cosmos database and returns data-plane clients for
+// ARM resource documents (Resources + Locks containers) and billing documents (Billing container).
+func NewCosmosDBClients(ctx context.Context, cosmosDBURL string, cosmosDBName string, azCoreClientOptions azcore.ClientOptions) (database.ARMResourcesDBClient, database.BillingDBClient, error) {
+	cosmosDatabaseClient, err := database.NewCosmosDatabaseClient(cosmosDBURL, cosmosDBName, azCoreClientOptions)
 	if err != nil {
-		return nil, utils.TrackError(fmt.Errorf("failed to create Azure Cosmos database client: %w", err))
+		return nil, nil, utils.TrackError(fmt.Errorf("failed to create Azure Cosmos database client: %w", err))
 	}
 
-	dbClient, err := database.NewARMResourcesDBClient(ctx, cosmosDatabaseClient)
+	armResourcesDBClient, err := database.NewARMResourcesDBClient(ctx, cosmosDatabaseClient)
 	if err != nil {
-		return nil, utils.TrackError(fmt.Errorf("failed to create ARM resources DB client: %w", err))
+		return nil, nil, utils.TrackError(fmt.Errorf("failed to create ARM resources database client: %w", err))
 	}
 
-	return dbClient, nil
+	billingDBClient, err := database.NewBillingDBClient(cosmosDatabaseClient)
+	if err != nil {
+		return nil, nil, utils.TrackError(fmt.Errorf("failed to create billing database client: %w", err))
+	}
+
+	return armResourcesDBClient, billingDBClient, nil
 }

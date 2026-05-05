@@ -104,10 +104,6 @@ func (g *mockARMResourcesGlobalListers) ActiveOperations() database.GlobalLister
 	return &mockActiveOperationsGlobalLister{client: g.client}
 }
 
-func (g *mockARMResourcesGlobalListers) BillingDocs() database.GlobalLister[database.BillingDocument] {
-	return &mockBillingGlobalLister{client: g.client}
-}
-
 // mockSubscriptionGlobalLister lists all subscriptions across all partitions.
 type mockSubscriptionGlobalLister struct {
 	client *MockARMResourcesDBClient

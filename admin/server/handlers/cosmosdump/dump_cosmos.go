@@ -49,11 +49,12 @@ func (h *CosmosDumpHandler) ServeHTTP(w http.ResponseWriter, request *http.Reque
 }
 
 type BillingDumpHandler struct {
-	cosmosClient database.ARMResourcesDBClient
+	cosmosClient  database.ARMResourcesDBClient
+	billingClient database.BillingDBClient
 }
 
-func NewBillingDumpHandler(cosmosClient database.ARMResourcesDBClient) *BillingDumpHandler {
-	return &BillingDumpHandler{cosmosClient: cosmosClient}
+func NewBillingDumpHandler(cosmosClient database.ARMResourcesDBClient, billingClient database.BillingDBClient) *BillingDumpHandler {
+	return &BillingDumpHandler{cosmosClient: cosmosClient, billingClient: billingClient}
 }
 
 func (h *BillingDumpHandler) ServeHTTP(w http.ResponseWriter, request *http.Request) error {
@@ -65,7 +66,7 @@ func (h *BillingDumpHandler) ServeHTTP(w http.ResponseWriter, request *http.Requ
 		return utils.TrackError(err)
 	}
 
-	if err := serverutils.DumpBillingToLogger(ctx, h.cosmosClient, resourceID); err != nil {
+	if err := serverutils.DumpBillingToLogger(ctx, h.cosmosClient, h.billingClient, resourceID); err != nil {
 		return utils.TrackError(err)
 	}
 

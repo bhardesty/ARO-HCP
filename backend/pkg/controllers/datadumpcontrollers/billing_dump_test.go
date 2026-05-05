@@ -35,10 +35,12 @@ func TestBillingDumpController_SyncOnce(t *testing.T) {
 
 	mockDB := databasetesting.NewMockARMResourcesDBClient()
 
+	mockBilling := databasetesting.NewMockBillingDBClient(mockDB)
 	syncer := &billingDump{
-		cooldownChecker: &alwaysSyncCooldownChecker{},
-		cosmosClient:    mockDB,
-		nextDumpChecker: &alwaysSyncCooldownChecker{},
+		cooldownChecker:    &alwaysSyncCooldownChecker{},
+		armResourcesClient: mockDB,
+		billingClient:      mockBilling,
+		nextDumpChecker:    &alwaysSyncCooldownChecker{},
 	}
 
 	key := controllerutils.HCPClusterKey{
@@ -55,10 +57,12 @@ func TestBillingDumpController_SyncOnce(t *testing.T) {
 func TestBillingDumpController_CooldownChecker(t *testing.T) {
 	mockDB := databasetesting.NewMockARMResourcesDBClient()
 
+	mockBilling := databasetesting.NewMockBillingDBClient(mockDB)
 	syncer := &billingDump{
-		cooldownChecker: &alwaysSyncCooldownChecker{},
-		cosmosClient:    mockDB,
-		nextDumpChecker: &alwaysSyncCooldownChecker{},
+		cooldownChecker:    &alwaysSyncCooldownChecker{},
+		armResourcesClient: mockDB,
+		billingClient:      mockBilling,
+		nextDumpChecker:    &alwaysSyncCooldownChecker{},
 	}
 
 	// Should return a cooldown checker
@@ -83,16 +87,18 @@ func TestBillingDumpController_SyncOnce_WithBillingDoc(t *testing.T) {
 	require.NoError(t, err)
 
 	mockDB := databasetesting.NewMockARMResourcesDBClient()
+	mockBilling := databasetesting.NewMockBillingDBClient(mockDB)
 
 	// Create billing document
 	billingDoc := database.NewBillingDocument("billing-doc-1", clusterResourceID)
-	err = mockDB.BillingDocs(clusterResourceID.SubscriptionID).Create(ctx, billingDoc)
+	err = mockBilling.BillingDocs(clusterResourceID.SubscriptionID).Create(ctx, billingDoc)
 	require.NoError(t, err)
 
 	syncer := &billingDump{
-		cooldownChecker: &alwaysSyncCooldownChecker{},
-		cosmosClient:    mockDB,
-		nextDumpChecker: &alwaysSyncCooldownChecker{},
+		cooldownChecker:    &alwaysSyncCooldownChecker{},
+		armResourcesClient: mockDB,
+		billingClient:      mockBilling,
+		nextDumpChecker:    &alwaysSyncCooldownChecker{},
 	}
 
 	key := controllerutils.HCPClusterKey{
@@ -120,10 +126,12 @@ func TestBillingDumpController_CooldownRespected(t *testing.T) {
 	})
 
 	// Test that cooldown prevents sync
+	mockBilling := databasetesting.NewMockBillingDBClient(mockDB)
 	syncer := &billingDump{
-		cooldownChecker: &alwaysSyncCooldownChecker{},
-		cosmosClient:    mockDB,
-		nextDumpChecker: neverSyncChecker,
+		cooldownChecker:    &alwaysSyncCooldownChecker{},
+		armResourcesClient: mockDB,
+		billingClient:      mockBilling,
+		nextDumpChecker:    neverSyncChecker,
 	}
 
 	key := controllerutils.HCPClusterKey{

@@ -37,6 +37,7 @@ import (
 type operationClusterDelete struct {
 	clock                utilsclock.PassiveClock
 	cosmosClient         database.ARMResourcesDBClient
+	billingClient        database.BillingDBClient
 	clusterServiceClient ocm.ClusterServiceClientSpec
 	notificationClient   *http.Client
 }
@@ -57,6 +58,7 @@ type operationClusterDelete struct {
 // a terminal value, there will be no further updates to the operation document.
 func NewOperationClusterDeleteController(
 	cosmosClient database.ARMResourcesDBClient,
+	billingClient database.BillingDBClient,
 	clusterServiceClient ocm.ClusterServiceClientSpec,
 	notificationClient *http.Client,
 	activeOperationInformer cache.SharedIndexInformer,
@@ -64,6 +66,7 @@ func NewOperationClusterDeleteController(
 	syncer := &operationClusterDelete{
 		clock:                utilsclock.RealClock{},
 		cosmosClient:         cosmosClient,
+		billingClient:        billingClient,
 		clusterServiceClient: clusterServiceClient,
 		notificationClient:   notificationClient,
 	}
@@ -121,7 +124,7 @@ func (c *operationClusterDelete) SynchronizeOperation(ctx context.Context, key c
 		// Do this before calling setDeleteOperationAsCompleted so that in
 		// case of error the backend will retry by virtue of the operation
 		// document still having a non-terminal status.
-		err = controllerutils.MarkBillingDocumentDeleted(ctx, c.cosmosClient, operation.ExternalID, c.clock.Now())
+		err = controllerutils.MarkBillingDocumentDeleted(ctx, c.billingClient, operation.ExternalID, c.clock.Now())
 		if errors.Is(err, database.ErrAmbiguousResult) {
 			// TODO: Remove when we enforce there's a single billing document per cluster.
 			logger.Error(err, "Failed to mark CosmosDB billing record for deletion")

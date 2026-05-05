@@ -193,9 +193,10 @@ func TestCreateBillingDoc_SyncOnce(t *testing.T) {
 			require.NoError(t, err)
 
 			controller := &createBillingDoc{
-				clock:         clocktesting.NewFakePassiveClock(fixedTime),
-				azureLocation: testAzureLocation,
-				cosmosClient:  mockDB,
+				clock:              clocktesting.NewFakePassiveClock(fixedTime),
+				azureLocation:      testAzureLocation,
+				armResourcesClient: mockDB,
+				billingClient:      databasetesting.NewMockBillingDBClient(mockDB),
 				clusterLister: &listertesting.SliceClusterLister{
 					Clusters: []*api.HCPOpenShiftCluster{tt.cluster},
 				},
@@ -238,10 +239,11 @@ func TestCreateBillingDoc_Idempotent(t *testing.T) {
 	}
 
 	controller := &createBillingDoc{
-		clock:         clocktesting.NewFakePassiveClock(fixedTime),
-		azureLocation: testAzureLocation,
-		cosmosClient:  mockDB,
-		clusterLister: clusterLister,
+		clock:              clocktesting.NewFakePassiveClock(fixedTime),
+		azureLocation:      testAzureLocation,
+		armResourcesClient: mockDB,
+		billingClient:      databasetesting.NewMockBillingDBClient(mockDB),
+		clusterLister:      clusterLister,
 		billingLister: &listertesting.SliceBillingLister{
 			BillingDocuments: []*database.BillingDocument{},
 		},
@@ -307,14 +309,15 @@ func TestCreateBillingDoc_ExistingBillingDocButMissingClusterRef(t *testing.T) {
 			require.NoError(t, err)
 
 			if tt.seedInDB {
-				err = mockDB.BillingDocs(testSubscriptionID).Create(ctx, preSeedDoc)
+				err = databasetesting.NewMockBillingDBClient(mockDB).BillingDocs(testSubscriptionID).Create(ctx, preSeedDoc)
 				require.NoError(t, err)
 			}
 
 			controller := &createBillingDoc{
-				clock:         clocktesting.NewFakePassiveClock(fixedTime),
-				azureLocation: testAzureLocation,
-				cosmosClient:  mockDB,
+				clock:              clocktesting.NewFakePassiveClock(fixedTime),
+				azureLocation:      testAzureLocation,
+				armResourcesClient: mockDB,
+				billingClient:      databasetesting.NewMockBillingDBClient(mockDB),
 				clusterLister: &listertesting.SliceClusterLister{
 					Clusters: []*api.HCPOpenShiftCluster{cluster},
 				},

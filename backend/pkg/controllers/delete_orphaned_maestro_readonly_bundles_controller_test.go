@@ -257,9 +257,6 @@ func (defaultPanicARMResourcesGlobalListers) Operations() database.GlobalLister[
 func (defaultPanicARMResourcesGlobalListers) ActiveOperations() database.GlobalLister[api.Operation] {
 	return &panicGlobalLister[api.Operation]{}
 }
-func (defaultPanicARMResourcesGlobalListers) BillingDocs() database.GlobalLister[database.BillingDocument] {
-	return &panicGlobalLister[database.BillingDocument]{}
-}
 
 var _ database.ARMResourcesGlobalListers = defaultPanicARMResourcesGlobalListers{}
 
@@ -425,9 +422,6 @@ func (f *alwaysErrorARMResourcesGlobalListers) ManagementClusterContents() datab
 }
 func (f *alwaysErrorARMResourcesGlobalListers) ServiceProviderNodePools() database.GlobalLister[api.ServiceProviderNodePool] {
 	return &alwaysErrorGlobalLister[api.ServiceProviderNodePool]{err: f.err}
-}
-func (f *alwaysErrorARMResourcesGlobalListers) BillingDocs() database.GlobalLister[database.BillingDocument] {
-	return &alwaysErrorGlobalLister[database.BillingDocument]{err: f.err}
 }
 
 var _ database.ARMResourcesGlobalListers = (*alwaysErrorARMResourcesGlobalListers)(nil)

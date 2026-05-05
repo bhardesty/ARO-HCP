@@ -377,12 +377,14 @@ func (f *BackendRootCmdFlags) ToBackendOptions(ctx context.Context, cmd *cobra.C
 
 	smiClientBuilder := app.NewServiceManagedIdentityClientBuilder(fpaMIDataplaneClientBuilder, azureConfig)
 
-	armResourcesCosmosDBClient, err := app.NewARMResourcesDBClient(
-		ctx, f.AzureCosmosDBURL, f.AzureCosmosDBName,
+	armResourcesCosmosDBClient, billingDBClient, err := app.NewCosmosDBClients(
+		ctx,
+		f.AzureCosmosDBURL,
+		f.AzureCosmosDBName,
 		*azureConfig.CloudEnvironment.AZCoreClientOptions(),
 	)
 	if err != nil {
-		return nil, utils.TrackError(fmt.Errorf("failed to create cosmos db client: %w", err))
+		return nil, err
 	}
 
 	clustersServiceClient, err := app.NewClustersServiceClient(ctx, f.ClustersServiceURL, f.ClustersServiceTLSInsecure)
@@ -398,6 +400,7 @@ func (f *BackendRootCmdFlags) ToBackendOptions(ctx context.Context, cmd *cobra.C
 		AzureLocation:                      f.AzureLocation,
 		LeaderElectionLock:                 leaderElectionLock,
 		ARMResourcesDBClient:               armResourcesCosmosDBClient,
+		BillingDBClient:                    billingDBClient,
 		ClustersServiceClient:              clustersServiceClient,
 		MetricsServerListenAddress:         f.MetricsServerListenAddress,
 		HealthzServerListenAddress:         f.HealthzServerListenAddress,

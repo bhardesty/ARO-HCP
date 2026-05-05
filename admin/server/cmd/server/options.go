@@ -137,6 +137,7 @@ type completedOptions struct {
 	MetricsPort             int
 	Location                string
 	ARMResourcesDBClient    database.ARMResourcesDBClient
+	BillingDBClient         database.BillingDBClient
 	ClusterServiceClient    ocm.ClusterServiceClientSpec
 	KustoClient             *kusto.Client
 	FpaCredentialRetriever  fpa.FirstPartyApplicationTokenCredentialRetriever
@@ -200,7 +201,7 @@ func (o *ValidatedOptions) Complete(ctx context.Context) (*Options, error) {
 	}
 	csClient := ocm.NewClusterServiceClient(csConnection)
 
-	// Create the database client.
+	// Create Cosmos async database and data-plane clients (Resources/Locks vs Billing containers).
 	clientOpts := azsdk.NewClientOptions(azsdk.ComponentAdmin)
 	// FIXME Cloud should be determined by other means.
 	clientOpts.Cloud = cloud.AzurePublic
@@ -212,9 +213,13 @@ func (o *ValidatedOptions) Complete(ctx context.Context) (*Options, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create the CosmosDB client: %w", err)
 	}
-	dbClient, err := database.NewARMResourcesDBClient(ctx, cosmosDatabaseClient)
+	armResourcesDBClient, err := database.NewARMResourcesDBClient(ctx, cosmosDatabaseClient)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create the database client: %w", err)
+		return nil, fmt.Errorf("failed to create the ARM resources database client: %w", err)
+	}
+	billingDBClient, err := database.NewBillingDBClient(cosmosDatabaseClient)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create the billing database client: %w", err)
 	}
 
 	// Create Kusto client
@@ -283,7 +288,8 @@ func (o *ValidatedOptions) Complete(ctx context.Context) (*Options, error) {
 			Port:                    o.Port,
 			MetricsPort:             o.MetricsPort,
 			Location:                o.Location,
-			ARMResourcesDBClient:    dbClient,
+			ARMResourcesDBClient:    armResourcesDBClient,
+			BillingDBClient:         billingDBClient,
 			ClusterServiceClient:    csClient,
 			KustoClient:             kustoClient,
 			FpaCredentialRetriever:  fpaCredentialRetriever,
@@ -338,6 +344,7 @@ func (opts *Options) Run(ctx context.Context) error {
 		listener,
 		metricsListener,
 		opts.ARMResourcesDBClient,
+		opts.BillingDBClient,
 		opts.ClusterServiceClient,
 		opts.KustoClient,
 		opts.FpaCredentialRetriever,

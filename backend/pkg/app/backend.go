@@ -64,6 +64,7 @@ type BackendOptions struct {
 	AzureLocation                      string
 	LeaderElectionLock                 resourcelock.Interface
 	ARMResourcesDBClient               database.ARMResourcesDBClient
+	BillingDBClient                    database.BillingDBClient
 	ClustersServiceClient              ocm.ClusterServiceClientSpec
 	MetricsRegisterer                  prometheus.Registerer
 	MetricsGatherer                    prometheus.Gatherer
@@ -349,7 +350,10 @@ func shutdownHTTPServer(ctx context.Context, server *http.Server, name string) e
 // runBackendControllersUnderLeaderElection runs the backen controllers under
 // a leader election loop.
 func (b *Backend) runBackendControllersUnderLeaderElection(ctx context.Context, electionChecker *leaderelection.HealthzAdaptor) error {
-	backendInformers := informers.NewBackendInformers(ctx, b.options.ARMResourcesDBClient.ARMResourcesGlobalListers())
+	backendInformers := informers.NewBackendInformers(ctx,
+		b.options.ARMResourcesDBClient.ARMResourcesGlobalListers(),
+		b.options.BillingDBClient.BillingGlobalListers(),
+	)
 
 	_, subscriptionLister := backendInformers.Subscriptions()
 	activeOperationInformer, activeOperationLister := backendInformers.ActiveOperations()
@@ -380,7 +384,7 @@ func (b *Backend) runBackendControllersUnderLeaderElection(ctx context.Context, 
 	subscriptionNonClusterDataDumpController := datadumpcontrollers.NewSubscriptionNonClusterDataDumpController(b.options.ARMResourcesDBClient, activeOperationLister, backendInformers)
 	clusterRecursiveDataDumpController := datadumpcontrollers.NewClusterRecursiveDataDumpController(b.options.ARMResourcesDBClient, activeOperationLister, backendInformers)
 	csStateDumpController := datadumpcontrollers.NewCSStateDumpController(b.options.ARMResourcesDBClient, activeOperationLister, backendInformers, b.options.ClustersServiceClient)
-	billingDumpController := datadumpcontrollers.NewBillingDumpController(b.options.ARMResourcesDBClient, activeOperationLister, backendInformers)
+	billingDumpController := datadumpcontrollers.NewBillingDumpController(b.options.ARMResourcesDBClient, b.options.BillingDBClient, activeOperationLister, backendInformers)
 	doNothingController := controllers.NewDoNothingExampleController(b.options.ARMResourcesDBClient, subscriptionLister)
 	dispatchRequestCredentialController := operationcontrollers.NewDispatchRequestCredentialController(
 		utilsclock.RealClock{},
@@ -409,6 +413,7 @@ func (b *Backend) runBackendControllersUnderLeaderElection(ctx context.Context, 
 	)
 	operationClusterDeleteController := operationcontrollers.NewOperationClusterDeleteController(
 		b.options.ARMResourcesDBClient,
+		b.options.BillingDBClient,
 		b.options.ClustersServiceClient,
 		http.DefaultClient,
 		activeOperationInformer,
@@ -464,7 +469,7 @@ func (b *Backend) runBackendControllersUnderLeaderElection(ctx context.Context, 
 	clusterServiceMatchingClusterController := mismatchcontrollers.NewClusterServiceClusterMatchingController(b.options.ARMResourcesDBClient, subscriptionLister, b.options.ClustersServiceClient)
 	cosmosMatchingNodePoolController := mismatchcontrollers.NewCosmosNodePoolMatchingController(b.options.ARMResourcesDBClient, b.options.ClustersServiceClient, backendInformers)
 	cosmosMatchingExternalAuthController := mismatchcontrollers.NewCosmosExternalAuthMatchingController(b.options.ARMResourcesDBClient, b.options.ClustersServiceClient, backendInformers)
-	cosmosMatchingClusterController := mismatchcontrollers.NewCosmosClusterMatchingController(utilsclock.RealClock{}, b.options.ARMResourcesDBClient, b.options.ClustersServiceClient, backendInformers)
+	cosmosMatchingClusterController := mismatchcontrollers.NewCosmosClusterMatchingController(utilsclock.RealClock{}, b.options.ARMResourcesDBClient, b.options.BillingDBClient, b.options.ClustersServiceClient, backendInformers)
 	alwaysSuccessClusterValidationController := validationcontrollers.NewClusterValidationController(
 		validations.NewAlwaysSuccessValidation(),
 		activeOperationLister,
@@ -474,11 +479,11 @@ func (b *Backend) runBackendControllersUnderLeaderElection(ctx context.Context, 
 	deleteOrphanedCosmosResourcesController := mismatchcontrollers.NewDeleteOrphanedCosmosResourcesController(b.options.ARMResourcesDBClient, subscriptionLister)
 	backfillClusterUIDController := controllerutils.NewClusterWatchingController(
 		"BackfillClusterUID", b.options.ARMResourcesDBClient, backendInformers, 60*time.Minute,
-		mismatchcontrollers.NewBackfillClusterUIDController(utilsclock.RealClock{}, b.options.ARMResourcesDBClient, clusterLister))
-	orphanedBillingCleanupController := billingcontrollers.NewOrphanedBillingCleanupController(utilsclock.RealClock{}, b.options.ARMResourcesDBClient, clusterLister, billingLister)
+		mismatchcontrollers.NewBackfillClusterUIDController(utilsclock.RealClock{}, b.options.ARMResourcesDBClient, b.options.BillingDBClient, clusterLister))
+	orphanedBillingCleanupController := billingcontrollers.NewOrphanedBillingCleanupController(utilsclock.RealClock{}, b.options.BillingDBClient, clusterLister, billingLister)
 	createBillingDocController := controllerutils.NewClusterWatchingController(
 		"CreateBillingDoc", b.options.ARMResourcesDBClient, backendInformers, 60*time.Second,
-		billingcontrollers.NewCreateBillingDocController(utilsclock.RealClock{}, b.options.AzureLocation, b.options.ARMResourcesDBClient, clusterLister, billingLister))
+		billingcontrollers.NewCreateBillingDocController(utilsclock.RealClock{}, b.options.AzureLocation, b.options.ARMResourcesDBClient, b.options.BillingDBClient, clusterLister, billingLister))
 	controlPlaneActiveVersionController := upgradecontrollers.NewControlPlaneActiveVersionController(
 		b.options.ARMResourcesDBClient,
 		activeOperationLister,

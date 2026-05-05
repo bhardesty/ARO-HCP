@@ -148,6 +148,7 @@ func NewIntegrationTestInfoFromEnv(ctx context.Context, t *testing.T, withMock b
 		adminListener,
 		adminMetricsListener,
 		storageIntegrationTestInfo.CosmosClient(),
+		storageIntegrationTestInfo.BillingClient(),
 		clusterServiceMockInfo.MockClusterServiceClient,
 		nil,
 		nil,

@@ -66,6 +66,7 @@ func NewAdminAPI(
 	listener net.Listener,
 	metricsListener net.Listener,
 	dbClient database.ARMResourcesDBClient,
+	billingDBClient database.BillingDBClient,
 	clustersServiceClient ocm.ClusterServiceClientSpec,
 	kustoClient *kusto.Client,
 	fpaCredentialRetriever fpa.FirstPartyApplicationTokenCredentialRetriever,
@@ -111,7 +112,7 @@ func NewAdminAPI(
 	)
 	middlewareMux.Handle(
 		middleware.V1HCPResourcePattern("GET", "/billingdump"),
-		hcpMiddleware.HandlerFunc(errorutils.ReportError(cosmosdump.NewBillingDumpHandler(dbClient).ServeHTTP)),
+		hcpMiddleware.HandlerFunc(errorutils.ReportError(cosmosdump.NewBillingDumpHandler(dbClient, billingDBClient).ServeHTTP)),
 	)
 	middlewareMux.Handle(
 		middleware.V1HCPResourcePattern("GET", "/serialconsole"),

@@ -82,10 +82,10 @@ func DumpDataToLogger(ctx context.Context, cosmosClient database.ARMResourcesDBC
 }
 
 // DumpBillingToLogger dumps active billing documents for the given cluster resource ID to the logger.
-func DumpBillingToLogger(ctx context.Context, cosmosClient database.ARMResourcesDBClient, resourceID *azcorearm.ResourceID) error {
+func DumpBillingToLogger(ctx context.Context, armResourcesClient database.ARMResourcesDBClient, billingClient database.BillingDBClient, resourceID *azcorearm.ResourceID) error {
 	logger := utils.LoggerFromContext(ctx)
 
-	clusterCRUD := cosmosClient.HCPClusters(resourceID.SubscriptionID, resourceID.ResourceGroupName)
+	clusterCRUD := armResourcesClient.HCPClusters(resourceID.SubscriptionID, resourceID.ResourceGroupName)
 	existingCluster, err := clusterCRUD.Get(ctx, resourceID.Name)
 	if database.IsNotFoundError(err) {
 		return nil
@@ -99,7 +99,7 @@ func DumpBillingToLogger(ctx context.Context, cosmosClient database.ARMResources
 		return nil
 	}
 
-	billingDoc, err := cosmosClient.BillingDocs(resourceID.SubscriptionID).GetByID(ctx, clusterUID)
+	billingDoc, err := billingClient.BillingDocs(resourceID.SubscriptionID).GetByID(ctx, clusterUID)
 	if database.IsNotFoundError(err) {
 		return nil
 	}

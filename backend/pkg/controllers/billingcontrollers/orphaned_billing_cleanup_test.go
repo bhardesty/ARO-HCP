@@ -175,8 +175,9 @@ func TestOrphanedBillingCleanup_SyncOnce(t *testing.T) {
 			mockDB := databasetesting.NewMockARMResourcesDBClient()
 
 			// Add billing documents directly
+			mockBilling := databasetesting.NewMockBillingDBClient(mockDB)
 			for _, doc := range tt.billingDocuments {
-				billingCRUD := mockDB.BillingDocs(doc.SubscriptionID)
+				billingCRUD := mockBilling.BillingDocs(doc.SubscriptionID)
 				err := billingCRUD.Create(ctx, doc)
 				require.NoError(t, err)
 			}
@@ -199,7 +200,7 @@ func TestOrphanedBillingCleanup_SyncOnce(t *testing.T) {
 				billingLister: &listertesting.SliceBillingLister{
 					BillingDocuments: tt.billingDocuments,
 				},
-				cosmosClient: mockDB,
+				billingClient: databasetesting.NewMockBillingDBClient(mockDB),
 			}
 
 			err := controller.SyncOnce(ctx, "default")

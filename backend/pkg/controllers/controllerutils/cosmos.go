@@ -26,12 +26,12 @@ import (
 )
 
 // MarkBillingDocumentDeleted patches a Cosmos DB document in the Billing container to add a deletion timestamp.
-func MarkBillingDocumentDeleted(ctx context.Context, cosmosClient database.ARMResourcesDBClient, resourceID *azcorearm.ResourceID, deletionTime time.Time) error {
+func MarkBillingDocumentDeleted(ctx context.Context, billingClient database.BillingDBClient, resourceID *azcorearm.ResourceID, deletionTime time.Time) error {
 	logger := utils.LoggerFromContext(ctx)
 
 	var patchOperations database.BillingDocumentPatchOperations
 	patchOperations.SetDeletionTime(deletionTime)
-	err := cosmosClient.BillingDocs(resourceID.SubscriptionID).PatchByClusterID(ctx, resourceID, patchOperations)
+	err := billingClient.BillingDocs(resourceID.SubscriptionID).PatchByClusterID(ctx, resourceID, patchOperations)
 	if err == nil {
 		logger.Info("Updated billing for cluster deletion")
 	} else if database.IsNotFoundError(err) {

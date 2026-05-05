@@ -44,6 +44,10 @@ func (m *MockCosmosIntegrationTestInfo) CosmosClient() database.ARMResourcesDBCl
 	return m.MockARMResourcesDBClient
 }
 
+func (m *MockCosmosIntegrationTestInfo) BillingClient() database.BillingDBClient {
+	return databasetesting.NewMockBillingDBClient(m.MockARMResourcesDBClient)
+}
+
 func (m *MockCosmosIntegrationTestInfo) LoadContent(ctx context.Context, content []byte) error {
 	return m.MockARMResourcesDBClient.LoadContent(ctx, content)
 }

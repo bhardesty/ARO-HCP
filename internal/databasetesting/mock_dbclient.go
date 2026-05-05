@@ -84,11 +84,6 @@ func (m *MockARMResourcesDBClient) NewTransaction(pk string) database.DBTransact
 	return newMockTransaction(pk, m)
 }
 
-// BillingDocs returns a CRUD interface for billing documents.
-func (m *MockARMResourcesDBClient) BillingDocs(subscriptionID string) database.BillingDocCRUD {
-	return newMockBillingDocCRUD(m, subscriptionID)
-}
-
 // UntypedCRUD provides access to untyped resource operations.
 func (m *MockARMResourcesDBClient) UntypedCRUD(parentResourceID azcorearm.ResourceID) (database.UntypedResourceCRUD, error) {
 	return newMockUntypedCRUD(m, parentResourceID), nil

@@ -82,6 +82,7 @@ func TestBackendExposesMetrics(t *testing.T) {
 		registry := prometheus.NewRegistry()
 
 		dbClient := storageIntegrationTestInfo.CosmosClient()
+		billingClient := storageIntegrationTestInfo.BillingClient()
 		clusterResourceID := api.Must(azcorearm.ParseResourceID("/subscriptions/sub-1/resourceGroups/rg/providers/Microsoft.RedHatOpenShift/hcpOpenShiftClusters/cluster-1"))
 		now := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 
@@ -101,6 +102,7 @@ func TestBackendExposesMetrics(t *testing.T) {
 			AzureLocation:                      "fake-location",
 			LeaderElectionLock:                 newFakeLeaderElectionLock("metrics-test"),
 			ARMResourcesDBClient:               dbClient,
+			BillingDBClient:                    billingClient,
 			ClustersServiceClient:              clusterServiceMock.MockClusterServiceClient,
 			MetricsRegisterer:                  registry,
 			MetricsGatherer:                    registry,

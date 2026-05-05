@@ -20,17 +20,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestARMResourcesGlobalListers_Billing verifies that the ARMResourcesGlobalListers interface
-// provides access to a billing document global lister.
-func TestARMResourcesGlobalListers_Billing(t *testing.T) {
-	// Create a cosmosARMResourcesGlobalListers instance with nil containers
-	// (we're only testing the interface, not actual Cosmos DB interaction)
-	gl := &cosmosARMResourcesGlobalListers{
-		resources: nil,
-		billing:   nil,
+// TestBillingGlobalListers verifies that BillingGlobalListers exposes a billing document global lister.
+func TestBillingGlobalListers(t *testing.T) {
+	gl := &cosmosBillingGlobalListers{
+		billing: nil,
 	}
-
-	// Verify the BillingDocs method exists and returns a GlobalLister
 	lister := gl.BillingDocs()
 	require.NotNil(t, lister, "BillingDocs() should return a non-nil GlobalLister")
 }

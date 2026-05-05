@@ -49,21 +49,18 @@ type ARMResourcesGlobalListers interface {
 	ManagementClusterContents() GlobalLister[api.ManagementClusterContent]
 	Operations() GlobalLister[api.Operation]
 	ActiveOperations() GlobalLister[api.Operation]
-	BillingDocs() GlobalLister[BillingDocument]
 }
 
-// cosmosARMResourcesGlobalListers implements ARMResourcesGlobalListers using a Cosmos DB container client.
+// cosmosARMResourcesGlobalListers implements ARMResourcesGlobalListers using the Resources Cosmos container.
 type cosmosARMResourcesGlobalListers struct {
 	resources *azcosmos.ContainerClient
-	billing   *azcosmos.ContainerClient
 }
 
 var _ ARMResourcesGlobalListers = &cosmosARMResourcesGlobalListers{}
 
-func NewCosmosARMResourcesGlobalListers(resources *azcosmos.ContainerClient, billing *azcosmos.ContainerClient) ARMResourcesGlobalListers {
+func NewCosmosARMResourcesGlobalListers(resources *azcosmos.ContainerClient) ARMResourcesGlobalListers {
 	return &cosmosARMResourcesGlobalListers{
 		resources: resources,
-		billing:   billing,
 	}
 }
 
@@ -140,12 +137,6 @@ func (g *cosmosARMResourcesGlobalListers) Operations() GlobalLister[api.Operatio
 func (g *cosmosARMResourcesGlobalListers) ActiveOperations() GlobalLister[api.Operation] {
 	return &cosmosActiveOperationsGlobalLister{
 		containerClient: g.resources,
-	}
-}
-
-func (g *cosmosARMResourcesGlobalListers) BillingDocs() GlobalLister[BillingDocument] {
-	return &cosmosBillingGlobalLister{
-		containerClient: g.billing,
 	}
 }
 
