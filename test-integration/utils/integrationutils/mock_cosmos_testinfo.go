@@ -28,14 +28,17 @@ type MockCosmosIntegrationTestInfo struct {
 	ArtifactsDir string
 
 	MockARMResourcesDBClient *databasetesting.MockARMResourcesDBClient
+	MockLocksDBClient        *databasetesting.MockLocksDBClient
 }
 
 func NewMockCosmosFromTestingEnv(ctx context.Context, t *testing.T) (StorageIntegrationTestInfo, error) {
 	mockARMResourcesDBClient := databasetesting.NewMockARMResourcesDBClient()
+	mockLocksDBClient := databasetesting.NewMockLocksDBClient()
 
 	testInfo := &MockCosmosIntegrationTestInfo{
 		ArtifactsDir:             path.Join(getArtifactDir(), t.Name()),
 		MockARMResourcesDBClient: mockARMResourcesDBClient,
+		MockLocksDBClient:        mockLocksDBClient,
 	}
 	return testInfo, nil
 }
@@ -46,6 +49,10 @@ func (m *MockCosmosIntegrationTestInfo) CosmosClient() database.ARMResourcesDBCl
 
 func (m *MockCosmosIntegrationTestInfo) BillingClient() database.BillingDBClient {
 	return databasetesting.NewMockBillingDBClient(m.MockARMResourcesDBClient)
+}
+
+func (m *MockCosmosIntegrationTestInfo) LocksClient() database.LocksDBClient {
+	return m.MockLocksDBClient
 }
 
 func (m *MockCosmosIntegrationTestInfo) LoadContent(ctx context.Context, content []byte) error {

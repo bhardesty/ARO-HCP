@@ -111,9 +111,6 @@ type ARMResourcesDBClientListActiveOperationDocsOptions struct {
 // ARMResourcesDBClient provides a customized interface to the Cosmos DB containers used by the
 // ARO-HCP resource provider.
 type ARMResourcesDBClient interface {
-	// GetLockClient returns a LockClient, or nil if the ARMResourcesDBClient does not support a LockClient.
-	GetLockClient() LockClientInterface
-
 	// NewTransaction initiates a new transactional batch for the given partition key.
 	NewTransaction(pk string) DBTransaction
 
@@ -142,38 +139,22 @@ var _ ARMResourcesDBClient = &armResourcesCosmosDBClient{}
 
 // armResourcesCosmosDBClient defines the needed values to perform CRUD operations against Cosmos DB.
 type armResourcesCosmosDBClient struct {
-	database   *azcosmos.DatabaseClient
-	resources  *azcosmos.ContainerClient
-	lockClient *LockClient
+	database  *azcosmos.DatabaseClient
+	resources *azcosmos.ContainerClient
 }
 
 // NewARMResourcesDBClient instantiates an ARMResourcesDBClient from a Cosmos DatabaseClient instance
-// targeting the Frontends async database (Resources and Locks containers).
-func NewARMResourcesDBClient(ctx context.Context, database *azcosmos.DatabaseClient) (ARMResourcesDBClient, error) {
+// targeting the Frontends async database (Resources container).
+func NewARMResourcesDBClient(database *azcosmos.DatabaseClient) (ARMResourcesDBClient, error) {
 	resources, err := database.NewContainer(resourcesContainer)
 	if err != nil {
 		return nil, utils.TrackError(err)
 	}
 
-	locks, err := database.NewContainer(locksContainer)
-	if err != nil {
-		return nil, utils.TrackError(err)
-	}
-
-	lockClient, err := NewLockClient(ctx, locks)
-	if err != nil {
-		return nil, utils.TrackError(err)
-	}
-
 	return &armResourcesCosmosDBClient{
-		database:   database,
-		resources:  resources,
-		lockClient: lockClient,
+		database:  database,
+		resources: resources,
 	}, nil
-}
-
-func (d *armResourcesCosmosDBClient) GetLockClient() LockClientInterface {
-	return d.lockClient
 }
 
 func (d *armResourcesCosmosDBClient) NewTransaction(pk string) DBTransaction {

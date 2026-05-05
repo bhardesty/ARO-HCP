@@ -45,38 +45,22 @@ type MockARMResourcesDBClient struct {
 	// billing stores billing documents keyed by their ID
 	billing map[string]*database.BillingDocument
 
-	// lockClient is an optional mock lock client
-	lockClient database.LockClientInterface
-
 	// globalListers is an optional custom global listers implementation for testing
 	globalListers database.ARMResourcesGlobalListers
 }
 
 // NewMockARMResourcesDBClient creates a new mock ARMResourcesDBClient with empty storage.
 func NewMockARMResourcesDBClient() *MockARMResourcesDBClient {
-	lockClient := NewMockLockClient(10)
-
 	return &MockARMResourcesDBClient{
-		documents:  make(map[string]json.RawMessage),
-		billing:    make(map[string]*database.BillingDocument),
-		lockClient: lockClient,
+		documents: make(map[string]json.RawMessage),
+		billing:   make(map[string]*database.BillingDocument),
 	}
-}
-
-// SetLockClient sets a mock lock client for testing.
-func (m *MockARMResourcesDBClient) SetLockClient(lockClient database.LockClientInterface) {
-	m.lockClient = lockClient
 }
 
 // SetARMResourcesGlobalListers sets a custom global listers implementation for testing.
 // This allows tests to provide custom ARMResourcesGlobalListers that return errors or paginate.
 func (m *MockARMResourcesDBClient) SetARMResourcesGlobalListers(globalListers database.ARMResourcesGlobalListers) {
 	m.globalListers = globalListers
-}
-
-// GetLockClient returns the mock lock client, or nil if not set.
-func (m *MockARMResourcesDBClient) GetLockClient() database.LockClientInterface {
-	return m.lockClient
 }
 
 // NewTransaction creates a new mock transaction.
@@ -518,6 +502,35 @@ func (c *MockLockClient) ReleaseLock(ctx context.Context, item *azcosmos.ItemRes
 }
 
 var _ database.LockClientInterface = &MockLockClient{}
+
+// MockLocksDBClient implements database.LocksDBClient for unit testing.
+type MockLocksDBClient struct {
+	mu   sync.RWMutex
+	lock database.LockClientInterface
+}
+
+// NewMockLocksDBClient returns a LocksDBClient backed by an in-memory lock implementation.
+func NewMockLocksDBClient() *MockLocksDBClient {
+	return &MockLocksDBClient{
+		lock: NewMockLockClient(10),
+	}
+}
+
+// SetLockClient replaces the lock implementation (e.g. for middleware tests).
+func (m *MockLocksDBClient) SetLockClient(lock database.LockClientInterface) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.lock = lock
+}
+
+// LockClient returns the configured lock client, or nil if unset.
+func (m *MockLocksDBClient) LockClient() database.LockClientInterface {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return m.lock
+}
+
+var _ database.LocksDBClient = &MockLocksDBClient{}
 
 // mockBillingDocCRUD implements database.BillingDocCRUD for testing.
 type mockBillingDocCRUD struct {

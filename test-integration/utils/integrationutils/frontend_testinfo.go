@@ -43,6 +43,7 @@ type StorageIntegrationTestInfo interface {
 	GetArtifactDir() string
 	CosmosClient() database.ARMResourcesDBClient
 	BillingClient() database.BillingDBClient
+	LocksClient() database.LocksDBClient
 
 	Cleanup(ctx context.Context)
 }

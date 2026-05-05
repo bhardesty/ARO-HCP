@@ -188,7 +188,7 @@ func (opts *FrontendOpts) Run() error {
 		return fmt.Errorf("could not initialize opentelemetry sdk: %w", err)
 	}
 
-	// Create Cosmos async database and ARM resources client (Resources + Locks containers).
+	// Create Cosmos async database, ARM resources client (Resources), and locks client (Locks).
 	clientOpts := azsdk.NewClientOptions(azsdk.ComponentFrontend)
 	// FIXME Cloud should be determined by other means.
 	clientOpts.Cloud = cloud.AzurePublic
@@ -203,9 +203,14 @@ func (opts *FrontendOpts) Run() error {
 		return fmt.Errorf("failed to create the CosmosDB client: %w", err)
 	}
 
-	armResourcesDBClient, err := database.NewARMResourcesDBClient(ctx, cosmosDatabaseClient)
+	armResourcesDBClient, err := database.NewARMResourcesDBClient(cosmosDatabaseClient)
 	if err != nil {
 		return fmt.Errorf("failed to create the ARM resources database client: %w", err)
+	}
+
+	locksDBClient, err := database.NewLocksDBClient(ctx, cosmosDatabaseClient)
+	if err != nil {
+		return fmt.Errorf("failed to create the locks database client: %w", err)
 	}
 
 	listener, err := net.Listen("tcp4", fmt.Sprintf(":%d", opts.port))
@@ -242,7 +247,7 @@ func (opts *FrontendOpts) Run() error {
 	f := frontend.NewFrontend(
 		logger, listener, metricsListener,
 		legacyregistry.Registerer(), legacyregistry.DefaultGatherer,
-		armResourcesDBClient, csClient, auditClient, opts.location, opts.clusterServiceProvisionShard,
+		armResourcesDBClient, locksDBClient, csClient, auditClient, opts.location, opts.clusterServiceProvisionShard,
 		opts.clusterServiceNoopProvision, opts.clusterServiceNoopDeprovision, opts.exitOnPanic,
 	)
 

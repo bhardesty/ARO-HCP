@@ -201,7 +201,7 @@ func (o *ValidatedOptions) Complete(ctx context.Context) (*Options, error) {
 	}
 	csClient := ocm.NewClusterServiceClient(csConnection)
 
-	// Create Cosmos async database and data-plane clients (Resources/Locks vs Billing containers).
+	// Create Cosmos async database and data-plane clients (Resources, Billing; Locks are frontend-only).
 	clientOpts := azsdk.NewClientOptions(azsdk.ComponentAdmin)
 	// FIXME Cloud should be determined by other means.
 	clientOpts.Cloud = cloud.AzurePublic
@@ -213,7 +213,7 @@ func (o *ValidatedOptions) Complete(ctx context.Context) (*Options, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create the CosmosDB client: %w", err)
 	}
-	armResourcesDBClient, err := database.NewARMResourcesDBClient(ctx, cosmosDatabaseClient)
+	armResourcesDBClient, err := database.NewARMResourcesDBClient(cosmosDatabaseClient)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create the ARM resources database client: %w", err)
 	}
