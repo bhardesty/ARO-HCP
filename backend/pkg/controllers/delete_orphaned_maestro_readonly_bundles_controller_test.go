@@ -223,42 +223,42 @@ func (n *panicGlobalLister[T]) List(context.Context, *database.DBClientListResou
 	panic("panicGlobalLister.List should not be called")
 }
 
-// defaultPanicARMResourcesGlobalListers implements database.ResourcesGlobalListers with panic-on-List listers for every resource type.
+// defaultPanicResourcesGlobalListers implements database.ResourcesGlobalListers with panic-on-List listers for every resource type.
 // Embed it in a test double and override only the accessors the test cares about.
-type defaultPanicARMResourcesGlobalListers struct{}
+type defaultPanicResourcesGlobalListers struct{}
 
-func (defaultPanicARMResourcesGlobalListers) Subscriptions() database.GlobalLister[arm.Subscription] {
+func (defaultPanicResourcesGlobalListers) Subscriptions() database.GlobalLister[arm.Subscription] {
 	return &panicGlobalLister[arm.Subscription]{}
 }
-func (defaultPanicARMResourcesGlobalListers) Clusters() database.GlobalLister[api.HCPOpenShiftCluster] {
+func (defaultPanicResourcesGlobalListers) Clusters() database.GlobalLister[api.HCPOpenShiftCluster] {
 	return &panicGlobalLister[api.HCPOpenShiftCluster]{}
 }
-func (defaultPanicARMResourcesGlobalListers) NodePools() database.GlobalLister[api.HCPOpenShiftClusterNodePool] {
+func (defaultPanicResourcesGlobalListers) NodePools() database.GlobalLister[api.HCPOpenShiftClusterNodePool] {
 	return &panicGlobalLister[api.HCPOpenShiftClusterNodePool]{}
 }
-func (defaultPanicARMResourcesGlobalListers) ExternalAuths() database.GlobalLister[api.HCPOpenShiftClusterExternalAuth] {
+func (defaultPanicResourcesGlobalListers) ExternalAuths() database.GlobalLister[api.HCPOpenShiftClusterExternalAuth] {
 	return &panicGlobalLister[api.HCPOpenShiftClusterExternalAuth]{}
 }
-func (defaultPanicARMResourcesGlobalListers) ServiceProviderClusters() database.GlobalLister[api.ServiceProviderCluster] {
+func (defaultPanicResourcesGlobalListers) ServiceProviderClusters() database.GlobalLister[api.ServiceProviderCluster] {
 	return &panicGlobalLister[api.ServiceProviderCluster]{}
 }
-func (defaultPanicARMResourcesGlobalListers) ServiceProviderNodePools() database.GlobalLister[api.ServiceProviderNodePool] {
+func (defaultPanicResourcesGlobalListers) ServiceProviderNodePools() database.GlobalLister[api.ServiceProviderNodePool] {
 	return &panicGlobalLister[api.ServiceProviderNodePool]{}
 }
-func (defaultPanicARMResourcesGlobalListers) Controllers() database.GlobalLister[api.Controller] {
+func (defaultPanicResourcesGlobalListers) Controllers() database.GlobalLister[api.Controller] {
 	return &panicGlobalLister[api.Controller]{}
 }
-func (defaultPanicARMResourcesGlobalListers) ManagementClusterContents() database.GlobalLister[api.ManagementClusterContent] {
+func (defaultPanicResourcesGlobalListers) ManagementClusterContents() database.GlobalLister[api.ManagementClusterContent] {
 	return &panicGlobalLister[api.ManagementClusterContent]{}
 }
-func (defaultPanicARMResourcesGlobalListers) Operations() database.GlobalLister[api.Operation] {
+func (defaultPanicResourcesGlobalListers) Operations() database.GlobalLister[api.Operation] {
 	return &panicGlobalLister[api.Operation]{}
 }
-func (defaultPanicARMResourcesGlobalListers) ActiveOperations() database.GlobalLister[api.Operation] {
+func (defaultPanicResourcesGlobalListers) ActiveOperations() database.GlobalLister[api.Operation] {
 	return &panicGlobalLister[api.Operation]{}
 }
 
-var _ database.ResourcesGlobalListers = defaultPanicARMResourcesGlobalListers{}
+var _ database.ResourcesGlobalListers = defaultPanicResourcesGlobalListers{}
 
 // simpleIterator is a simple iterator implementation for testing that doesn't use gomock.
 type simpleIterator[T any] struct {
@@ -386,45 +386,45 @@ func TestDeleteOrphanedMaestroReadonlyBundles_getAllServiceProviderNodePools(t *
 	}
 }
 
-// alwaysErrorARMResourcesGlobalListers is a test double that makes the returned global listers
+// alwaysErrorResourcesGlobalListers is a test double that makes the returned global listers
 // always return an error
-type alwaysErrorARMResourcesGlobalListers struct {
+type alwaysErrorResourcesGlobalListers struct {
 	err error
 }
 
-func (f *alwaysErrorARMResourcesGlobalListers) Subscriptions() database.GlobalLister[arm.Subscription] {
+func (f *alwaysErrorResourcesGlobalListers) Subscriptions() database.GlobalLister[arm.Subscription] {
 	return &alwaysErrorGlobalLister[arm.Subscription]{err: f.err}
 }
-func (f *alwaysErrorARMResourcesGlobalListers) Clusters() database.GlobalLister[api.HCPOpenShiftCluster] {
+func (f *alwaysErrorResourcesGlobalListers) Clusters() database.GlobalLister[api.HCPOpenShiftCluster] {
 	return &alwaysErrorGlobalLister[api.HCPOpenShiftCluster]{err: f.err}
 }
-func (f *alwaysErrorARMResourcesGlobalListers) NodePools() database.GlobalLister[api.HCPOpenShiftClusterNodePool] {
+func (f *alwaysErrorResourcesGlobalListers) NodePools() database.GlobalLister[api.HCPOpenShiftClusterNodePool] {
 	return &alwaysErrorGlobalLister[api.HCPOpenShiftClusterNodePool]{err: f.err}
 }
-func (f *alwaysErrorARMResourcesGlobalListers) ExternalAuths() database.GlobalLister[api.HCPOpenShiftClusterExternalAuth] {
+func (f *alwaysErrorResourcesGlobalListers) ExternalAuths() database.GlobalLister[api.HCPOpenShiftClusterExternalAuth] {
 	return &alwaysErrorGlobalLister[api.HCPOpenShiftClusterExternalAuth]{err: f.err}
 }
-func (f *alwaysErrorARMResourcesGlobalListers) ServiceProviderClusters() database.GlobalLister[api.ServiceProviderCluster] {
+func (f *alwaysErrorResourcesGlobalListers) ServiceProviderClusters() database.GlobalLister[api.ServiceProviderCluster] {
 	return &alwaysErrorGlobalLister[api.ServiceProviderCluster]{err: f.err}
 }
-func (f *alwaysErrorARMResourcesGlobalListers) Operations() database.GlobalLister[api.Operation] {
+func (f *alwaysErrorResourcesGlobalListers) Operations() database.GlobalLister[api.Operation] {
 	return &alwaysErrorGlobalLister[api.Operation]{err: f.err}
 }
-func (f *alwaysErrorARMResourcesGlobalListers) ActiveOperations() database.GlobalLister[api.Operation] {
+func (f *alwaysErrorResourcesGlobalListers) ActiveOperations() database.GlobalLister[api.Operation] {
 	return &alwaysErrorGlobalLister[api.Operation]{err: f.err}
 }
 
-func (f *alwaysErrorARMResourcesGlobalListers) Controllers() database.GlobalLister[api.Controller] {
+func (f *alwaysErrorResourcesGlobalListers) Controllers() database.GlobalLister[api.Controller] {
 	return &alwaysErrorGlobalLister[api.Controller]{err: f.err}
 }
-func (f *alwaysErrorARMResourcesGlobalListers) ManagementClusterContents() database.GlobalLister[api.ManagementClusterContent] {
+func (f *alwaysErrorResourcesGlobalListers) ManagementClusterContents() database.GlobalLister[api.ManagementClusterContent] {
 	return &alwaysErrorGlobalLister[api.ManagementClusterContent]{err: f.err}
 }
-func (f *alwaysErrorARMResourcesGlobalListers) ServiceProviderNodePools() database.GlobalLister[api.ServiceProviderNodePool] {
+func (f *alwaysErrorResourcesGlobalListers) ServiceProviderNodePools() database.GlobalLister[api.ServiceProviderNodePool] {
 	return &alwaysErrorGlobalLister[api.ServiceProviderNodePool]{err: f.err}
 }
 
-var _ database.ResourcesGlobalListers = (*alwaysErrorARMResourcesGlobalListers)(nil)
+var _ database.ResourcesGlobalListers = (*alwaysErrorResourcesGlobalListers)(nil)
 
 type alwaysErrorGlobalLister[T any] struct {
 	err error
@@ -457,21 +457,21 @@ func (f *failOnSecondSPNPGlobalLister) List(ctx context.Context, opts *database.
 	return &simpleIterator[api.ServiceProviderNodePool]{}, nil
 }
 
-// syncOnceSPCOKFailSecondSPNPARMResourcesGlobalListers lists empty SPCs always, and fails the second global SPNP list during nodepool ensure (for SyncOnce integration).
-type syncOnceSPCOKFailSecondSPNPARMResourcesGlobalListers struct {
-	defaultPanicARMResourcesGlobalListers
+// syncOnceSPCOKFailSecondSPNPResourcesGlobalListers lists empty SPCs always, and fails the second global SPNP list during nodepool ensure (for SyncOnce integration).
+type syncOnceSPCOKFailSecondSPNPResourcesGlobalListers struct {
+	defaultPanicResourcesGlobalListers
 	spnp *failOnSecondSPNPGlobalLister
 }
 
-func (g *syncOnceSPCOKFailSecondSPNPARMResourcesGlobalListers) ServiceProviderClusters() database.GlobalLister[api.ServiceProviderCluster] {
+func (g *syncOnceSPCOKFailSecondSPNPResourcesGlobalListers) ServiceProviderClusters() database.GlobalLister[api.ServiceProviderCluster] {
 	return &emptyGlobalLister[api.ServiceProviderCluster]{}
 }
 
-func (g *syncOnceSPCOKFailSecondSPNPARMResourcesGlobalListers) ServiceProviderNodePools() database.GlobalLister[api.ServiceProviderNodePool] {
+func (g *syncOnceSPCOKFailSecondSPNPResourcesGlobalListers) ServiceProviderNodePools() database.GlobalLister[api.ServiceProviderNodePool] {
 	return g.spnp
 }
 
-var _ database.ResourcesGlobalListers = (*syncOnceSPCOKFailSecondSPNPARMResourcesGlobalListers)(nil)
+var _ database.ResourcesGlobalListers = (*syncOnceSPCOKFailSecondSPNPResourcesGlobalListers)(nil)
 
 // failOnSecondServiceProviderClusterGlobalLister fails ServiceProviderClusters.List starting on the second call.
 type failOnSecondServiceProviderClusterGlobalLister struct {
@@ -505,45 +505,45 @@ func (e *emptyFirstThenServiceProviderClusterGlobalLister) List(ctx context.Cont
 	return &simpleIterator[api.ServiceProviderCluster]{ids: ids, items: e.items}, nil
 }
 
-// orphanTestARMResourcesGlobalListersSPCOnly is a ARMResourcesGlobalListers test double that only customizes ServiceProviderClusters().
-type orphanTestARMResourcesGlobalListersSPCOnly struct {
-	defaultPanicARMResourcesGlobalListers
+// orphanTestResourcesGlobalListersSPCOnly is a ResourcesGlobalListers test double that only customizes ServiceProviderClusters().
+type orphanTestResourcesGlobalListersSPCOnly struct {
+	defaultPanicResourcesGlobalListers
 	spc database.GlobalLister[api.ServiceProviderCluster]
 }
 
-func newOrphanTestARMResourcesGlobalListersSPCOnly(spc database.GlobalLister[api.ServiceProviderCluster]) *orphanTestARMResourcesGlobalListersSPCOnly {
-	return &orphanTestARMResourcesGlobalListersSPCOnly{spc: spc}
+func newOrphanTestResourcesGlobalListersSPCOnly(spc database.GlobalLister[api.ServiceProviderCluster]) *orphanTestResourcesGlobalListersSPCOnly {
+	return &orphanTestResourcesGlobalListersSPCOnly{spc: spc}
 }
 
-func (g *orphanTestARMResourcesGlobalListersSPCOnly) ServiceProviderClusters() database.GlobalLister[api.ServiceProviderCluster] {
+func (g *orphanTestResourcesGlobalListersSPCOnly) ServiceProviderClusters() database.GlobalLister[api.ServiceProviderCluster] {
 	return g.spc
 }
 
-func (g *orphanTestARMResourcesGlobalListersSPCOnly) ServiceProviderNodePools() database.GlobalLister[api.ServiceProviderNodePool] {
+func (g *orphanTestResourcesGlobalListersSPCOnly) ServiceProviderNodePools() database.GlobalLister[api.ServiceProviderNodePool] {
 	return &emptyGlobalLister[api.ServiceProviderNodePool]{}
 }
 
-var _ database.ResourcesGlobalListers = (*orphanTestARMResourcesGlobalListersSPCOnly)(nil)
+var _ database.ResourcesGlobalListers = (*orphanTestResourcesGlobalListersSPCOnly)(nil)
 
-// orphanTestARMResourcesGlobalListersSPNPOnly is a ARMResourcesGlobalListers test double that only customizes ServiceProviderNodePools().
-type orphanTestARMResourcesGlobalListersSPNPOnly struct {
-	defaultPanicARMResourcesGlobalListers
+// orphanTestResourcesGlobalListersSPNPOnly is a ResourcesGlobalListers test double that only customizes ServiceProviderNodePools().
+type orphanTestResourcesGlobalListersSPNPOnly struct {
+	defaultPanicResourcesGlobalListers
 	spnp database.GlobalLister[api.ServiceProviderNodePool]
 }
 
-func newOrphanTestARMResourcesGlobalListersSPNPOnly(spnp database.GlobalLister[api.ServiceProviderNodePool]) *orphanTestARMResourcesGlobalListersSPNPOnly {
-	return &orphanTestARMResourcesGlobalListersSPNPOnly{spnp: spnp}
+func newOrphanTestResourcesGlobalListersSPNPOnly(spnp database.GlobalLister[api.ServiceProviderNodePool]) *orphanTestResourcesGlobalListersSPNPOnly {
+	return &orphanTestResourcesGlobalListersSPNPOnly{spnp: spnp}
 }
 
-func (g *orphanTestARMResourcesGlobalListersSPNPOnly) ServiceProviderClusters() database.GlobalLister[api.ServiceProviderCluster] {
+func (g *orphanTestResourcesGlobalListersSPNPOnly) ServiceProviderClusters() database.GlobalLister[api.ServiceProviderCluster] {
 	return &emptyGlobalLister[api.ServiceProviderCluster]{}
 }
 
-func (g *orphanTestARMResourcesGlobalListersSPNPOnly) ServiceProviderNodePools() database.GlobalLister[api.ServiceProviderNodePool] {
+func (g *orphanTestResourcesGlobalListersSPNPOnly) ServiceProviderNodePools() database.GlobalLister[api.ServiceProviderNodePool] {
 	return g.spnp
 }
 
-var _ database.ResourcesGlobalListers = (*orphanTestARMResourcesGlobalListersSPNPOnly)(nil)
+var _ database.ResourcesGlobalListers = (*orphanTestResourcesGlobalListersSPNPOnly)(nil)
 
 // hcpClusterGetErrorInjectingResourcesDBClient wraps a mockResourcesDBClient and forces HCPClusters().Get to return a configurable
 // non-NotFound error. Lets tests exercise the "real Get failure" path without modifying the in-memory mock.
@@ -573,7 +573,7 @@ func TestDeleteOrphanedMaestroReadonlyBundles_SyncOnce_ListServiceProviderCluste
 	ctrl := gomock.NewController(t)
 	mockDB := databasetesting.NewMockResourcesDBClient()
 	listErr := fmt.Errorf("list SPCs error")
-	mockDB.SetARMResourcesGlobalListers(&alwaysErrorARMResourcesGlobalListers{err: listErr})
+	mockDB.SetResourcesGlobalListers(&alwaysErrorResourcesGlobalListers{err: listErr})
 
 	mockCS := ocm.NewMockClusterServiceClientSpec(ctrl)
 	mockCS.EXPECT().ListProvisionShards().Return(ocm.NewSimpleProvisionShardListIterator(nil, nil))
@@ -590,7 +590,7 @@ func TestDeleteOrphanedMaestroReadonlyBundles_SyncOnce_ListServiceProviderNodePo
 	ctrl := gomock.NewController(t)
 	mockDB := databasetesting.NewMockResourcesDBClient()
 	listErr := fmt.Errorf("list SPNPs error")
-	mockDB.SetARMResourcesGlobalListers(&syncOnceSPCOKFailSecondSPNPARMResourcesGlobalListers{
+	mockDB.SetResourcesGlobalListers(&syncOnceSPCOKFailSecondSPNPResourcesGlobalListers{
 		spnp: &failOnSecondSPNPGlobalLister{err: listErr},
 	})
 
@@ -1319,7 +1319,7 @@ func TestDeleteOrphanedMaestroReadonlyBundles_ensureClusterScopedOrphanedMaestro
 			name: "second global SPC list error",
 			setupMock: func(_ *testing.T, m *maestro.MockClient, mockDB *databasetesting.MockResourcesDBClient, _ *ocm.MockClusterServiceClientSpec, shard *arohcpv1alpha1.ProvisionShard) map[string]*shardMaestroClient {
 				listErr := fmt.Errorf("fresh list SPCs error")
-				mockDB.SetARMResourcesGlobalListers(newOrphanTestARMResourcesGlobalListersSPCOnly(&failOnSecondServiceProviderClusterGlobalLister{err: listErr}))
+				mockDB.SetResourcesGlobalListers(newOrphanTestResourcesGlobalListersSPCOnly(&failOnSecondServiceProviderClusterGlobalLister{err: listErr}))
 				m.EXPECT().List(gomock.Any(), gomock.Any()).Return(&workv1.ManifestWorkList{}, nil)
 				return map[string]*shardMaestroClient{
 					shard.ID(): {maestroClient: m, maestroClientCancelFunc: func() {}},
@@ -1542,7 +1542,7 @@ func TestDeleteOrphanedMaestroReadonlyBundles_ensureOrphanedNodePoolScopedMaestr
 			name: "second global ServiceProviderNodePools list error",
 			setupMock: func(_ *testing.T, m *maestro.MockClient, mockDB *databasetesting.MockResourcesDBClient, _ *ocm.MockClusterServiceClientSpec, shard *arohcpv1alpha1.ProvisionShard) map[string]*shardMaestroClient {
 				listErr := fmt.Errorf("fresh list SPNPs error")
-				mockDB.SetARMResourcesGlobalListers(newOrphanTestARMResourcesGlobalListersSPNPOnly(&failOnSecondSPNPGlobalLister{err: listErr}))
+				mockDB.SetResourcesGlobalListers(newOrphanTestResourcesGlobalListersSPNPOnly(&failOnSecondSPNPGlobalLister{err: listErr}))
 				m.EXPECT().List(gomock.Any(), gomock.Any()).Return(&workv1.ManifestWorkList{}, nil)
 				return map[string]*shardMaestroClient{
 					shard.ID(): {maestroClient: m, maestroClientCancelFunc: func() {}},
@@ -1879,7 +1879,7 @@ func TestDeleteOrphanedMaestroReadonlyBundles_ensureClusterScopedOrphanedMaestro
 	_, err = mockDB.ServiceProviderClusters(clusterRID.SubscriptionID, clusterRID.ResourceGroupName, clusterRID.Name).Create(ctx, spc, nil)
 	require.NoError(t, err)
 
-	mockDB.SetARMResourcesGlobalListers(newOrphanTestARMResourcesGlobalListersSPCOnly(&emptyFirstThenServiceProviderClusterGlobalLister{items: []*api.ServiceProviderCluster{spc}}))
+	mockDB.SetResourcesGlobalListers(newOrphanTestResourcesGlobalListersSPCOnly(&emptyFirstThenServiceProviderClusterGlobalLister{items: []*api.ServiceProviderCluster{spc}}))
 
 	clients := map[string]*shardMaestroClient{
 		shard.ID(): {

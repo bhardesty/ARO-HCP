@@ -35,7 +35,7 @@ func TestBillingDumpController_SyncOnce(t *testing.T) {
 
 	mockDB := databasetesting.NewMockResourcesDBClient()
 
-	mockBilling := databasetesting.NewMockBillingDBClient(mockDB)
+	mockBilling := databasetesting.NewMockBillingDBClient()
 	syncer := &billingDump{
 		cooldownChecker:   &alwaysSyncCooldownChecker{},
 		resourcesDBClient: mockDB,
@@ -57,7 +57,7 @@ func TestBillingDumpController_SyncOnce(t *testing.T) {
 func TestBillingDumpController_CooldownChecker(t *testing.T) {
 	mockDB := databasetesting.NewMockResourcesDBClient()
 
-	mockBilling := databasetesting.NewMockBillingDBClient(mockDB)
+	mockBilling := databasetesting.NewMockBillingDBClient()
 	syncer := &billingDump{
 		cooldownChecker:   &alwaysSyncCooldownChecker{},
 		resourcesDBClient: mockDB,
@@ -87,7 +87,7 @@ func TestBillingDumpController_SyncOnce_WithBillingDoc(t *testing.T) {
 	require.NoError(t, err)
 
 	mockDB := databasetesting.NewMockResourcesDBClient()
-	mockBilling := databasetesting.NewMockBillingDBClient(mockDB)
+	mockBilling := databasetesting.NewMockBillingDBClient()
 
 	// Create billing document
 	billingDoc := database.NewBillingDocument("billing-doc-1", clusterResourceID)
@@ -126,7 +126,7 @@ func TestBillingDumpController_CooldownRespected(t *testing.T) {
 	})
 
 	// Test that cooldown prevents sync
-	mockBilling := databasetesting.NewMockBillingDBClient(mockDB)
+	mockBilling := databasetesting.NewMockBillingDBClient()
 	syncer := &billingDump{
 		cooldownChecker:   &alwaysSyncCooldownChecker{},
 		resourcesDBClient: mockDB,

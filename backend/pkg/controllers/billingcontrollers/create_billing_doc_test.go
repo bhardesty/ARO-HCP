@@ -117,14 +117,14 @@ func TestCreateBillingDoc_SyncOnce(t *testing.T) {
 		name        string
 		cluster     *api.HCPOpenShiftCluster
 		expectError bool
-		verify      func(t *testing.T, db *databasetesting.MockResourcesDBClient)
+		verify      func(t *testing.T, billing *databasetesting.MockBillingDBClient)
 	}{
 		{
 			name:        "creates billing document for succeeded cluster with ClusterUID",
 			cluster:     newTestCluster(t, testClusterUID, arm.ProvisioningStateSucceeded, &createdAt),
 			expectError: false,
-			verify: func(t *testing.T, db *databasetesting.MockResourcesDBClient) {
-				billingDocs := db.GetBillingDocuments()
+			verify: func(t *testing.T, billing *databasetesting.MockBillingDBClient) {
+				billingDocs := billing.GetBillingDocuments()
 				require.Len(t, billingDocs, 1)
 				doc := billingDocs[testClusterUID]
 				require.NotNil(t, doc)
@@ -138,8 +138,8 @@ func TestCreateBillingDoc_SyncOnce(t *testing.T) {
 			name:        "uses fallback time when CreatedAt is nil",
 			cluster:     newTestCluster(t, testClusterUID, arm.ProvisioningStateSucceeded, nil),
 			expectError: false,
-			verify: func(t *testing.T, db *databasetesting.MockResourcesDBClient) {
-				billingDocs := db.GetBillingDocuments()
+			verify: func(t *testing.T, billing *databasetesting.MockBillingDBClient) {
+				billingDocs := billing.GetBillingDocuments()
 				require.Len(t, billingDocs, 1)
 				doc := billingDocs[testClusterUID]
 				require.NotNil(t, doc)
@@ -150,8 +150,8 @@ func TestCreateBillingDoc_SyncOnce(t *testing.T) {
 			name:        "skips cluster without ClusterUID",
 			cluster:     newTestCluster(t, "", arm.ProvisioningStateSucceeded, &createdAt),
 			expectError: false,
-			verify: func(t *testing.T, db *databasetesting.MockResourcesDBClient) {
-				billingDocs := db.GetBillingDocuments()
+			verify: func(t *testing.T, billing *databasetesting.MockBillingDBClient) {
+				billingDocs := billing.GetBillingDocuments()
 				assert.Empty(t, billingDocs, "no billing document should be created when ClusterUID is empty")
 			},
 		},
@@ -159,8 +159,8 @@ func TestCreateBillingDoc_SyncOnce(t *testing.T) {
 			name:        "skips cluster not in Succeeded state",
 			cluster:     newTestCluster(t, testClusterUID, arm.ProvisioningStateProvisioning, &createdAt),
 			expectError: false,
-			verify: func(t *testing.T, db *databasetesting.MockResourcesDBClient) {
-				billingDocs := db.GetBillingDocuments()
+			verify: func(t *testing.T, billing *databasetesting.MockBillingDBClient) {
+				billingDocs := billing.GetBillingDocuments()
 				assert.Empty(t, billingDocs, "no billing document should be created for non-succeeded cluster")
 			},
 		},
@@ -168,8 +168,8 @@ func TestCreateBillingDoc_SyncOnce(t *testing.T) {
 			name:        "skips cluster in Failed state",
 			cluster:     newTestCluster(t, testClusterUID, arm.ProvisioningStateFailed, &createdAt),
 			expectError: false,
-			verify: func(t *testing.T, db *databasetesting.MockResourcesDBClient) {
-				billingDocs := db.GetBillingDocuments()
+			verify: func(t *testing.T, billing *databasetesting.MockBillingDBClient) {
+				billingDocs := billing.GetBillingDocuments()
 				assert.Empty(t, billingDocs, "no billing document should be created for failed cluster")
 			},
 		},
@@ -191,12 +191,13 @@ func TestCreateBillingDoc_SyncOnce(t *testing.T) {
 
 			mockDB, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, resources)
 			require.NoError(t, err)
+			mockBillingDBClient := databasetesting.NewMockBillingDBClient()
 
 			controller := &createBillingDoc{
 				clock:             clocktesting.NewFakePassiveClock(fixedTime),
 				azureLocation:     testAzureLocation,
 				resourcesDBClient: mockDB,
-				billingClient:     databasetesting.NewMockBillingDBClient(mockDB),
+				billingClient:     mockBillingDBClient,
 				clusterLister: &listertesting.SliceClusterLister{
 					Clusters: []*api.HCPOpenShiftCluster{tt.cluster},
 				},
@@ -214,7 +215,7 @@ func TestCreateBillingDoc_SyncOnce(t *testing.T) {
 			}
 
 			if tt.verify != nil {
-				tt.verify(t, mockDB)
+				tt.verify(t, mockBillingDBClient)
 			}
 		})
 	}
@@ -230,8 +231,9 @@ func TestCreateBillingDoc_Idempotent(t *testing.T) {
 	cluster := newTestCluster(t, testClusterUID, arm.ProvisioningStateSucceeded, &createdAt)
 	subscription := newTestSubscription()
 
-	mockDB, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, []any{cluster, subscription})
+	mockResourcesDBClient, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, []any{cluster, subscription})
 	require.NoError(t, err)
+	mockBillingDBClient := databasetesting.NewMockBillingDBClient()
 
 	// Setup slice cluster lister (cache)
 	clusterLister := &listertesting.SliceClusterLister{
@@ -241,8 +243,8 @@ func TestCreateBillingDoc_Idempotent(t *testing.T) {
 	controller := &createBillingDoc{
 		clock:             clocktesting.NewFakePassiveClock(fixedTime),
 		azureLocation:     testAzureLocation,
-		resourcesDBClient: mockDB,
-		billingClient:     databasetesting.NewMockBillingDBClient(mockDB),
+		resourcesDBClient: mockResourcesDBClient,
+		billingClient:     mockBillingDBClient,
 		clusterLister:     clusterLister,
 		billingLister: &listertesting.SliceBillingLister{
 			BillingDocuments: []*database.BillingDocument{},
@@ -255,14 +257,14 @@ func TestCreateBillingDoc_Idempotent(t *testing.T) {
 	err = controller.SyncOnce(ctx, key)
 	require.NoError(t, err)
 
-	billingDocs := mockDB.GetBillingDocuments()
+	billingDocs := mockBillingDBClient.GetBillingDocuments()
 	require.Len(t, billingDocs, 1)
 
 	// Second sync should succeed without error (idempotent - conflict handled)
 	err = controller.SyncOnce(ctx, key)
 	require.NoError(t, err)
 
-	billingDocs = mockDB.GetBillingDocuments()
+	billingDocs = mockBillingDBClient.GetBillingDocuments()
 	assert.Len(t, billingDocs, 1, "should still have exactly one billing document")
 }
 
@@ -307,9 +309,10 @@ func TestCreateBillingDoc_ExistingBillingDocButMissingClusterRef(t *testing.T) {
 
 			mockDB, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, []any{cluster, subscription})
 			require.NoError(t, err)
+			mockBillingDBClient := databasetesting.NewMockBillingDBClient()
 
 			if tt.seedInDB {
-				err = databasetesting.NewMockBillingDBClient(mockDB).BillingDocs(testSubscriptionID).Create(ctx, preSeedDoc)
+				err = mockBillingDBClient.BillingDocs(testSubscriptionID).Create(ctx, preSeedDoc)
 				require.NoError(t, err)
 			}
 
@@ -317,7 +320,7 @@ func TestCreateBillingDoc_ExistingBillingDocButMissingClusterRef(t *testing.T) {
 				clock:             clocktesting.NewFakePassiveClock(fixedTime),
 				azureLocation:     testAzureLocation,
 				resourcesDBClient: mockDB,
-				billingClient:     databasetesting.NewMockBillingDBClient(mockDB),
+				billingClient:     mockBillingDBClient,
 				clusterLister: &listertesting.SliceClusterLister{
 					Clusters: []*api.HCPOpenShiftCluster{cluster},
 				},
@@ -330,7 +333,7 @@ func TestCreateBillingDoc_ExistingBillingDocButMissingClusterRef(t *testing.T) {
 			require.NoError(t, err)
 
 			// Verify no new billing document was created.
-			billingDocs := mockDB.GetBillingDocuments()
+			billingDocs := mockBillingDBClient.GetBillingDocuments()
 			if tt.seedInDB {
 				assert.Len(t, billingDocs, 1, "should not create a second billing document")
 			}

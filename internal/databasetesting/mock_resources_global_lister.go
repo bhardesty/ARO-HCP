@@ -265,17 +265,17 @@ func (l *mockControllerGlobalLister) List(ctx context.Context, options *database
 
 // mockBillingGlobalLister lists all billing documents across all partitions.
 type mockBillingGlobalLister struct {
-	client *MockResourcesDBClient
+	store *mockBillingStore
 }
 
 func (l *mockBillingGlobalLister) List(ctx context.Context, options *database.DBClientListResourceDocsOptions) (database.DBClientIterator[database.BillingDocument], error) {
-	l.client.mu.RLock()
-	defer l.client.mu.RUnlock()
+	l.store.mu.RLock()
+	defer l.store.mu.RUnlock()
 
 	var ids []string
 	var items []*database.BillingDocument
 
-	for id, doc := range l.client.billing {
+	for id, doc := range l.store.docs {
 		ids = append(ids, id)
 		items = append(items, doc)
 	}

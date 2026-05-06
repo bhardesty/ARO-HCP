@@ -166,7 +166,8 @@ func TestOperationClusterDelete_SynchronizeOperation(t *testing.T) {
 
 			mockDB, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, []any{cluster, operation})
 			require.NoError(t, err)
-			err = databasetesting.NewMockBillingDBClient(mockDB).BillingDocs(fixture.clusterResourceID.SubscriptionID).Create(ctx, billingDoc)
+			mockBilling := databasetesting.NewMockBillingDBClient()
+			err = mockBilling.BillingDocs(fixture.clusterResourceID.SubscriptionID).Create(ctx, billingDoc)
 			require.NoError(t, err)
 
 			mockCSClient := tt.setupMock(ctrl, fixture)
@@ -174,7 +175,7 @@ func TestOperationClusterDelete_SynchronizeOperation(t *testing.T) {
 			controller := &operationClusterDelete{
 				clock:                clocktesting.NewFakePassiveClock(fixedTime),
 				cosmosClient:         mockDB,
-				billingClient:        databasetesting.NewMockBillingDBClient(mockDB),
+				billingClient:        mockBilling,
 				clusterServiceClient: mockCSClient,
 				notificationClient:   nil,
 			}

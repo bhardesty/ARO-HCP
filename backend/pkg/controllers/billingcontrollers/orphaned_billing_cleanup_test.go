@@ -64,7 +64,7 @@ func TestOrphanedBillingCleanup_SyncOnce(t *testing.T) {
 		billingDocuments []*database.BillingDocument
 		clusters         []*api.HCPOpenShiftCluster
 		expectError      bool
-		verify           func(t *testing.T, db *databasetesting.MockResourcesDBClient)
+		verify           func(t *testing.T, billingDBClient *databasetesting.MockBillingDBClient)
 	}{
 		{
 			name: "marks orphaned billing document as deleted",
@@ -73,8 +73,8 @@ func TestOrphanedBillingCleanup_SyncOnce(t *testing.T) {
 			},
 			clusters:    []*api.HCPOpenShiftCluster{}, // No clusters
 			expectError: false,
-			verify: func(t *testing.T, db *databasetesting.MockResourcesDBClient) {
-				billingDocs := db.GetBillingDocuments()
+			verify: func(t *testing.T, billingDBClient *databasetesting.MockBillingDBClient) {
+				billingDocs := billingDBClient.GetBillingDocuments()
 				require.Len(t, billingDocs, 1)
 				doc := billingDocs["billing-doc-1"]
 				require.NotNil(t, doc)
@@ -90,8 +90,8 @@ func TestOrphanedBillingCleanup_SyncOnce(t *testing.T) {
 				newTestCluster(t, "billing-doc-1", arm.ProvisioningStateSucceeded, &createdAt),
 			},
 			expectError: false,
-			verify: func(t *testing.T, db *databasetesting.MockResourcesDBClient) {
-				billingDocs := db.GetBillingDocuments()
+			verify: func(t *testing.T, billingDBClient *databasetesting.MockBillingDBClient) {
+				billingDocs := billingDBClient.GetBillingDocuments()
 				require.Len(t, billingDocs, 1)
 				doc := billingDocs["billing-doc-1"]
 				require.NotNil(t, doc)
@@ -105,8 +105,8 @@ func TestOrphanedBillingCleanup_SyncOnce(t *testing.T) {
 			},
 			clusters:    []*api.HCPOpenShiftCluster{}, // No clusters
 			expectError: false,
-			verify: func(t *testing.T, db *databasetesting.MockResourcesDBClient) {
-				billingDocs := db.GetBillingDocuments()
+			verify: func(t *testing.T, billingDBClient *databasetesting.MockBillingDBClient) {
+				billingDocs := billingDBClient.GetBillingDocuments()
 				require.Len(t, billingDocs, 1)
 				doc := billingDocs["billing-doc-1"]
 				require.NotNil(t, doc)
@@ -144,8 +144,8 @@ func TestOrphanedBillingCleanup_SyncOnce(t *testing.T) {
 				},
 			},
 			expectError: false,
-			verify: func(t *testing.T, db *databasetesting.MockResourcesDBClient) {
-				billingDocs := db.GetBillingDocuments()
+			verify: func(t *testing.T, billingDBClient *databasetesting.MockBillingDBClient) {
+				billingDocs := billingDBClient.GetBillingDocuments()
 				require.Len(t, billingDocs, 3)
 
 				// billing-doc-1 should be deleted (cluster-1 doesn't exist)
@@ -175,9 +175,9 @@ func TestOrphanedBillingCleanup_SyncOnce(t *testing.T) {
 			mockDB := databasetesting.NewMockResourcesDBClient()
 
 			// Add billing documents directly
-			mockBilling := databasetesting.NewMockBillingDBClient(mockDB)
+			mockBillingDBClient := databasetesting.NewMockBillingDBClient()
 			for _, doc := range tt.billingDocuments {
-				billingCRUD := mockBilling.BillingDocs(doc.SubscriptionID)
+				billingCRUD := mockBillingDBClient.BillingDocs(doc.SubscriptionID)
 				err := billingCRUD.Create(ctx, doc)
 				require.NoError(t, err)
 			}
@@ -200,7 +200,7 @@ func TestOrphanedBillingCleanup_SyncOnce(t *testing.T) {
 				billingLister: &listertesting.SliceBillingLister{
 					BillingDocuments: tt.billingDocuments,
 				},
-				billingClient: databasetesting.NewMockBillingDBClient(mockDB),
+				billingClient: mockBillingDBClient,
 			}
 
 			err := controller.SyncOnce(ctx, "default")
@@ -212,7 +212,7 @@ func TestOrphanedBillingCleanup_SyncOnce(t *testing.T) {
 			}
 
 			if tt.verify != nil {
-				tt.verify(t, mockDB)
+				tt.verify(t, mockBillingDBClient)
 			}
 		})
 	}
