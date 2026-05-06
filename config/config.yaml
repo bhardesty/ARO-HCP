@@ -157,7 +157,7 @@ defaults:
     image:
       registry: arohcpsvcdev.azurecr.io
       repository: arohcpmetrics
-      digest: sha256:b64f3deef6f6d5de0cae249b99e15c79567894c0d343b1ea9496da78a0bd87c2 # 2c8efd8 (2026-05-05 20:42)
+      digest: sha256:1672736ec645ce65755bbefe279cef3cd6392696d9384de5dd30b860db8300da # 737b3da (2026-05-06 12:07)
   # Secret Sync Controller
   secretSyncController:
     image:
@@ -275,7 +275,7 @@ defaults:
     image:
       registry: quay.io
       repository: redhat-services-prod/crt-redhat-acm-tenant/hypershift/hypershift-operator
-      digest: sha256:7c9d8a1c94f1b49d07b71d40edb4f68cebd9243ad34f5ef9133281a89bd3d0cf # effd75432d795fdecd36e5f254f6da235de079d7 (2026-05-05 21:52)
+      digest: sha256:1fb8eda343f133aeb85f70f72209b4ca24588cb1df5ee93a2bcb0296142dd5a5 # a62eefd100c1e0214fbb7e3d58f63b568dd27b47 (2026-05-06 12:34)
     namespace: hypershift
     additionalInstallArg: '--enable-cpo-overrides'
     # By default we set it to empty as this tag is only required for msft environments. We override
@@ -629,7 +629,7 @@ defaults:
     image:
       registry: arohcpsvcdev.azurecr.io
       repository: arohcpbackend
-      digest: sha256:3b40f64a59175658e284d637d0b4b039d551668b0f406e6b42d560b88583fa2d # 2c8efd8 (2026-05-05 20:42)
+      digest: sha256:97d6f4659b50ba64adb5a48a1585576c63b0a9bdb47f0a0359f7852e4396537b # 737b3da (2026-05-06 12:07)
     tracing:
       address: ""
       exporter: ""
@@ -658,7 +658,7 @@ defaults:
     image:
       registry: arohcpsvcdev.azurecr.io
       repository: arohcpadminapi
-      digest: sha256:71fe6df96d6377d001da16ed0e0e4386f8ab839d997c8cdfd97ab14ebc832a9e # 2c8efd8 (2026-05-05 20:42)
+      digest: sha256:eac0d2337c4109ce05e81ea5b8ef634c4217e4dda3248e15d7d3785b1d045dda # 737b3da (2026-05-06 12:07)
     managedIdentityName: admin-api
     k8s:
       replicas: 2
@@ -677,7 +677,7 @@ defaults:
     image:
       registry: arohcpsvcdev.azurecr.io
       repository: arohcpsessiongate
-      digest: sha256:dcec29bfc4a82ae9183b747a1196cad423427e7234638dd640cf20a5de7624b2 # 2c8efd8 (2026-05-05 20:42)
+      digest: sha256:c9f65b1304ac18128e92263c8ea622a8ed844cedab11989237b24a858ea9c715 # 737b3da (2026-05-06 12:07)
     managedIdentityName: sessiongate
     k8s:
       replicas: 2
@@ -702,7 +702,7 @@ defaults:
     image:
       registry: arohcpsvcdev.azurecr.io
       repository: arohcpfrontend
-      digest: sha256:f29fdde9ad6694ce60d5d11423c0f55967d18fb84ddad2ef09b3c2ccd68307b8 # 2c8efd8 (2026-05-05 20:42)
+      digest: sha256:0df7de1fd0d1ebdc8ed38baade24550f3a3b9f1d5a820d4bcefc0d266bf4eb5d # 737b3da (2026-05-06 12:07)
     tracing:
       address: ""
       exporter: ""
@@ -874,7 +874,7 @@ defaults:
       bundle:
         registry: quay.io
         repository: redhat-user-workloads/crt-redhat-acm-tenant/acm-operator-bundle-acm-216
-        digest: sha256:e9ceec5df27628c0519176e174c35a8dd40b3ccb30529c433615e87af2bbd94d # v2.16.1-392 (2026-05-05 10:39)
+        digest: sha256:b3cac04691f30da08b64ccf26c053dfdf5c39f4f71e12494d2181ae1cb8dc2c6 # v2.16.1-394 (2026-05-06 14:11)
     mce:
       bundle:
         registry: quay.io
@@ -885,7 +885,7 @@ defaults:
     image:
       registry: quay.io
       repository: app-sre/aro-hcp-clusters-service
-      digest: sha256:7aa79ff0c835089a9afb2beeca84aa07e81e4cdc1486a4a5f3a90a09e20b8250 # 17cb903a006927548ac39c860479a382cf06fb3b (2026-05-04 14:35)
+      digest: sha256:8ab0246038cbe1dfdca7bdf82f1ff27795402268caad9cdc6e040ab46a8e06e7 # e2d2136cbc1d8bd348ba989d1419576949717565 (2026-05-06 13:30)
     # controls how many HCPs can be placed on an MC, sadly not configurable per MC
     provisionShardClusterLimit: 100
     provisionShardStatus: active
@@ -945,7 +945,7 @@ defaults:
       image:
         registry: arohcpsvcdev.azurecr.io
         repository: image-sync/oc-mirror
-        digest: sha256:53d0040bd10e320658093e1ec54579ac43f472b48fce63598370b4cd5b8cc673 # 2c8efd8 (2026-05-05 20:42)
+        digest: sha256:52f0eb2dbf53cf571628e56bb3045e7cc7f24e0fdde53556e23f4a404a65abba # 737b3da (2026-05-06 12:08)
       pullSecretName: ocmirror-pull-secret
       operatorVersionsToMirror: "4.18,4.19,4.20,4.21"
   # Automation Account
