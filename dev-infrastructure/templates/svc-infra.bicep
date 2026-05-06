@@ -4,9 +4,6 @@ param serviceKeyVaultName string
 @description('The name of the resource group for the service keyvault')
 param serviceKeyVaultResourceGroup string = resourceGroup().name
 
-@description('The subscription ID where the service keyvault resource group lives. Defaults to the current subscription. Set when the keyvault is shared across subscriptions.')
-param serviceKeyVaultSubscription string = subscription().subscriptionId
-
 @description('The location of the resource group for the service keyvault')
 param serviceKeyVaultLocation string = resourceGroup().location
 
@@ -56,7 +53,7 @@ var deploymentNameSuffix = uniqueString(resourceGroup().id)
 
 module serviceKeyVault '../modules/keyvault/keyvault.bicep' = {
   name: 'svc-kv-${deploymentNameSuffix}'
-  scope: resourceGroup(serviceKeyVaultSubscription, serviceKeyVaultResourceGroup)
+  scope: resourceGroup(serviceKeyVaultResourceGroup)
   params: {
     location: serviceKeyVaultLocation
     keyVaultName: serviceKeyVaultName
@@ -69,7 +66,7 @@ module serviceKeyVault '../modules/keyvault/keyvault.bicep' = {
 
 module serviceKeyVaultCertOfficer '../modules/keyvault/keyvault-secret-access.bicep' = {
   name: 'svc-kv-cert-officer-${deploymentNameSuffix}'
-  scope: resourceGroup(serviceKeyVaultSubscription, serviceKeyVaultResourceGroup)
+  scope: resourceGroup(serviceKeyVaultResourceGroup)
   params: {
     keyVaultName: serviceKeyVaultName
     roleName: 'Key Vault Certificates Officer'
@@ -82,7 +79,7 @@ module serviceKeyVaultCertOfficer '../modules/keyvault/keyvault-secret-access.bi
 
 module serviceKeyVaultSecretsOfficer '../modules/keyvault/keyvault-secret-access.bicep' = {
   name: 'svc-kv-secret-officer-${deploymentNameSuffix}'
-  scope: resourceGroup(serviceKeyVaultSubscription, serviceKeyVaultResourceGroup)
+  scope: resourceGroup(serviceKeyVaultResourceGroup)
   params: {
     keyVaultName: serviceKeyVaultName
     roleName: 'Key Vault Secrets Officer'
@@ -95,7 +92,7 @@ module serviceKeyVaultSecretsOfficer '../modules/keyvault/keyvault-secret-access
 
 module serviceKeyVaultDevopsSecretsOfficer '../modules/keyvault/keyvault-secret-access.bicep' = {
   name: 'svc-kv-devops-secret-officer-${deploymentNameSuffix}'
-  scope: resourceGroup(serviceKeyVaultSubscription, serviceKeyVaultResourceGroup)
+  scope: resourceGroup(serviceKeyVaultResourceGroup)
   params: {
     keyVaultName: serviceKeyVaultName
     roleName: 'Key Vault Secrets Officer'
