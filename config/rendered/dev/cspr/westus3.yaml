@@ -573,6 +573,7 @@ mgmt:
       zones: ""
     vnetAddressPrefix: 10.128.0.0/14
   applyKubeletFixes: true
+  defaultStorageClassSkuName: PremiumV2_LRS
   hcpBackups:
     storageAccount:
       name: oadpcsprusw31
