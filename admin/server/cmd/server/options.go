@@ -136,7 +136,7 @@ type completedOptions struct {
 	Port                    int
 	MetricsPort             int
 	Location                string
-	ARMResourcesDBClient    database.ARMResourcesDBClient
+	ResourcesDBClient       database.ResourcesDBClient
 	BillingDBClient         database.BillingDBClient
 	ClusterServiceClient    ocm.ClusterServiceClientSpec
 	KustoClient             *kusto.Client
@@ -213,9 +213,9 @@ func (o *ValidatedOptions) Complete(ctx context.Context) (*Options, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create the CosmosDB client: %w", err)
 	}
-	armResourcesDBClient, err := database.NewARMResourcesDBClient(cosmosDatabaseClient)
+	resourcesDBClient, err := database.NewResourcesDBClient(cosmosDatabaseClient)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create the ARM resources database client: %w", err)
+		return nil, fmt.Errorf("failed to create the resources DB client: %w", err)
 	}
 	billingDBClient, err := database.NewBillingDBClient(cosmosDatabaseClient)
 	if err != nil {
@@ -288,7 +288,7 @@ func (o *ValidatedOptions) Complete(ctx context.Context) (*Options, error) {
 			Port:                    o.Port,
 			MetricsPort:             o.MetricsPort,
 			Location:                o.Location,
-			ARMResourcesDBClient:    armResourcesDBClient,
+			ResourcesDBClient:       resourcesDBClient,
 			BillingDBClient:         billingDBClient,
 			ClusterServiceClient:    csClient,
 			KustoClient:             kustoClient,
@@ -343,7 +343,7 @@ func (opts *Options) Run(ctx context.Context) error {
 		opts.Location,
 		listener,
 		metricsListener,
-		opts.ARMResourcesDBClient,
+		opts.ResourcesDBClient,
 		opts.BillingDBClient,
 		opts.ClusterServiceClient,
 		opts.KustoClient,

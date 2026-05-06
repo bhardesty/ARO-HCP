@@ -34,13 +34,13 @@ import (
 type cosmosClusterMatching struct {
 	clock                utilsclock.PassiveClock
 	cooldownChecker      controllerutils.CooldownChecker
-	cosmosClient         database.ARMResourcesDBClient
+	cosmosClient         database.ResourcesDBClient
 	billingClient        database.BillingDBClient
 	clusterServiceClient ocm.ClusterServiceClientSpec
 }
 
 // NewCosmosClusterMatchingController periodically looks for mismatched cluster-service and cosmos externalauths
-func NewCosmosClusterMatchingController(clock utilsclock.PassiveClock, cosmosClient database.ARMResourcesDBClient, billingClient database.BillingDBClient, clusterServiceClient ocm.ClusterServiceClientSpec, informers informers.BackendInformers) controllerutils.Controller {
+func NewCosmosClusterMatchingController(clock utilsclock.PassiveClock, cosmosClient database.ResourcesDBClient, billingClient database.BillingDBClient, clusterServiceClient ocm.ClusterServiceClientSpec, informers informers.BackendInformers) controllerutils.Controller {
 	syncer := &cosmosClusterMatching{
 		clock:                clock,
 		cooldownChecker:      controllerutils.NewTimeBasedCooldownChecker(1 * time.Hour),

@@ -50,7 +50,7 @@ func TestSerialConsoleHandler(t *testing.T) {
 		name               string
 		resourceID         string
 		vmName             string
-		setupData          func(context.Context, *testing.T, *databasetesting.MockARMResourcesDBClient, *azcorearm.ResourceID)
+		setupData          func(context.Context, *testing.T, *databasetesting.MockResourcesDBClient, *azcorearm.ResourceID)
 		mockFPA            *mockFPACredentialRetriever
 		expectedStatusCode int
 		expectedError      string
@@ -59,7 +59,7 @@ func TestSerialConsoleHandler(t *testing.T) {
 			name:       "missing vmName parameter",
 			resourceID: api.TestClusterResourceID,
 			vmName:     "",
-			setupData: func(ctx context.Context, t *testing.T, mockDB *databasetesting.MockARMResourcesDBClient, resourceID *azcorearm.ResourceID) {
+			setupData: func(ctx context.Context, t *testing.T, mockDB *databasetesting.MockResourcesDBClient, resourceID *azcorearm.ResourceID) {
 			},
 			mockFPA:            &mockFPACredentialRetriever{},
 			expectedStatusCode: http.StatusBadRequest,
@@ -69,7 +69,7 @@ func TestSerialConsoleHandler(t *testing.T) {
 			name:       "invalid vmName format",
 			resourceID: api.TestClusterResourceID,
 			vmName:     "-invalid-vm-name",
-			setupData: func(ctx context.Context, t *testing.T, mockDB *databasetesting.MockARMResourcesDBClient, resourceID *azcorearm.ResourceID) {
+			setupData: func(ctx context.Context, t *testing.T, mockDB *databasetesting.MockResourcesDBClient, resourceID *azcorearm.ResourceID) {
 			},
 			mockFPA:            &mockFPACredentialRetriever{},
 			expectedStatusCode: http.StatusBadRequest,
@@ -79,7 +79,7 @@ func TestSerialConsoleHandler(t *testing.T) {
 			name:       "HCP cluster not found in database",
 			resourceID: api.TestClusterResourceID,
 			vmName:     "test-vm",
-			setupData: func(ctx context.Context, t *testing.T, mockDB *databasetesting.MockARMResourcesDBClient, resourceID *azcorearm.ResourceID) {
+			setupData: func(ctx context.Context, t *testing.T, mockDB *databasetesting.MockResourcesDBClient, resourceID *azcorearm.ResourceID) {
 			},
 			mockFPA:            &mockFPACredentialRetriever{},
 			expectedStatusCode: http.StatusInternalServerError,
@@ -89,7 +89,7 @@ func TestSerialConsoleHandler(t *testing.T) {
 			name:       "subscription not found",
 			resourceID: api.TestClusterResourceID,
 			vmName:     "test-vm",
-			setupData: func(ctx context.Context, t *testing.T, mockDB *databasetesting.MockARMResourcesDBClient, resourceID *azcorearm.ResourceID) {
+			setupData: func(ctx context.Context, t *testing.T, mockDB *databasetesting.MockResourcesDBClient, resourceID *azcorearm.ResourceID) {
 				// Create HCP cluster with InternalID
 				internalID, err := api.NewInternalID("/api/clusters_mgmt/v1/clusters/test-cluster-id")
 				require.NoError(t, err)
@@ -112,7 +112,7 @@ func TestSerialConsoleHandler(t *testing.T) {
 			name:       "FPA credential retrieval fails",
 			resourceID: api.TestClusterResourceID,
 			vmName:     "test-vm",
-			setupData: func(ctx context.Context, t *testing.T, mockDB *databasetesting.MockARMResourcesDBClient, resourceID *azcorearm.ResourceID) {
+			setupData: func(ctx context.Context, t *testing.T, mockDB *databasetesting.MockResourcesDBClient, resourceID *azcorearm.ResourceID) {
 				// Create HCP cluster with InternalID
 				internalID, err := api.NewInternalID("/api/clusters_mgmt/v1/clusters/test-cluster-id")
 				require.NoError(t, err)
@@ -156,7 +156,7 @@ func TestSerialConsoleHandler(t *testing.T) {
 			ctx := utils.ContextWithLogger(context.Background(), testr.New(t))
 
 			// Setup database and test data
-			mockDB := databasetesting.NewMockARMResourcesDBClient()
+			mockDB := databasetesting.NewMockResourcesDBClient()
 
 			// Parse resource ID and add to context
 			resourceID, err := azcorearm.ParseResourceID(tt.resourceID)
@@ -219,7 +219,7 @@ func TestSerialConsoleHandler(t *testing.T) {
 func TestSerialConsoleHandler_InvalidResourceID(t *testing.T) {
 	ctx := utils.ContextWithLogger(context.Background(), testr.New(t))
 
-	mockDB := databasetesting.NewMockARMResourcesDBClient()
+	mockDB := databasetesting.NewMockResourcesDBClient()
 	mockFPA := &mockFPACredentialRetriever{}
 
 	handler := NewHCPSerialConsoleHandler(mockDB, mockFPA)

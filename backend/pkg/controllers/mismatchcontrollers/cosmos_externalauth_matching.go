@@ -31,12 +31,12 @@ import (
 
 type cosmosExternalAuthMatching struct {
 	cooldownChecker      controllerutils.CooldownChecker
-	cosmosClient         database.ARMResourcesDBClient
+	cosmosClient         database.ResourcesDBClient
 	clusterServiceClient ocm.ClusterServiceClientSpec
 }
 
 // NewCosmosExternalAuthMatchingController periodically looks for mismatched cluster-service and cosmos externalauths
-func NewCosmosExternalAuthMatchingController(cosmosClient database.ARMResourcesDBClient, clusterServiceClient ocm.ClusterServiceClientSpec, informers informers.BackendInformers) controllerutils.Controller {
+func NewCosmosExternalAuthMatchingController(cosmosClient database.ResourcesDBClient, clusterServiceClient ocm.ClusterServiceClientSpec, informers informers.BackendInformers) controllerutils.Controller {
 	syncer := &cosmosExternalAuthMatching{
 		cooldownChecker:      controllerutils.NewTimeBasedCooldownChecker(1 * time.Hour),
 		cosmosClient:         cosmosClient,

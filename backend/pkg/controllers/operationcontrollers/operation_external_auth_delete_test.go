@@ -39,7 +39,7 @@ func TestOperationExternalAuthDelete_SynchronizeOperation(t *testing.T) {
 		name        string
 		setupMock   func(ctrl *gomock.Controller, fixture *externalAuthTestFixture) ocm.ClusterServiceClientSpec
 		expectError bool
-		verify      func(t *testing.T, ctx context.Context, db *databasetesting.MockARMResourcesDBClient, fixture *externalAuthTestFixture)
+		verify      func(t *testing.T, ctx context.Context, db *databasetesting.MockResourcesDBClient, fixture *externalAuthTestFixture)
 	}{
 		{
 			name: "external auth not found marks operation succeeded and removes external auth",
@@ -52,7 +52,7 @@ func TestOperationExternalAuthDelete_SynchronizeOperation(t *testing.T) {
 				return mockCSClient
 			},
 			expectError: false,
-			verify: func(t *testing.T, ctx context.Context, db *databasetesting.MockARMResourcesDBClient, fixture *externalAuthTestFixture) {
+			verify: func(t *testing.T, ctx context.Context, db *databasetesting.MockResourcesDBClient, fixture *externalAuthTestFixture) {
 				op, err := db.Operations(testSubscriptionID).Get(ctx, testOperationName)
 				require.NoError(t, err)
 				assert.Equal(t, arm.ProvisioningStateSucceeded, op.Status)
@@ -75,7 +75,7 @@ func TestOperationExternalAuthDelete_SynchronizeOperation(t *testing.T) {
 				return mockCSClient
 			},
 			expectError: false,
-			verify: func(t *testing.T, ctx context.Context, db *databasetesting.MockARMResourcesDBClient, fixture *externalAuthTestFixture) {
+			verify: func(t *testing.T, ctx context.Context, db *databasetesting.MockResourcesDBClient, fixture *externalAuthTestFixture) {
 				// When external auth still exists, operation stays at Accepted
 				op, err := db.Operations(testSubscriptionID).Get(ctx, testOperationName)
 				require.NoError(t, err)
@@ -101,7 +101,7 @@ func TestOperationExternalAuthDelete_SynchronizeOperation(t *testing.T) {
 			externalAuth := fixture.newExternalAuth()
 			operation := fixture.newOperation(database.OperationRequestDelete)
 
-			mockDB, err := databasetesting.NewMockARMResourcesDBClientWithResources(ctx, []any{cluster, externalAuth, operation})
+			mockDB, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, []any{cluster, externalAuth, operation})
 			require.NoError(t, err)
 
 			mockCSClient := tt.setupMock(ctrl, fixture)

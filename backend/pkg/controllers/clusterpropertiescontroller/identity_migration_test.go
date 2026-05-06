@@ -205,7 +205,7 @@ func TestIdentityMigrationSyncer_SyncOnce(t *testing.T) {
 			defer ctrl.Finish()
 
 			// Setup mock DB
-			mockDB := databasetesting.NewMockARMResourcesDBClient()
+			mockDB := databasetesting.NewMockResourcesDBClient()
 
 			// Create the cluster in the mock DB (cosmos)
 			clusterCRUD := mockDB.HCPClusters(testSubscriptionID, testResourceGroupName)

@@ -101,7 +101,7 @@ func TestBackendExposesMetrics(t *testing.T) {
 			AppVersion:                         "test",
 			AzureLocation:                      "fake-location",
 			LeaderElectionLock:                 newFakeLeaderElectionLock("metrics-test"),
-			ARMResourcesDBClient:               dbClient,
+			ResourcesDBClient:                  dbClient,
 			BillingDBClient:                    billingClient,
 			ClustersServiceClient:              clusterServiceMock.MockClusterServiceClient,
 			MetricsRegisterer:                  registry,

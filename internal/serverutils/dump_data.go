@@ -26,7 +26,7 @@ import (
 	"github.com/Azure/ARO-HCP/internal/utils"
 )
 
-func DumpDataToLogger(ctx context.Context, cosmosClient database.ARMResourcesDBClient, resourceID *azcorearm.ResourceID) error {
+func DumpDataToLogger(ctx context.Context, cosmosClient database.ResourcesDBClient, resourceID *azcorearm.ResourceID) error {
 	logger := utils.LoggerFromContext(ctx)
 
 	// load the HCP from the cosmos DB
@@ -82,10 +82,10 @@ func DumpDataToLogger(ctx context.Context, cosmosClient database.ARMResourcesDBC
 }
 
 // DumpBillingToLogger dumps active billing documents for the given cluster resource ID to the logger.
-func DumpBillingToLogger(ctx context.Context, armResourcesClient database.ARMResourcesDBClient, billingClient database.BillingDBClient, resourceID *azcorearm.ResourceID) error {
+func DumpBillingToLogger(ctx context.Context, resourcesDBClient database.ResourcesDBClient, billingClient database.BillingDBClient, resourceID *azcorearm.ResourceID) error {
 	logger := utils.LoggerFromContext(ctx)
 
-	clusterCRUD := armResourcesClient.HCPClusters(resourceID.SubscriptionID, resourceID.ResourceGroupName)
+	clusterCRUD := resourcesDBClient.HCPClusters(resourceID.SubscriptionID, resourceID.ResourceGroupName)
 	existingCluster, err := clusterCRUD.Get(ctx, resourceID.Name)
 	if database.IsNotFoundError(err) {
 		return nil

@@ -194,6 +194,19 @@ func convertCustomerManagedEncryptionTypeRPToCS(encryptionTypeRP api.CustomerMan
 	}
 }
 
+func convertUsernameClaimPrefixPolicyCSToRP(prefixPolicyCS string) (api.UsernameClaimPrefixPolicy, error) {
+	switch prefixPolicyCS {
+	case csUsernameClaimPrefixPolicyPrefix:
+		return api.UsernameClaimPrefixPolicyPrefix, nil
+	case csUsernameClaimPrefixPolicyNoPrefix:
+		return api.UsernameClaimPrefixPolicyNoPrefix, nil
+	case "":
+		return api.UsernameClaimPrefixPolicyNone, nil
+	default:
+		return "", conversionError[api.UsernameClaimPrefixPolicy](prefixPolicyCS)
+	}
+}
+
 func convertUsernameClaimPrefixPolicyRPToCS(prefixPolicyRP api.UsernameClaimPrefixPolicy) (string, error) {
 	switch prefixPolicyRP {
 	case api.UsernameClaimPrefixPolicyPrefix:
@@ -238,6 +251,17 @@ func convertKeyManagementModeTypeRPToCS(keyManagementModeRP api.EtcdDataEncrypti
 		return csKeyManagementModeCustomerManaged, nil
 	default:
 		return "", conversionError[string](keyManagementModeRP)
+	}
+}
+
+func convertExternalAuthClientTypeCSToRP(externalAuthClientTypeCS arohcpv1alpha1.ExternalAuthClientType) (api.ExternalAuthClientType, error) {
+	switch externalAuthClientTypeCS {
+	case arohcpv1alpha1.ExternalAuthClientTypeConfidential:
+		return api.ExternalAuthClientTypeConfidential, nil
+	case arohcpv1alpha1.ExternalAuthClientTypePublic:
+		return api.ExternalAuthClientTypePublic, nil
+	default:
+		return "", conversionError[api.ExternalAuthClientType](externalAuthClientTypeCS)
 	}
 }
 
@@ -698,6 +722,82 @@ func BuildCSNodePool(ctx context.Context, nodePool *api.HCPOpenShiftClusterNodeP
 	}
 
 	return nodePoolBuilder, nil
+}
+
+// ConvertCStoExternalAuth converts a CS ExternalAuth object into HCPOpenShiftClusterExternalAuth object.
+func ConvertCStoExternalAuth(resourceID *azcorearm.ResourceID, csExternalAuth *arohcpv1alpha1.ExternalAuth) (*api.HCPOpenShiftClusterExternalAuth, error) {
+	usernameClaimPrefixPolicy, err := convertUsernameClaimPrefixPolicyCSToRP(csExternalAuth.Claim().Mappings().UserName().PrefixPolicy())
+	if err != nil {
+		return nil, err
+	}
+
+	externalAuth := &api.HCPOpenShiftClusterExternalAuth{
+		ProxyResource: arm.ProxyResource{
+			Resource: arm.Resource{
+				ID:   resourceID,
+				Name: resourceID.Name,
+				Type: resourceID.ResourceType.String(),
+			},
+		},
+		Properties: api.HCPOpenShiftClusterExternalAuthProperties{
+			Issuer: api.TokenIssuerProfile{
+				URL:       csExternalAuth.Issuer().URL(),
+				CA:        csExternalAuth.Issuer().CA(),
+				Audiences: csExternalAuth.Issuer().Audiences(),
+			},
+			Claim: api.ExternalAuthClaimProfile{
+				Mappings: api.TokenClaimMappingsProfile{
+					Username: api.UsernameClaimProfile{
+						Claim:        csExternalAuth.Claim().Mappings().UserName().Claim(),
+						Prefix:       csExternalAuth.Claim().Mappings().UserName().Prefix(),
+						PrefixPolicy: usernameClaimPrefixPolicy,
+					},
+				},
+			},
+		},
+	}
+
+	if groups, ok := csExternalAuth.Claim().Mappings().GetGroups(); ok {
+		externalAuth.Properties.Claim.Mappings.Groups = &api.GroupClaimProfile{
+			Claim:  groups.Claim(),
+			Prefix: groups.Prefix(),
+		}
+	}
+
+	clients := make([]api.ExternalAuthClientProfile, 0, len(csExternalAuth.Clients()))
+	for _, client := range csExternalAuth.Clients() {
+		clientType, err := convertExternalAuthClientTypeCSToRP(client.Type())
+		if err != nil {
+			return nil, err
+		}
+
+		clients = append(clients, api.ExternalAuthClientProfile{
+			Component: api.ExternalAuthClientComponentProfile{
+				Name:                client.Component().Name(),
+				AuthClientNamespace: client.Component().Namespace(),
+			},
+			ClientID:    client.ID(),
+			ExtraScopes: client.ExtraScopes(),
+			Type:        clientType,
+		})
+	}
+	externalAuth.Properties.Clients = clients
+
+	validationRules := make([]api.TokenClaimValidationRule, 0, len(csExternalAuth.Claim().ValidationRules()))
+	if csExternalAuth.Claim().ValidationRules() != nil {
+		for _, validationRule := range csExternalAuth.Claim().ValidationRules() {
+			validationRules = append(validationRules, api.TokenClaimValidationRule{
+				Type: api.TokenValidationRuleTypeRequiredClaim,
+				RequiredClaim: api.TokenRequiredClaim{
+					Claim:         validationRule.Claim(),
+					RequiredValue: validationRule.RequiredValue(),
+				},
+			})
+		}
+	}
+	externalAuth.Properties.Claim.ValidationRules = validationRules
+
+	return externalAuth, nil
 }
 
 // BuildCSExternalAuth creates a CS ExternalAuthBuilder object from an HCPOpenShiftClusterExternalAuth object.

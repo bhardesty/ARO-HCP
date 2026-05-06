@@ -64,7 +64,7 @@ func TestOrphanedBillingCleanup_SyncOnce(t *testing.T) {
 		billingDocuments []*database.BillingDocument
 		clusters         []*api.HCPOpenShiftCluster
 		expectError      bool
-		verify           func(t *testing.T, db *databasetesting.MockARMResourcesDBClient)
+		verify           func(t *testing.T, db *databasetesting.MockResourcesDBClient)
 	}{
 		{
 			name: "marks orphaned billing document as deleted",
@@ -73,7 +73,7 @@ func TestOrphanedBillingCleanup_SyncOnce(t *testing.T) {
 			},
 			clusters:    []*api.HCPOpenShiftCluster{}, // No clusters
 			expectError: false,
-			verify: func(t *testing.T, db *databasetesting.MockARMResourcesDBClient) {
+			verify: func(t *testing.T, db *databasetesting.MockResourcesDBClient) {
 				billingDocs := db.GetBillingDocuments()
 				require.Len(t, billingDocs, 1)
 				doc := billingDocs["billing-doc-1"]
@@ -90,7 +90,7 @@ func TestOrphanedBillingCleanup_SyncOnce(t *testing.T) {
 				newTestCluster(t, "billing-doc-1", arm.ProvisioningStateSucceeded, &createdAt),
 			},
 			expectError: false,
-			verify: func(t *testing.T, db *databasetesting.MockARMResourcesDBClient) {
+			verify: func(t *testing.T, db *databasetesting.MockResourcesDBClient) {
 				billingDocs := db.GetBillingDocuments()
 				require.Len(t, billingDocs, 1)
 				doc := billingDocs["billing-doc-1"]
@@ -105,7 +105,7 @@ func TestOrphanedBillingCleanup_SyncOnce(t *testing.T) {
 			},
 			clusters:    []*api.HCPOpenShiftCluster{}, // No clusters
 			expectError: false,
-			verify: func(t *testing.T, db *databasetesting.MockARMResourcesDBClient) {
+			verify: func(t *testing.T, db *databasetesting.MockResourcesDBClient) {
 				billingDocs := db.GetBillingDocuments()
 				require.Len(t, billingDocs, 1)
 				doc := billingDocs["billing-doc-1"]
@@ -144,7 +144,7 @@ func TestOrphanedBillingCleanup_SyncOnce(t *testing.T) {
 				},
 			},
 			expectError: false,
-			verify: func(t *testing.T, db *databasetesting.MockARMResourcesDBClient) {
+			verify: func(t *testing.T, db *databasetesting.MockResourcesDBClient) {
 				billingDocs := db.GetBillingDocuments()
 				require.Len(t, billingDocs, 3)
 
@@ -172,7 +172,7 @@ func TestOrphanedBillingCleanup_SyncOnce(t *testing.T) {
 			ctx = utils.ContextWithLogger(ctx, testr.New(t))
 
 			// Create mock DB and add billing documents
-			mockDB := databasetesting.NewMockARMResourcesDBClient()
+			mockDB := databasetesting.NewMockResourcesDBClient()
 
 			// Add billing documents directly
 			mockBilling := databasetesting.NewMockBillingDBClient(mockDB)

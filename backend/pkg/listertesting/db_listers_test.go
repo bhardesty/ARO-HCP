@@ -35,10 +35,10 @@ func TestDBClusterLister(t *testing.T) {
 	cluster2 := newTestCluster(testSubscriptionID, testResourceGroupName, testClusterName2)
 	cluster3 := newTestCluster(testSubscriptionID2, testResourceGroupName, testClusterName)
 
-	mockDB, err := databasetesting.NewMockARMResourcesDBClientWithResources(ctx, []any{cluster1, cluster2, cluster3})
+	mockDB, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, []any{cluster1, cluster2, cluster3})
 	require.NoError(t, err)
 
-	lister := &DBClusterLister{ARMResourcesDBClient: mockDB}
+	lister := &DBClusterLister{ResourcesDBClient: mockDB}
 
 	t.Run("List returns all clusters", func(t *testing.T) {
 		result, err := lister.List(ctx)
@@ -75,10 +75,10 @@ func TestDBNodePoolLister(t *testing.T) {
 	np1 := newTestNodePool(testSubscriptionID, testResourceGroupName, testClusterName, testNodePoolName)
 	np2 := newTestNodePool(testSubscriptionID, testResourceGroupName, testClusterName, "nodepool-2")
 
-	mockDB, err := databasetesting.NewMockARMResourcesDBClientWithResources(ctx, []any{cluster, np1, np2})
+	mockDB, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, []any{cluster, np1, np2})
 	require.NoError(t, err)
 
-	lister := &DBNodePoolLister{ARMResourcesDBClient: mockDB}
+	lister := &DBNodePoolLister{ResourcesDBClient: mockDB}
 
 	t.Run("List returns all node pools", func(t *testing.T) {
 		result, err := lister.List(ctx)
@@ -120,10 +120,10 @@ func TestDBSubscriptionLister(t *testing.T) {
 	sub2 := newTestSubscription(testSubscriptionID2)
 	sub2.State = arm.SubscriptionStateRegistered
 
-	mockDB, err := databasetesting.NewMockARMResourcesDBClientWithResources(ctx, []any{sub1, sub2})
+	mockDB, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, []any{sub1, sub2})
 	require.NoError(t, err)
 
-	lister := &DBSubscriptionLister{ARMResourcesDBClient: mockDB}
+	lister := &DBSubscriptionLister{ResourcesDBClient: mockDB}
 
 	t.Run("List returns all subscriptions", func(t *testing.T) {
 		result, err := lister.List(ctx)
@@ -156,10 +156,10 @@ func TestDBActiveOperationLister(t *testing.T) {
 	op2 := newTestOperation(testSubscriptionID, "op2", testSubscriptionID, testResourceGroupName, testClusterName)
 	op2.Status = arm.ProvisioningStateProvisioning
 
-	mockDB, err := databasetesting.NewMockARMResourcesDBClientWithResources(ctx, []any{cluster, op1, op2})
+	mockDB, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, []any{cluster, op1, op2})
 	require.NoError(t, err)
 
-	lister := &DBActiveOperationLister{ARMResourcesDBClient: mockDB}
+	lister := &DBActiveOperationLister{ResourcesDBClient: mockDB}
 
 	t.Run("List returns all active operations", func(t *testing.T) {
 		result, err := lister.List(ctx)
@@ -196,10 +196,10 @@ func TestDBExternalAuthLister(t *testing.T) {
 	ea1 := newTestExternalAuth(testSubscriptionID, testResourceGroupName, testClusterName, testExternalAuthName)
 	ea2 := newTestExternalAuth(testSubscriptionID, testResourceGroupName, testClusterName, "external-auth-2")
 
-	mockDB, err := databasetesting.NewMockARMResourcesDBClientWithResources(ctx, []any{cluster, ea1, ea2})
+	mockDB, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, []any{cluster, ea1, ea2})
 	require.NoError(t, err)
 
-	lister := &DBExternalAuthLister{ARMResourcesDBClient: mockDB}
+	lister := &DBExternalAuthLister{ResourcesDBClient: mockDB}
 
 	t.Run("List returns all external auths", func(t *testing.T) {
 		result, err := lister.List(ctx)
@@ -241,10 +241,10 @@ func TestDBServiceProviderClusterLister(t *testing.T) {
 	// Create test service provider cluster
 	spc := newTestServiceProviderCluster(testSubscriptionID, testResourceGroupName, testClusterName)
 
-	mockDB, err := databasetesting.NewMockARMResourcesDBClientWithResources(ctx, []any{cluster, spc})
+	mockDB, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, []any{cluster, spc})
 	require.NoError(t, err)
 
-	lister := &DBServiceProviderClusterLister{ARMResourcesDBClient: mockDB}
+	lister := &DBServiceProviderClusterLister{ResourcesDBClient: mockDB}
 
 	t.Run("List returns all service provider clusters", func(t *testing.T) {
 		result, err := lister.List(ctx)
@@ -287,13 +287,13 @@ func TestDBControllerLister(t *testing.T) {
 	npCtrl := newTestNodePoolController(testSubscriptionID, testResourceGroupName, testClusterName, testNodePoolName, "ctrl-np")
 	eaCtrl := newTestExternalAuthController(testSubscriptionID, testResourceGroupName, testClusterName, testExternalAuthName, "ctrl-ea")
 
-	mockDB, err := databasetesting.NewMockARMResourcesDBClientWithResources(ctx, []any{
+	mockDB, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, []any{
 		cluster1, cluster2, np, ea,
 		clusterCtrl1, clusterCtrl2, npCtrl, eaCtrl,
 	})
 	require.NoError(t, err)
 
-	lister := &DBControllerLister{ARMResourcesDBClient: mockDB}
+	lister := &DBControllerLister{ResourcesDBClient: mockDB}
 
 	t.Run("List returns all controllers", func(t *testing.T) {
 		result, err := lister.List(ctx)
@@ -365,13 +365,13 @@ func TestDBManagementClusterContentLister(t *testing.T) {
 	mccCluster2 := newTestClusterScopedManagementClusterContent(testSubscriptionID, testResourceGroupName, testClusterName2, "mcc-under-cluster2")
 	mccNP := newTestNodePoolScopedManagementClusterContent(testSubscriptionID, testResourceGroupName, testClusterName, testNodePoolName, "mcc-under-np")
 
-	mockDB, err := databasetesting.NewMockARMResourcesDBClientWithResources(ctx, []any{
+	mockDB, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, []any{
 		cluster1, cluster2, np,
 		mccCluster1, mccCluster2, mccNP,
 	})
 	require.NoError(t, err)
 
-	lister := &DBManagementClusterContentLister{ARMResourcesDBClient: mockDB}
+	lister := &DBManagementClusterContentLister{ResourcesDBClient: mockDB}
 
 	t.Run("List returns all management cluster contents", func(t *testing.T) {
 		result, err := lister.List(ctx)
@@ -411,9 +411,9 @@ func TestDBManagementClusterContentLister(t *testing.T) {
 
 func TestDBClusterListerWithEmptyDB(t *testing.T) {
 	ctx := context.Background()
-	mockDB := databasetesting.NewMockARMResourcesDBClient()
+	mockDB := databasetesting.NewMockResourcesDBClient()
 
-	lister := &DBClusterLister{ARMResourcesDBClient: mockDB}
+	lister := &DBClusterLister{ResourcesDBClient: mockDB}
 
 	t.Run("List returns empty slice", func(t *testing.T) {
 		result, err := lister.List(ctx)
@@ -436,7 +436,7 @@ func TestDBClusterListerWithEmptyDB(t *testing.T) {
 
 func TestDBClusterListerWithDeletes(t *testing.T) {
 	ctx := context.Background()
-	mockDB := databasetesting.NewMockARMResourcesDBClient()
+	mockDB := databasetesting.NewMockResourcesDBClient()
 
 	// Create test clusters
 	cluster1 := newTestCluster(testSubscriptionID, testResourceGroupName, testClusterName)
@@ -448,7 +448,7 @@ func TestDBClusterListerWithDeletes(t *testing.T) {
 	_, err = clusterCRUD.Create(ctx, cluster2, nil)
 	require.NoError(t, err)
 
-	lister := &DBClusterLister{ARMResourcesDBClient: mockDB}
+	lister := &DBClusterLister{ResourcesDBClient: mockDB}
 
 	t.Run("List returns both clusters before delete", func(t *testing.T) {
 		result, err := lister.List(ctx)
@@ -495,7 +495,7 @@ func TestDBClusterListerWithDeletes(t *testing.T) {
 
 func TestDBClusterListerWithUpdates(t *testing.T) {
 	ctx := context.Background()
-	mockDB := databasetesting.NewMockARMResourcesDBClient()
+	mockDB := databasetesting.NewMockResourcesDBClient()
 
 	// Create test cluster
 	cluster := newTestCluster(testSubscriptionID, testResourceGroupName, testClusterName)
@@ -505,7 +505,7 @@ func TestDBClusterListerWithUpdates(t *testing.T) {
 	createdCluster, err := clusterCRUD.Create(ctx, cluster, nil)
 	require.NoError(t, err)
 
-	lister := &DBClusterLister{ARMResourcesDBClient: mockDB}
+	lister := &DBClusterLister{ResourcesDBClient: mockDB}
 
 	t.Run("Get returns original value before update", func(t *testing.T) {
 		result, err := lister.Get(ctx, testSubscriptionID, testResourceGroupName, testClusterName)
@@ -534,7 +534,7 @@ func TestDBClusterListerWithUpdates(t *testing.T) {
 
 func TestDBNodePoolListerWithDeletes(t *testing.T) {
 	ctx := context.Background()
-	mockDB := databasetesting.NewMockARMResourcesDBClient()
+	mockDB := databasetesting.NewMockResourcesDBClient()
 
 	// Create test cluster first
 	cluster := newTestCluster(testSubscriptionID, testResourceGroupName, testClusterName)
@@ -552,7 +552,7 @@ func TestDBNodePoolListerWithDeletes(t *testing.T) {
 	_, err = nodePoolCRUD.Create(ctx, np2, nil)
 	require.NoError(t, err)
 
-	lister := &DBNodePoolLister{ARMResourcesDBClient: mockDB}
+	lister := &DBNodePoolLister{ResourcesDBClient: mockDB}
 
 	t.Run("List returns both node pools before delete", func(t *testing.T) {
 		result, err := lister.List(ctx)
@@ -586,7 +586,7 @@ func TestDBNodePoolListerWithDeletes(t *testing.T) {
 
 func TestDBNodePoolListerWithUpdates(t *testing.T) {
 	ctx := context.Background()
-	mockDB := databasetesting.NewMockARMResourcesDBClient()
+	mockDB := databasetesting.NewMockResourcesDBClient()
 
 	// Create test cluster first
 	cluster := newTestCluster(testSubscriptionID, testResourceGroupName, testClusterName)
@@ -602,7 +602,7 @@ func TestDBNodePoolListerWithUpdates(t *testing.T) {
 	createdNP, err := nodePoolCRUD.Create(ctx, np, nil)
 	require.NoError(t, err)
 
-	lister := &DBNodePoolLister{ARMResourcesDBClient: mockDB}
+	lister := &DBNodePoolLister{ResourcesDBClient: mockDB}
 
 	t.Run("Get returns original replicas before update", func(t *testing.T) {
 		result, err := lister.Get(ctx, testSubscriptionID, testResourceGroupName, testClusterName, testNodePoolName)
@@ -624,7 +624,7 @@ func TestDBNodePoolListerWithUpdates(t *testing.T) {
 
 func TestDBSubscriptionListerWithDeletes(t *testing.T) {
 	ctx := context.Background()
-	mockDB := databasetesting.NewMockARMResourcesDBClient()
+	mockDB := databasetesting.NewMockResourcesDBClient()
 
 	// Create test subscriptions
 	sub1 := newTestSubscription(testSubscriptionID)
@@ -638,7 +638,7 @@ func TestDBSubscriptionListerWithDeletes(t *testing.T) {
 	_, err = subCRUD.Create(ctx, sub2, nil)
 	require.NoError(t, err)
 
-	lister := &DBSubscriptionLister{ARMResourcesDBClient: mockDB}
+	lister := &DBSubscriptionLister{ResourcesDBClient: mockDB}
 
 	t.Run("List returns both subscriptions before delete", func(t *testing.T) {
 		result, err := lister.List(ctx)
@@ -666,7 +666,7 @@ func TestDBSubscriptionListerWithDeletes(t *testing.T) {
 
 func TestDBSubscriptionListerWithUpdates(t *testing.T) {
 	ctx := context.Background()
-	mockDB := databasetesting.NewMockARMResourcesDBClient()
+	mockDB := databasetesting.NewMockResourcesDBClient()
 
 	// Create test subscription
 	sub := newTestSubscription(testSubscriptionID)
@@ -676,7 +676,7 @@ func TestDBSubscriptionListerWithUpdates(t *testing.T) {
 	createdSub, err := subCRUD.Create(ctx, sub, nil)
 	require.NoError(t, err)
 
-	lister := &DBSubscriptionLister{ARMResourcesDBClient: mockDB}
+	lister := &DBSubscriptionLister{ResourcesDBClient: mockDB}
 
 	t.Run("Get returns original state before update", func(t *testing.T) {
 		result, err := lister.Get(ctx, testSubscriptionID)
@@ -698,7 +698,7 @@ func TestDBSubscriptionListerWithUpdates(t *testing.T) {
 
 func TestDBActiveOperationListerWithDeletes(t *testing.T) {
 	ctx := context.Background()
-	mockDB := databasetesting.NewMockARMResourcesDBClient()
+	mockDB := databasetesting.NewMockResourcesDBClient()
 
 	// Create a test cluster first
 	cluster := newTestCluster(testSubscriptionID, testResourceGroupName, testClusterName)
@@ -718,7 +718,7 @@ func TestDBActiveOperationListerWithDeletes(t *testing.T) {
 	_, err = opCRUD.Create(ctx, op2, nil)
 	require.NoError(t, err)
 
-	lister := &DBActiveOperationLister{ARMResourcesDBClient: mockDB}
+	lister := &DBActiveOperationLister{ResourcesDBClient: mockDB}
 
 	t.Run("List returns both operations before delete", func(t *testing.T) {
 		result, err := lister.List(ctx)
@@ -746,7 +746,7 @@ func TestDBActiveOperationListerWithDeletes(t *testing.T) {
 
 func TestDBActiveOperationListerWithUpdates(t *testing.T) {
 	ctx := context.Background()
-	mockDB := databasetesting.NewMockARMResourcesDBClient()
+	mockDB := databasetesting.NewMockResourcesDBClient()
 
 	// Create a test cluster first
 	cluster := newTestCluster(testSubscriptionID, testResourceGroupName, testClusterName)
@@ -762,7 +762,7 @@ func TestDBActiveOperationListerWithUpdates(t *testing.T) {
 	createdOp, err := opCRUD.Create(ctx, op, nil)
 	require.NoError(t, err)
 
-	lister := &DBActiveOperationLister{ARMResourcesDBClient: mockDB}
+	lister := &DBActiveOperationLister{ResourcesDBClient: mockDB}
 
 	t.Run("List returns operation with Provisioning status", func(t *testing.T) {
 		result, err := lister.List(ctx)
@@ -791,19 +791,19 @@ func TestDBActiveOperationListerWithUpdates(t *testing.T) {
 	})
 }
 
-// Tests for NewMockARMResourcesDBClientWithResources initialization helper
+// Tests for NewmockResourcesDBClientWithResources initialization helper
 
-func TestNewMockARMResourcesDBClientWithResources_Clusters(t *testing.T) {
+func TestNewMockResourcesDBClientWithResources_Clusters(t *testing.T) {
 	ctx := context.Background()
 
 	cluster1 := newTestCluster(testSubscriptionID, testResourceGroupName, testClusterName)
 	cluster2 := newTestCluster(testSubscriptionID, testResourceGroupName, testClusterName2)
 	cluster3 := newTestCluster(testSubscriptionID2, testResourceGroupName, testClusterName)
 
-	mockDB, err := databasetesting.NewMockARMResourcesDBClientWithResources(ctx, []any{cluster1, cluster2, cluster3})
+	mockDB, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, []any{cluster1, cluster2, cluster3})
 	require.NoError(t, err)
 
-	lister := &DBClusterLister{ARMResourcesDBClient: mockDB}
+	lister := &DBClusterLister{ResourcesDBClient: mockDB}
 
 	t.Run("List returns all initialized clusters", func(t *testing.T) {
 		result, err := lister.List(ctx)
@@ -824,7 +824,7 @@ func TestNewMockARMResourcesDBClientWithResources_Clusters(t *testing.T) {
 	})
 }
 
-func TestNewMockARMResourcesDBClientWithResources_NodePools(t *testing.T) {
+func TestNewMockResourcesDBClientWithResources_NodePools(t *testing.T) {
 	ctx := context.Background()
 
 	cluster := newTestCluster(testSubscriptionID, testResourceGroupName, testClusterName)
@@ -832,10 +832,10 @@ func TestNewMockARMResourcesDBClientWithResources_NodePools(t *testing.T) {
 	np2 := newTestNodePool(testSubscriptionID, testResourceGroupName, testClusterName, "nodepool-2")
 
 	// Create cluster first, then node pools
-	mockDB, err := databasetesting.NewMockARMResourcesDBClientWithResources(ctx, []any{cluster, np1, np2})
+	mockDB, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, []any{cluster, np1, np2})
 	require.NoError(t, err)
 
-	lister := &DBNodePoolLister{ARMResourcesDBClient: mockDB}
+	lister := &DBNodePoolLister{ResourcesDBClient: mockDB}
 
 	t.Run("List returns all initialized node pools", func(t *testing.T) {
 		result, err := lister.List(ctx)
@@ -856,7 +856,7 @@ func TestNewMockARMResourcesDBClientWithResources_NodePools(t *testing.T) {
 	})
 }
 
-func TestNewMockARMResourcesDBClientWithResources_Subscriptions(t *testing.T) {
+func TestNewMockResourcesDBClientWithResources_Subscriptions(t *testing.T) {
 	ctx := context.Background()
 
 	sub1 := newTestSubscription(testSubscriptionID)
@@ -864,10 +864,10 @@ func TestNewMockARMResourcesDBClientWithResources_Subscriptions(t *testing.T) {
 	sub2 := newTestSubscription(testSubscriptionID2)
 	sub2.State = arm.SubscriptionStateRegistered
 
-	mockDB, err := databasetesting.NewMockARMResourcesDBClientWithResources(ctx, []any{sub1, sub2})
+	mockDB, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, []any{sub1, sub2})
 	require.NoError(t, err)
 
-	lister := &DBSubscriptionLister{ARMResourcesDBClient: mockDB}
+	lister := &DBSubscriptionLister{ResourcesDBClient: mockDB}
 
 	t.Run("List returns all initialized subscriptions", func(t *testing.T) {
 		result, err := lister.List(ctx)
@@ -882,7 +882,7 @@ func TestNewMockARMResourcesDBClientWithResources_Subscriptions(t *testing.T) {
 	})
 }
 
-func TestNewMockARMResourcesDBClientWithResources_Operations(t *testing.T) {
+func TestNewMockResourcesDBClientWithResources_Operations(t *testing.T) {
 	ctx := context.Background()
 
 	cluster := newTestCluster(testSubscriptionID, testResourceGroupName, testClusterName)
@@ -891,10 +891,10 @@ func TestNewMockARMResourcesDBClientWithResources_Operations(t *testing.T) {
 	op2 := newTestOperation(testSubscriptionID, "op2", testSubscriptionID, testResourceGroupName, testClusterName)
 	op2.Status = arm.ProvisioningStateProvisioning
 
-	mockDB, err := databasetesting.NewMockARMResourcesDBClientWithResources(ctx, []any{cluster, op1, op2})
+	mockDB, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, []any{cluster, op1, op2})
 	require.NoError(t, err)
 
-	lister := &DBActiveOperationLister{ARMResourcesDBClient: mockDB}
+	lister := &DBActiveOperationLister{ResourcesDBClient: mockDB}
 
 	t.Run("List returns all initialized operations", func(t *testing.T) {
 		result, err := lister.List(ctx)
@@ -915,17 +915,17 @@ func TestNewMockARMResourcesDBClientWithResources_Operations(t *testing.T) {
 	})
 }
 
-func TestNewMockARMResourcesDBClientWithResources_ExternalAuths(t *testing.T) {
+func TestNewMockResourcesDBClientWithResources_ExternalAuths(t *testing.T) {
 	ctx := context.Background()
 
 	cluster := newTestCluster(testSubscriptionID, testResourceGroupName, testClusterName)
 	ea1 := newTestExternalAuth(testSubscriptionID, testResourceGroupName, testClusterName, testExternalAuthName)
 	ea2 := newTestExternalAuth(testSubscriptionID, testResourceGroupName, testClusterName, "external-auth-2")
 
-	mockDB, err := databasetesting.NewMockARMResourcesDBClientWithResources(ctx, []any{cluster, ea1, ea2})
+	mockDB, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, []any{cluster, ea1, ea2})
 	require.NoError(t, err)
 
-	lister := &DBExternalAuthLister{ARMResourcesDBClient: mockDB}
+	lister := &DBExternalAuthLister{ResourcesDBClient: mockDB}
 
 	t.Run("List returns all initialized external auths", func(t *testing.T) {
 		result, err := lister.List(ctx)
@@ -946,16 +946,16 @@ func TestNewMockARMResourcesDBClientWithResources_ExternalAuths(t *testing.T) {
 	})
 }
 
-func TestNewMockARMResourcesDBClientWithResources_ServiceProviderClusters(t *testing.T) {
+func TestNewMockResourcesDBClientWithResources_ServiceProviderClusters(t *testing.T) {
 	ctx := context.Background()
 
 	cluster := newTestCluster(testSubscriptionID, testResourceGroupName, testClusterName)
 	spc := newTestServiceProviderCluster(testSubscriptionID, testResourceGroupName, testClusterName)
 
-	mockDB, err := databasetesting.NewMockARMResourcesDBClientWithResources(ctx, []any{cluster, spc})
+	mockDB, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, []any{cluster, spc})
 	require.NoError(t, err)
 
-	lister := &DBServiceProviderClusterLister{ARMResourcesDBClient: mockDB}
+	lister := &DBServiceProviderClusterLister{ResourcesDBClient: mockDB}
 
 	t.Run("List returns all initialized service provider clusters", func(t *testing.T) {
 		result, err := lister.List(ctx)
@@ -977,7 +977,7 @@ func TestNewMockARMResourcesDBClientWithResources_ServiceProviderClusters(t *tes
 	})
 }
 
-func TestNewMockARMResourcesDBClientWithResources_MixedTypes(t *testing.T) {
+func TestNewMockResourcesDBClientWithResources_MixedTypes(t *testing.T) {
 	ctx := context.Background()
 
 	// Create a mix of all resource types
@@ -990,7 +990,7 @@ func TestNewMockARMResourcesDBClientWithResources_MixedTypes(t *testing.T) {
 	sub := newTestSubscription(testSubscriptionID)
 	sub.State = arm.SubscriptionStateRegistered
 
-	mockDB, err := databasetesting.NewMockARMResourcesDBClientWithResources(ctx, []any{
+	mockDB, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, []any{
 		cluster,
 		np,
 		op,
@@ -1001,77 +1001,77 @@ func TestNewMockARMResourcesDBClientWithResources_MixedTypes(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("All clusters can be listed", func(t *testing.T) {
-		lister := &DBClusterLister{ARMResourcesDBClient: mockDB}
+		lister := &DBClusterLister{ResourcesDBClient: mockDB}
 		result, err := lister.List(ctx)
 		require.NoError(t, err)
 		assert.Len(t, result, 1)
 	})
 
 	t.Run("All node pools can be listed", func(t *testing.T) {
-		lister := &DBNodePoolLister{ARMResourcesDBClient: mockDB}
+		lister := &DBNodePoolLister{ResourcesDBClient: mockDB}
 		result, err := lister.List(ctx)
 		require.NoError(t, err)
 		assert.Len(t, result, 1)
 	})
 
 	t.Run("All operations can be listed", func(t *testing.T) {
-		lister := &DBActiveOperationLister{ARMResourcesDBClient: mockDB}
+		lister := &DBActiveOperationLister{ResourcesDBClient: mockDB}
 		result, err := lister.List(ctx)
 		require.NoError(t, err)
 		assert.Len(t, result, 1)
 	})
 
 	t.Run("All external auths can be listed", func(t *testing.T) {
-		lister := &DBExternalAuthLister{ARMResourcesDBClient: mockDB}
+		lister := &DBExternalAuthLister{ResourcesDBClient: mockDB}
 		result, err := lister.List(ctx)
 		require.NoError(t, err)
 		assert.Len(t, result, 1)
 	})
 
 	t.Run("All service provider clusters can be listed", func(t *testing.T) {
-		lister := &DBServiceProviderClusterLister{ARMResourcesDBClient: mockDB}
+		lister := &DBServiceProviderClusterLister{ResourcesDBClient: mockDB}
 		result, err := lister.List(ctx)
 		require.NoError(t, err)
 		assert.Len(t, result, 1)
 	})
 
 	t.Run("All subscriptions can be listed", func(t *testing.T) {
-		lister := &DBSubscriptionLister{ARMResourcesDBClient: mockDB}
+		lister := &DBSubscriptionLister{ResourcesDBClient: mockDB}
 		result, err := lister.List(ctx)
 		require.NoError(t, err)
 		assert.Len(t, result, 1)
 	})
 }
 
-func TestNewMockARMResourcesDBClientWithResources_EmptySlice(t *testing.T) {
+func TestNewMockResourcesDBClientWithResources_EmptySlice(t *testing.T) {
 	ctx := context.Background()
 
-	mockDB, err := databasetesting.NewMockARMResourcesDBClientWithResources(ctx, []any{})
+	mockDB, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, []any{})
 	require.NoError(t, err)
 	require.NotNil(t, mockDB)
 
-	lister := &DBClusterLister{ARMResourcesDBClient: mockDB}
+	lister := &DBClusterLister{ResourcesDBClient: mockDB}
 	result, err := lister.List(ctx)
 	require.NoError(t, err)
 	assert.Empty(t, result)
 }
 
-func TestNewMockARMResourcesDBClientWithResources_UnsupportedType(t *testing.T) {
+func TestNewMockResourcesDBClientWithResources_UnsupportedType(t *testing.T) {
 	ctx := context.Background()
 
 	// Try to add an unsupported type
-	_, err := databasetesting.NewMockARMResourcesDBClientWithResources(ctx, []any{"unsupported string"})
+	_, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, []any{"unsupported string"})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unsupported resource type")
 }
 
-func TestNewMockARMResourcesDBClientWithResources_NilResourceID(t *testing.T) {
+func TestNewMockResourcesDBClientWithResources_NilResourceID(t *testing.T) {
 	ctx := context.Background()
 
 	// Create a cluster without a resource ID
 	clusterWithNilID := &api.HCPOpenShiftCluster{}
 
-	_, err := databasetesting.NewMockARMResourcesDBClientWithResources(ctx, []any{clusterWithNilID})
+	_, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, []any{clusterWithNilID})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "missing resource ID")
 }

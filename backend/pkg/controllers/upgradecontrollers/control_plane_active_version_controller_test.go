@@ -49,14 +49,14 @@ func TestControlPlaneActiveVersionSyncer_SyncOnce(t *testing.T) {
 
 	tests := []struct {
 		name                  string
-		seedDB                func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockARMResourcesDBClient)
+		seedDB                func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockResourcesDBClient)
 		expectedError         bool
 		expectedErrorContains string
-		validateAfter         func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockARMResourcesDBClient)
+		validateAfter         func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockResourcesDBClient)
 	}{
 		{
 			name: "cluster not found in cosmos returns nil",
-			seedDB: func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockARMResourcesDBClient) {
+			seedDB: func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockResourcesDBClient) {
 				t.Helper()
 				// No cluster seeded - Get will return not found.
 			},
@@ -64,7 +64,7 @@ func TestControlPlaneActiveVersionSyncer_SyncOnce(t *testing.T) {
 		},
 		{
 			name: "no management cluster content returns nil (no error)",
-			seedDB: func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockARMResourcesDBClient) {
+			seedDB: func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockResourcesDBClient) {
 				t.Helper()
 				createTestHCPCluster(t, ctx, mockDB)
 				// No ManagementClusterContent - Get returns not found, version is nil, no update.
@@ -73,7 +73,7 @@ func TestControlPlaneActiveVersionSyncer_SyncOnce(t *testing.T) {
 		},
 		{
 			name: "active versions unchanged when management cluster version matches current",
-			seedDB: func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockARMResourcesDBClient) {
+			seedDB: func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockResourcesDBClient) {
 				t.Helper()
 				createTestHCPCluster(t, ctx, mockDB)
 				createServiceProviderClusterWithVersion(t, ctx, mockDB, "4.19.15")
@@ -82,7 +82,7 @@ func TestControlPlaneActiveVersionSyncer_SyncOnce(t *testing.T) {
 				})
 			},
 			expectedError: false,
-			validateAfter: func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockARMResourcesDBClient) {
+			validateAfter: func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockResourcesDBClient) {
 				t.Helper()
 				spc, err := mockDB.ServiceProviderClusters(testSubscriptionID, testResourceGroupName, testClusterName).Get(ctx, api.ServiceProviderClusterResourceName)
 				require.NoError(t, err)
@@ -93,7 +93,7 @@ func TestControlPlaneActiveVersionSyncer_SyncOnce(t *testing.T) {
 		},
 		{
 			name: "all versions from newest until last completed when multiple history entries",
-			seedDB: func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockARMResourcesDBClient) {
+			seedDB: func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockResourcesDBClient) {
 				t.Helper()
 				createTestHCPCluster(t, ctx, mockDB)
 				createManagementClusterContentWithHostedClusterHistory(t, ctx, mockDB, []configv1.UpdateHistory{
@@ -102,7 +102,7 @@ func TestControlPlaneActiveVersionSyncer_SyncOnce(t *testing.T) {
 				})
 			},
 			expectedError: false,
-			validateAfter: func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockARMResourcesDBClient) {
+			validateAfter: func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockResourcesDBClient) {
 				t.Helper()
 				spc, err := mockDB.ServiceProviderClusters(testSubscriptionID, testResourceGroupName, testClusterName).Get(ctx, api.ServiceProviderClusterResourceName)
 				require.NoError(t, err)
@@ -113,7 +113,7 @@ func TestControlPlaneActiveVersionSyncer_SyncOnce(t *testing.T) {
 		},
 		{
 			name: "one active version when version history has one element",
-			seedDB: func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockARMResourcesDBClient) {
+			seedDB: func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockResourcesDBClient) {
 				t.Helper()
 				createTestHCPCluster(t, ctx, mockDB)
 				createManagementClusterContentWithHostedClusterHistory(t, ctx, mockDB, []configv1.UpdateHistory{
@@ -121,7 +121,7 @@ func TestControlPlaneActiveVersionSyncer_SyncOnce(t *testing.T) {
 				})
 			},
 			expectedError: false,
-			validateAfter: func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockARMResourcesDBClient) {
+			validateAfter: func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockResourcesDBClient) {
 				t.Helper()
 				spc, err := mockDB.ServiceProviderClusters(testSubscriptionID, testResourceGroupName, testClusterName).Get(ctx, api.ServiceProviderClusterResourceName)
 				require.NoError(t, err)
@@ -132,13 +132,13 @@ func TestControlPlaneActiveVersionSyncer_SyncOnce(t *testing.T) {
 		},
 		{
 			name: "no active versions when version history is empty",
-			seedDB: func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockARMResourcesDBClient) {
+			seedDB: func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockResourcesDBClient) {
 				t.Helper()
 				createTestHCPCluster(t, ctx, mockDB)
 				createManagementClusterContentWithHostedClusterHistory(t, ctx, mockDB, []configv1.UpdateHistory{})
 			},
 			expectedError: false,
-			validateAfter: func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockARMResourcesDBClient) {
+			validateAfter: func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockResourcesDBClient) {
 				t.Helper()
 				spc, err := mockDB.ServiceProviderClusters(testSubscriptionID, testResourceGroupName, testClusterName).Get(ctx, api.ServiceProviderClusterResourceName)
 				require.NoError(t, err)
@@ -147,7 +147,7 @@ func TestControlPlaneActiveVersionSyncer_SyncOnce(t *testing.T) {
 		},
 		{
 			name: "history entries with empty or invalid version are skipped",
-			seedDB: func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockARMResourcesDBClient) {
+			seedDB: func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockResourcesDBClient) {
 				t.Helper()
 				createTestHCPCluster(t, ctx, mockDB)
 				createManagementClusterContentWithHostedClusterHistory(t, ctx, mockDB, []configv1.UpdateHistory{
@@ -157,7 +157,7 @@ func TestControlPlaneActiveVersionSyncer_SyncOnce(t *testing.T) {
 				})
 			},
 			expectedError: false,
-			validateAfter: func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockARMResourcesDBClient) {
+			validateAfter: func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockResourcesDBClient) {
 				t.Helper()
 				spc, err := mockDB.ServiceProviderClusters(testSubscriptionID, testResourceGroupName, testClusterName).Get(ctx, api.ServiceProviderClusterResourceName)
 				require.NoError(t, err)
@@ -168,7 +168,7 @@ func TestControlPlaneActiveVersionSyncer_SyncOnce(t *testing.T) {
 		},
 		{
 			name: "nightly version in history is parsed and included",
-			seedDB: func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockARMResourcesDBClient) {
+			seedDB: func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockResourcesDBClient) {
 				t.Helper()
 				createTestHCPCluster(t, ctx, mockDB)
 				createManagementClusterContentWithHostedClusterHistory(t, ctx, mockDB, []configv1.UpdateHistory{
@@ -176,7 +176,7 @@ func TestControlPlaneActiveVersionSyncer_SyncOnce(t *testing.T) {
 				})
 			},
 			expectedError: false,
-			validateAfter: func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockARMResourcesDBClient) {
+			validateAfter: func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockResourcesDBClient) {
 				t.Helper()
 				spc, err := mockDB.ServiceProviderClusters(testSubscriptionID, testResourceGroupName, testClusterName).Get(ctx, api.ServiceProviderClusterResourceName)
 				require.NoError(t, err)
@@ -187,7 +187,7 @@ func TestControlPlaneActiveVersionSyncer_SyncOnce(t *testing.T) {
 		},
 		{
 			name: "no HostedCluster in KubeContent returns error",
-			seedDB: func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockARMResourcesDBClient) {
+			seedDB: func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockResourcesDBClient) {
 				t.Helper()
 				createTestHCPCluster(t, ctx, mockDB)
 				cm := &unstructured.Unstructured{}
@@ -201,7 +201,7 @@ func TestControlPlaneActiveVersionSyncer_SyncOnce(t *testing.T) {
 		},
 		{
 			name: "invalid management cluster content returns error",
-			seedDB: func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockARMResourcesDBClient) {
+			seedDB: func(t *testing.T, ctx context.Context, mockDB *databasetesting.MockResourcesDBClient) {
 				t.Helper()
 				createTestHCPCluster(t, ctx, mockDB)
 				// Empty RawExtension cannot be parsed and triggers an error.
@@ -215,7 +215,7 @@ func TestControlPlaneActiveVersionSyncer_SyncOnce(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			runCtx := utils.ContextWithLogger(context.Background(), logr.Discard())
-			mockDB := databasetesting.NewMockARMResourcesDBClient()
+			mockDB := databasetesting.NewMockResourcesDBClient()
 
 			tt.seedDB(t, runCtx, mockDB)
 
@@ -246,7 +246,7 @@ func TestControlPlaneActiveVersionSyncer_SyncOnce(t *testing.T) {
 // _etag / _ts / properties.cosmosMetadata.etag.
 func TestControlPlaneActiveVersionSyncer_NoReplaceWhenVersionsUnchanged(t *testing.T) {
 	runCtx := utils.ContextWithLogger(context.Background(), logr.Discard())
-	mockDB := databasetesting.NewMockARMResourcesDBClient()
+	mockDB := databasetesting.NewMockResourcesDBClient()
 
 	createTestHCPCluster(t, runCtx, mockDB)
 	createServiceProviderClusterWithVersion(t, runCtx, mockDB, "4.19.15")
@@ -276,7 +276,7 @@ func TestControlPlaneActiveVersionSyncer_NoReplaceWhenVersionsUnchanged(t *testi
 
 // createTestHCPCluster creates an HCP cluster in the mock database (no node pools).
 // Used as the parent resource for control plane active version sync.
-func createTestHCPCluster(t *testing.T, ctx context.Context, mockDB *databasetesting.MockARMResourcesDBClient) {
+func createTestHCPCluster(t *testing.T, ctx context.Context, mockDB *databasetesting.MockResourcesDBClient) {
 	t.Helper()
 
 	clusterResourceID := api.Must(azcorearm.ParseResourceID("/subscriptions/" + testSubscriptionID +
@@ -305,7 +305,7 @@ func createTestHCPCluster(t *testing.T, ctx context.Context, mockDB *databasetes
 
 // createManagementClusterContentWithHostedClusterHistory creates a ManagementClusterContent with
 // KubeContent containing a HostedCluster whose status.version.history is built from entries (newest first).
-func createManagementClusterContentWithHostedClusterHistory(t *testing.T, ctx context.Context, mockDB *databasetesting.MockARMResourcesDBClient, entries []configv1.UpdateHistory) {
+func createManagementClusterContentWithHostedClusterHistory(t *testing.T, ctx context.Context, mockDB *databasetesting.MockResourcesDBClient, entries []configv1.UpdateHistory) {
 	t.Helper()
 
 	hc := &hsv1beta1.HostedCluster{}
@@ -328,7 +328,7 @@ func createManagementClusterContentWithHostedClusterHistory(t *testing.T, ctx co
 
 // createManagementClusterContentWithKubeContentItems creates a ManagementClusterContent with
 // the given KubeContent items. Used to test error paths (e.g. invalid JSON or empty RawExtension).
-func createManagementClusterContentWithKubeContentItems(t *testing.T, ctx context.Context, mockDB *databasetesting.MockARMResourcesDBClient, items []runtime.RawExtension) {
+func createManagementClusterContentWithKubeContentItems(t *testing.T, ctx context.Context, mockDB *databasetesting.MockResourcesDBClient, items []runtime.RawExtension) {
 	t.Helper()
 
 	clusterRID := api.Must(azcorearm.ParseResourceID("/subscriptions/" + testSubscriptionID +

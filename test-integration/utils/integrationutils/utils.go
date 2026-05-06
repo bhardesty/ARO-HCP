@@ -177,13 +177,13 @@ func NewIntegrationTestInfoFromEnv(ctx context.Context, t *testing.T, withMock b
 	return testInfo, nil
 }
 
-func MarkOperationsCompleteForName(ctx context.Context, dbClient database.ARMResourcesDBClient, subscriptionID, resourceName string) error {
-	operationsIterator := dbClient.Operations(subscriptionID).ListActiveOperations(nil)
+func MarkOperationsCompleteForName(ctx context.Context, resourcesDBClient database.ResourcesDBClient, subscriptionID, resourceName string) error {
+	operationsIterator := resourcesDBClient.Operations(subscriptionID).ListActiveOperations(nil)
 	for _, operation := range operationsIterator.Items(ctx) {
 		if operation.ExternalID.Name != resourceName {
 			continue
 		}
-		err := operationcontrollers.UpdateOperationStatus(ctx, dbClient, operation, arm.ProvisioningStateSucceeded, nil, nil)
+		err := operationcontrollers.UpdateOperationStatus(ctx, resourcesDBClient, operation, arm.ProvisioningStateSucceeded, nil, nil)
 		if err != nil {
 			return err
 		}

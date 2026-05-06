@@ -27,9 +27,9 @@ import (
 )
 
 type billingDump struct {
-	cooldownChecker    controllerutils.CooldownChecker
-	armResourcesClient database.ARMResourcesDBClient
-	billingClient      database.BillingDBClient
+	cooldownChecker   controllerutils.CooldownChecker
+	resourcesDBClient database.ResourcesDBClient
+	billingDBClient   database.BillingDBClient
 
 	// nextDumpChecker ensures we don't hotloop from any source.
 	nextDumpChecker controllerutils.CooldownChecker
@@ -37,21 +37,21 @@ type billingDump struct {
 
 // NewBillingDumpController periodically dumps billing documents for each cluster.
 func NewBillingDumpController(
-	armResourcesClient database.ARMResourcesDBClient,
-	billingClient database.BillingDBClient,
+	resourcesDBClient database.ResourcesDBClient,
+	billingDBClient database.BillingDBClient,
 	activeOperationLister listers.ActiveOperationLister,
 	backendInformers informers.BackendInformers,
 ) controllerutils.Controller {
 	syncer := &billingDump{
-		cooldownChecker:    controllerutils.DefaultActiveOperationPrioritizingCooldown(activeOperationLister),
-		armResourcesClient: armResourcesClient,
-		billingClient:      billingClient,
-		nextDumpChecker:    controllerutils.DefaultActiveOperationPrioritizingCooldown(activeOperationLister),
+		cooldownChecker:   controllerutils.DefaultActiveOperationPrioritizingCooldown(activeOperationLister),
+		resourcesDBClient: resourcesDBClient,
+		billingDBClient:   billingDBClient,
+		nextDumpChecker:   controllerutils.DefaultActiveOperationPrioritizingCooldown(activeOperationLister),
 	}
 
 	return controllerutils.NewClusterWatchingController(
 		"BillingDump",
-		armResourcesClient,
+		resourcesDBClient,
 		backendInformers,
 		1*time.Minute,
 		syncer,
@@ -65,7 +65,7 @@ func (c *billingDump) SyncOnce(ctx context.Context, key controllerutils.HCPClust
 
 	logger := utils.LoggerFromContext(ctx)
 
-	if err := serverutils.DumpBillingToLogger(ctx, c.armResourcesClient, c.billingClient, key.GetResourceID()); err != nil {
+	if err := serverutils.DumpBillingToLogger(ctx, c.resourcesDBClient, c.billingDBClient, key.GetResourceID()); err != nil {
 		// never fail, this is best effort
 		logger.Error(err, "failed to dump billing to logger")
 	}

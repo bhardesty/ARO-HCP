@@ -55,7 +55,7 @@ type createNodePoolScopedMaestroReadonlyBundlesSyncer struct {
 
 	activeOperationLister listers.ActiveOperationLister
 
-	cosmosClient database.ARMResourcesDBClient
+	cosmosClient database.ResourcesDBClient
 
 	clusterServiceClient ocm.ClusterServiceClientSpec
 
@@ -70,7 +70,7 @@ var _ controllerutils.NodePoolSyncer = (*createNodePoolScopedMaestroReadonlyBund
 
 func NewCreateNodePoolScopedMaestroReadonlyBundlesController(
 	activeOperationLister listers.ActiveOperationLister,
-	cosmosClient database.ARMResourcesDBClient,
+	cosmosClient database.ResourcesDBClient,
 	clusterServiceClient ocm.ClusterServiceClientSpec,
 	informers informers.BackendInformers,
 	maestroSourceEnvironmentIdentifier string,

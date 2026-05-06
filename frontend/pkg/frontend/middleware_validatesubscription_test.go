@@ -178,7 +178,7 @@ func TestMiddlewareValidateSubscription(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockARMResourcesDBClient := databasetesting.NewMockARMResourcesDBClient()
+			mockResourcesDBClient := databasetesting.NewMockResourcesDBClient()
 
 			var subscription *arm.Subscription
 
@@ -196,7 +196,7 @@ func TestMiddlewareValidateSubscription(t *testing.T) {
 				}
 				// Pre-populate the subscription in the mock database
 				ctx := t.Context()
-				_, err := mockARMResourcesDBClient.Subscriptions().Create(ctx, subscription, nil)
+				_, err := mockResourcesDBClient.Subscriptions().Create(ctx, subscription, nil)
 				require.NoError(t, err)
 			}
 
@@ -219,7 +219,7 @@ func TestMiddlewareValidateSubscription(t *testing.T) {
 				request.SetPathValue(PathSegmentSubscriptionID, subscriptionId)
 			}
 
-			newMiddlewareValidateSubscriptionState(mockARMResourcesDBClient).handleRequest(writer, request, next)
+			newMiddlewareValidateSubscriptionState(mockResourcesDBClient).handleRequest(writer, request, next)
 
 			res := writer.Result()
 			if tt.expectedError != nil {

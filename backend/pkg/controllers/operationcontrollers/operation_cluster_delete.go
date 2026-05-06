@@ -36,7 +36,7 @@ import (
 
 type operationClusterDelete struct {
 	clock                utilsclock.PassiveClock
-	cosmosClient         database.ARMResourcesDBClient
+	cosmosClient         database.ResourcesDBClient
 	billingClient        database.BillingDBClient
 	clusterServiceClient ocm.ClusterServiceClientSpec
 	notificationClient   *http.Client
@@ -57,7 +57,7 @@ type operationClusterDelete struct {
 // any of "Succeeded", "Failed", or "Canceled". Once the operation status reaches
 // a terminal value, there will be no further updates to the operation document.
 func NewOperationClusterDeleteController(
-	cosmosClient database.ARMResourcesDBClient,
+	cosmosClient database.ResourcesDBClient,
 	billingClient database.BillingDBClient,
 	clusterServiceClient ocm.ClusterServiceClientSpec,
 	notificationClient *http.Client,

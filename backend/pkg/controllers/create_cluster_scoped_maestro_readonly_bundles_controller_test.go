@@ -44,20 +44,20 @@ import (
 	"github.com/Azure/ARO-HCP/internal/ocm"
 )
 
-// errorInjectingARMResourcesDBClientForCreate wraps MockARMResourcesDBClient to return error-injecting CRUDs.
-type errorInjectingARMResourcesDBClientForCreate struct {
-	*databasetesting.MockARMResourcesDBClient
+// errorInjectingResourcesDBClientForCreate wraps mockResourcesDBClient to return error-injecting CRUDs.
+type errorInjectingResourcesDBClientForCreate struct {
+	*databasetesting.MockResourcesDBClient
 	spcCRUD database.ServiceProviderClusterCRUD
 }
 
-func (e *errorInjectingARMResourcesDBClientForCreate) ServiceProviderClusters(subscriptionID, resourceGroupName, clusterName string) database.ServiceProviderClusterCRUD {
+func (e *errorInjectingResourcesDBClientForCreate) ServiceProviderClusters(subscriptionID, resourceGroupName, clusterName string) database.ServiceProviderClusterCRUD {
 	if e.spcCRUD != nil {
 		return e.spcCRUD
 	}
-	return e.MockARMResourcesDBClient.ServiceProviderClusters(subscriptionID, resourceGroupName, clusterName)
+	return e.MockResourcesDBClient.ServiceProviderClusters(subscriptionID, resourceGroupName, clusterName)
 }
 
-var _ database.ARMResourcesDBClient = &errorInjectingARMResourcesDBClientForCreate{}
+var _ database.ResourcesDBClient = &errorInjectingResourcesDBClientForCreate{}
 
 // errorInjectingSPCCRUDForCreate wraps ServiceProviderClusterCRUD to allow error injection.
 type errorInjectingSPCCRUDForCreate struct {
@@ -413,7 +413,7 @@ func TestCreateClusterScopedMaestroReadonlyBundlesSyncer_syncMaestroBundle(t *te
 				},
 			}
 
-			mockDB := databasetesting.NewMockARMResourcesDBClient()
+			mockDB := databasetesting.NewMockResourcesDBClient()
 			spcCRUD := mockDB.ServiceProviderClusters("test-sub", "test-rg", "test-cluster")
 			createdSPC, err := spcCRUD.Create(ctx, tt.initialSPC, nil)
 			require.NoError(t, err)
@@ -509,10 +509,10 @@ func TestCreateClusterScopedMaestroReadonlyBundlesSyncer_buildInitialReadonlyMae
 }
 
 func TestCreateClusterScopedMaestroReadonlyBundlesSyncer_SyncOnce_ClusterNotFound(t *testing.T) {
-	mockARMResourcesDBClient := databasetesting.NewMockARMResourcesDBClient()
+	mockResourcesDBClient := databasetesting.NewMockResourcesDBClient()
 	syncer := &createClusterScopedMaestroReadonlyBundlesSyncer{
 		cooldownChecker:                      &alwaysSyncCooldownChecker{},
-		cosmosClient:                         mockARMResourcesDBClient,
+		cosmosClient:                         mockResourcesDBClient,
 		maestroSourceEnvironmentIdentifier:   "test-env",
 		maestroAPIMaestroBundleNameGenerator: maestro.NewMaestroAPIMaestroBundleNameGenerator(),
 	}
@@ -533,7 +533,7 @@ func TestCreateClusterScopedMaestroReadonlyBundlesSyncer_SyncOnce_ClusterNotFoun
 func TestCreateClusterScopedMaestroReadonlyBundlesSyncer_SyncOnce_GetServiceProviderClusterError(t *testing.T) {
 	ctx := context.Background()
 
-	baseMockDB := databasetesting.NewMockARMResourcesDBClient()
+	baseMockDB := databasetesting.NewMockResourcesDBClient()
 
 	key := controllerutils.HCPClusterKey{
 		SubscriptionID:    "test-sub",
@@ -556,8 +556,8 @@ func TestCreateClusterScopedMaestroReadonlyBundlesSyncer_SyncOnce_GetServiceProv
 
 	// Use error-injecting wrapper to simulate SPC Get error
 	expectedError := fmt.Errorf("database error")
-	mockARMResourcesDBClient := &errorInjectingARMResourcesDBClientForCreate{
-		MockARMResourcesDBClient: baseMockDB,
+	mockResourcesDBClient := &errorInjectingResourcesDBClientForCreate{
+		MockResourcesDBClient: baseMockDB,
 		spcCRUD: &errorInjectingSPCCRUDForCreate{
 			getErr: expectedError,
 		},
@@ -565,7 +565,7 @@ func TestCreateClusterScopedMaestroReadonlyBundlesSyncer_SyncOnce_GetServiceProv
 
 	syncer := &createClusterScopedMaestroReadonlyBundlesSyncer{
 		cooldownChecker:                      &alwaysSyncCooldownChecker{},
-		cosmosClient:                         mockARMResourcesDBClient,
+		cosmosClient:                         mockResourcesDBClient,
 		maestroSourceEnvironmentIdentifier:   "test-env",
 		maestroAPIMaestroBundleNameGenerator: maestro.NewMaestroAPIMaestroBundleNameGenerator(),
 	}
@@ -577,10 +577,10 @@ func TestCreateClusterScopedMaestroReadonlyBundlesSyncer_SyncOnce_GetServiceProv
 
 func TestCreateClusterScopedMaestroReadonlyBundlesSyncer_SyncOnce_AllBundlesAlreadySynced(t *testing.T) {
 	ctx := context.Background()
-	mockARMResourcesDBClient := databasetesting.NewMockARMResourcesDBClient()
+	mockResourcesDBClient := databasetesting.NewMockResourcesDBClient()
 	syncer := &createClusterScopedMaestroReadonlyBundlesSyncer{
 		cooldownChecker:                      &alwaysSyncCooldownChecker{},
-		cosmosClient:                         mockARMResourcesDBClient,
+		cosmosClient:                         mockResourcesDBClient,
 		maestroSourceEnvironmentIdentifier:   "test-env",
 		maestroAPIMaestroBundleNameGenerator: maestro.NewMaestroAPIMaestroBundleNameGenerator(),
 	}
@@ -600,7 +600,7 @@ func TestCreateClusterScopedMaestroReadonlyBundlesSyncer_SyncOnce_AllBundlesAlre
 			ClusterServiceID: api.Ptr(api.Must(api.NewInternalID("/api/aro_hcp/v1alpha1/clusters/11111111111111111111111111111111"))),
 		},
 	}
-	clustersCRUD := mockARMResourcesDBClient.HCPClusters(key.SubscriptionID, key.ResourceGroupName)
+	clustersCRUD := mockResourcesDBClient.HCPClusters(key.SubscriptionID, key.ResourceGroupName)
 	_, err := clustersCRUD.Create(ctx, cluster, nil)
 	require.NoError(t, err)
 
@@ -625,7 +625,7 @@ func TestCreateClusterScopedMaestroReadonlyBundlesSyncer_SyncOnce_AllBundlesAlre
 			},
 		},
 	}
-	spcCRUD := mockARMResourcesDBClient.ServiceProviderClusters(key.SubscriptionID, key.ResourceGroupName, key.HCPClusterName)
+	spcCRUD := mockResourcesDBClient.ServiceProviderClusters(key.SubscriptionID, key.ResourceGroupName, key.HCPClusterName)
 	_, err = spcCRUD.Create(ctx, spc, nil)
 	require.NoError(t, err)
 
@@ -640,14 +640,14 @@ func TestCreateClusterScopedMaestroReadonlyBundlesSyncer_SyncOnce_SyncLoopExecut
 	ctx := context.Background()
 
 	// Setup mocks
-	mockARMResourcesDBClient := databasetesting.NewMockARMResourcesDBClient()
+	mockResourcesDBClient := databasetesting.NewMockResourcesDBClient()
 	mockClusterService := ocm.NewMockClusterServiceClientSpec(ctrl)
 	mockMaestroBuilder := maestro.NewMockMaestroClientBuilder(ctrl)
 	mockMaestroClient := maestro.NewMockClient(ctrl)
 
 	syncer := &createClusterScopedMaestroReadonlyBundlesSyncer{
 		cooldownChecker:                      &alwaysSyncCooldownChecker{},
-		cosmosClient:                         mockARMResourcesDBClient,
+		cosmosClient:                         mockResourcesDBClient,
 		clusterServiceClient:                 mockClusterService,
 		maestroClientBuilder:                 mockMaestroBuilder,
 		maestroSourceEnvironmentIdentifier:   "test-env",
@@ -674,7 +674,7 @@ func TestCreateClusterScopedMaestroReadonlyBundlesSyncer_SyncOnce_SyncLoopExecut
 	}
 
 	// Create cluster in mock DB
-	clustersCRUD := mockARMResourcesDBClient.HCPClusters(key.SubscriptionID, key.ResourceGroupName)
+	clustersCRUD := mockResourcesDBClient.HCPClusters(key.SubscriptionID, key.ResourceGroupName)
 	_, err := clustersCRUD.Create(ctx, cluster, nil)
 	require.NoError(t, err)
 
@@ -691,7 +691,7 @@ func TestCreateClusterScopedMaestroReadonlyBundlesSyncer_SyncOnce_SyncLoopExecut
 	}
 
 	// Create SPC in mock DB
-	spcCRUD := mockARMResourcesDBClient.ServiceProviderClusters(key.SubscriptionID, key.ResourceGroupName, key.HCPClusterName)
+	spcCRUD := mockResourcesDBClient.ServiceProviderClusters(key.SubscriptionID, key.ResourceGroupName, key.HCPClusterName)
 	_, err = spcCRUD.Create(ctx, spc, nil)
 	require.NoError(t, err)
 
@@ -755,14 +755,14 @@ func TestCreateClusterScopedMaestroReadonlyBundlesSyncer_SyncOnce_ProcessesParti
 	ctrl := gomock.NewController(t)
 	ctx := context.Background()
 
-	mockARMResourcesDBClient := databasetesting.NewMockARMResourcesDBClient()
+	mockResourcesDBClient := databasetesting.NewMockResourcesDBClient()
 	mockClusterService := ocm.NewMockClusterServiceClientSpec(ctrl)
 	mockMaestroBuilder := maestro.NewMockMaestroClientBuilder(ctrl)
 	mockMaestroClient := maestro.NewMockClient(ctrl)
 
 	syncer := &createClusterScopedMaestroReadonlyBundlesSyncer{
 		cooldownChecker:                      &alwaysSyncCooldownChecker{},
-		cosmosClient:                         mockARMResourcesDBClient,
+		cosmosClient:                         mockResourcesDBClient,
 		clusterServiceClient:                 mockClusterService,
 		maestroClientBuilder:                 mockMaestroBuilder,
 		maestroSourceEnvironmentIdentifier:   "test-env",
@@ -784,7 +784,7 @@ func TestCreateClusterScopedMaestroReadonlyBundlesSyncer_SyncOnce_ProcessesParti
 			ClusterServiceID: api.Ptr(api.Must(api.NewInternalID("/api/aro_hcp/v1alpha1/clusters/11111111111111111111111111111111"))),
 		},
 	}
-	clustersCRUD := mockARMResourcesDBClient.HCPClusters(key.SubscriptionID, key.ResourceGroupName)
+	clustersCRUD := mockResourcesDBClient.HCPClusters(key.SubscriptionID, key.ResourceGroupName)
 	_, err := clustersCRUD.Create(ctx, cluster, nil)
 	require.NoError(t, err)
 
@@ -809,7 +809,7 @@ func TestCreateClusterScopedMaestroReadonlyBundlesSyncer_SyncOnce_ProcessesParti
 			},
 		},
 	}
-	spcCRUD := mockARMResourcesDBClient.ServiceProviderClusters(key.SubscriptionID, key.ResourceGroupName, key.HCPClusterName)
+	spcCRUD := mockResourcesDBClient.ServiceProviderClusters(key.SubscriptionID, key.ResourceGroupName, key.HCPClusterName)
 	_, err = spcCRUD.Create(ctx, spc, nil)
 	require.NoError(t, err)
 

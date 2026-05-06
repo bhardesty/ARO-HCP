@@ -63,7 +63,7 @@ type BackendOptions struct {
 	AppVersion                         string
 	AzureLocation                      string
 	LeaderElectionLock                 resourcelock.Interface
-	ARMResourcesDBClient               database.ARMResourcesDBClient
+	ResourcesDBClient                  database.ResourcesDBClient
 	BillingDBClient                    database.BillingDBClient
 	ClustersServiceClient              ocm.ClusterServiceClientSpec
 	MetricsRegisterer                  prometheus.Registerer
@@ -351,7 +351,7 @@ func shutdownHTTPServer(ctx context.Context, server *http.Server, name string) e
 // a leader election loop.
 func (b *Backend) runBackendControllersUnderLeaderElection(ctx context.Context, electionChecker *leaderelection.HealthzAdaptor) error {
 	backendInformers := informers.NewBackendInformers(ctx,
-		b.options.ARMResourcesDBClient.ARMResourcesGlobalListers(),
+		b.options.ResourcesDBClient.ResourcesGlobalListers(),
 		b.options.BillingDBClient.BillingGlobalListers(),
 	)
 
@@ -381,160 +381,160 @@ func (b *Backend) runBackendControllersUnderLeaderElection(ctx context.Context, 
 
 	maestroClientBuilder := maestro.NewMaestroClientBuilder()
 
-	subscriptionNonClusterDataDumpController := datadumpcontrollers.NewSubscriptionNonClusterDataDumpController(b.options.ARMResourcesDBClient, activeOperationLister, backendInformers)
-	clusterRecursiveDataDumpController := datadumpcontrollers.NewClusterRecursiveDataDumpController(b.options.ARMResourcesDBClient, activeOperationLister, backendInformers)
-	csStateDumpController := datadumpcontrollers.NewCSStateDumpController(b.options.ARMResourcesDBClient, activeOperationLister, backendInformers, b.options.ClustersServiceClient)
-	billingDumpController := datadumpcontrollers.NewBillingDumpController(b.options.ARMResourcesDBClient, b.options.BillingDBClient, activeOperationLister, backendInformers)
-	doNothingController := controllers.NewDoNothingExampleController(b.options.ARMResourcesDBClient, subscriptionLister)
+	subscriptionNonClusterDataDumpController := datadumpcontrollers.NewSubscriptionNonClusterDataDumpController(b.options.ResourcesDBClient, activeOperationLister, backendInformers)
+	clusterRecursiveDataDumpController := datadumpcontrollers.NewClusterRecursiveDataDumpController(b.options.ResourcesDBClient, activeOperationLister, backendInformers)
+	csStateDumpController := datadumpcontrollers.NewCSStateDumpController(b.options.ResourcesDBClient, activeOperationLister, backendInformers, b.options.ClustersServiceClient)
+	billingDumpController := datadumpcontrollers.NewBillingDumpController(b.options.ResourcesDBClient, b.options.BillingDBClient, activeOperationLister, backendInformers)
+	doNothingController := controllers.NewDoNothingExampleController(b.options.ResourcesDBClient, subscriptionLister)
 	dispatchRequestCredentialController := operationcontrollers.NewDispatchRequestCredentialController(
 		utilsclock.RealClock{},
-		b.options.ARMResourcesDBClient,
+		b.options.ResourcesDBClient,
 		b.options.ClustersServiceClient,
 		activeOperationInformer,
 	)
 	dispatchRevokeCredentialsController := operationcontrollers.NewDispatchRevokeCredentialsController(
 		utilsclock.RealClock{},
-		b.options.ARMResourcesDBClient,
+		b.options.ResourcesDBClient,
 		b.options.ClustersServiceClient,
 		activeOperationInformer,
 	)
 	operationClusterCreateController := operationcontrollers.NewOperationClusterCreateController(
-		b.options.ARMResourcesDBClient,
+		b.options.ResourcesDBClient,
 		b.options.ClustersServiceClient,
 		http.DefaultClient,
 		activeOperationInformer,
 		backendInformers,
 	)
 	operationClusterUpdateController := operationcontrollers.NewOperationClusterUpdateController(
-		b.options.ARMResourcesDBClient,
+		b.options.ResourcesDBClient,
 		b.options.ClustersServiceClient,
 		http.DefaultClient,
 		activeOperationInformer,
 	)
 	operationClusterDeleteController := operationcontrollers.NewOperationClusterDeleteController(
-		b.options.ARMResourcesDBClient,
+		b.options.ResourcesDBClient,
 		b.options.BillingDBClient,
 		b.options.ClustersServiceClient,
 		http.DefaultClient,
 		activeOperationInformer,
 	)
 	operationNodePoolCreateController := operationcontrollers.NewOperationNodePoolCreateController(
-		b.options.ARMResourcesDBClient,
+		b.options.ResourcesDBClient,
 		b.options.ClustersServiceClient,
 		http.DefaultClient,
 		activeOperationInformer,
 	)
 	operationNodePoolUpdateController := operationcontrollers.NewOperationNodePoolUpdateController(
-		b.options.ARMResourcesDBClient,
+		b.options.ResourcesDBClient,
 		b.options.ClustersServiceClient,
 		http.DefaultClient,
 		activeOperationInformer,
 	)
 	operationNodePoolDeleteController := operationcontrollers.NewOperationNodePoolDeleteController(
-		b.options.ARMResourcesDBClient,
+		b.options.ResourcesDBClient,
 		b.options.ClustersServiceClient,
 		http.DefaultClient,
 		activeOperationInformer,
 	)
 	operationExternalAuthCreateController := operationcontrollers.NewOperationExternalAuthCreateController(
-		b.options.ARMResourcesDBClient,
+		b.options.ResourcesDBClient,
 		b.options.ClustersServiceClient,
 		http.DefaultClient,
 		activeOperationInformer,
 	)
 	operationExternalAuthUpdateController := operationcontrollers.NewOperationExternalAuthUpdateController(
-		b.options.ARMResourcesDBClient,
+		b.options.ResourcesDBClient,
 		b.options.ClustersServiceClient,
 		http.DefaultClient,
 		activeOperationInformer,
 	)
 	operationExternalAuthDeleteController := operationcontrollers.NewOperationExternalAuthDeleteController(
-		b.options.ARMResourcesDBClient,
+		b.options.ResourcesDBClient,
 		b.options.ClustersServiceClient,
 		http.DefaultClient,
 		activeOperationInformer,
 	)
 	operationRequestCredentialController := operationcontrollers.NewOperationRequestCredentialController(
-		b.options.ARMResourcesDBClient,
+		b.options.ResourcesDBClient,
 		b.options.ClustersServiceClient,
 		http.DefaultClient,
 		activeOperationInformer,
 	)
 	operationRevokeCredentialsController := operationcontrollers.NewOperationRevokeCredentialsController(
-		b.options.ARMResourcesDBClient,
+		b.options.ResourcesDBClient,
 		b.options.ClustersServiceClient,
 		http.DefaultClient,
 		activeOperationInformer,
 	)
-	clusterServiceMatchingClusterController := mismatchcontrollers.NewClusterServiceClusterMatchingController(b.options.ARMResourcesDBClient, subscriptionLister, b.options.ClustersServiceClient)
-	cosmosMatchingNodePoolController := mismatchcontrollers.NewCosmosNodePoolMatchingController(b.options.ARMResourcesDBClient, b.options.ClustersServiceClient, backendInformers)
-	cosmosMatchingExternalAuthController := mismatchcontrollers.NewCosmosExternalAuthMatchingController(b.options.ARMResourcesDBClient, b.options.ClustersServiceClient, backendInformers)
-	cosmosMatchingClusterController := mismatchcontrollers.NewCosmosClusterMatchingController(utilsclock.RealClock{}, b.options.ARMResourcesDBClient, b.options.BillingDBClient, b.options.ClustersServiceClient, backendInformers)
+	clusterServiceMatchingClusterController := mismatchcontrollers.NewClusterServiceClusterMatchingController(b.options.ResourcesDBClient, subscriptionLister, b.options.ClustersServiceClient)
+	cosmosMatchingNodePoolController := mismatchcontrollers.NewCosmosNodePoolMatchingController(b.options.ResourcesDBClient, b.options.ClustersServiceClient, backendInformers)
+	cosmosMatchingExternalAuthController := mismatchcontrollers.NewCosmosExternalAuthMatchingController(b.options.ResourcesDBClient, b.options.ClustersServiceClient, backendInformers)
+	cosmosMatchingClusterController := mismatchcontrollers.NewCosmosClusterMatchingController(utilsclock.RealClock{}, b.options.ResourcesDBClient, b.options.BillingDBClient, b.options.ClustersServiceClient, backendInformers)
 	alwaysSuccessClusterValidationController := validationcontrollers.NewClusterValidationController(
 		validations.NewAlwaysSuccessValidation(),
 		activeOperationLister,
-		b.options.ARMResourcesDBClient,
+		b.options.ResourcesDBClient,
 		backendInformers,
 	)
-	deleteOrphanedCosmosResourcesController := mismatchcontrollers.NewDeleteOrphanedCosmosResourcesController(b.options.ARMResourcesDBClient, subscriptionLister)
+	deleteOrphanedCosmosResourcesController := mismatchcontrollers.NewDeleteOrphanedCosmosResourcesController(b.options.ResourcesDBClient, subscriptionLister)
 	backfillClusterUIDController := controllerutils.NewClusterWatchingController(
-		"BackfillClusterUID", b.options.ARMResourcesDBClient, backendInformers, 60*time.Minute,
-		mismatchcontrollers.NewBackfillClusterUIDController(utilsclock.RealClock{}, b.options.ARMResourcesDBClient, b.options.BillingDBClient, clusterLister))
+		"BackfillClusterUID", b.options.ResourcesDBClient, backendInformers, 60*time.Minute,
+		mismatchcontrollers.NewBackfillClusterUIDController(utilsclock.RealClock{}, b.options.ResourcesDBClient, b.options.BillingDBClient, clusterLister))
 	orphanedBillingCleanupController := billingcontrollers.NewOrphanedBillingCleanupController(utilsclock.RealClock{}, b.options.BillingDBClient, clusterLister, billingLister)
 	createBillingDocController := controllerutils.NewClusterWatchingController(
-		"CreateBillingDoc", b.options.ARMResourcesDBClient, backendInformers, 60*time.Second,
-		billingcontrollers.NewCreateBillingDocController(utilsclock.RealClock{}, b.options.AzureLocation, b.options.ARMResourcesDBClient, b.options.BillingDBClient, clusterLister, billingLister))
+		"CreateBillingDoc", b.options.ResourcesDBClient, backendInformers, 60*time.Second,
+		billingcontrollers.NewCreateBillingDocController(utilsclock.RealClock{}, b.options.AzureLocation, b.options.ResourcesDBClient, b.options.BillingDBClient, clusterLister, billingLister))
 	controlPlaneActiveVersionController := upgradecontrollers.NewControlPlaneActiveVersionController(
-		b.options.ARMResourcesDBClient,
+		b.options.ResourcesDBClient,
 		activeOperationLister,
 		backendInformers,
 	)
 	controlPlaneDesiredVersionController := upgradecontrollers.NewControlPlaneDesiredVersionController(
-		b.options.ARMResourcesDBClient,
+		b.options.ResourcesDBClient,
 		b.options.ClustersServiceClient,
 		activeOperationLister,
 		backendInformers,
 		subscriptionLister,
 	)
 	triggerControlPlaneUpgradeController := upgradecontrollers.NewTriggerControlPlaneUpgradeController(
-		b.options.ARMResourcesDBClient,
+		b.options.ResourcesDBClient,
 		b.options.ClustersServiceClient,
 		activeOperationLister,
 		backendInformers,
 	)
 	clusterPropertiesSyncController := clusterpropertiescontroller.NewClusterPropertiesSyncController(
-		b.options.ARMResourcesDBClient,
+		b.options.ResourcesDBClient,
 		b.options.ClustersServiceClient,
 		activeOperationLister,
 		backendInformers,
 	)
 	identityMigrationController := clusterpropertiescontroller.NewIdentityMigrationController(
-		b.options.ARMResourcesDBClient,
+		b.options.ResourcesDBClient,
 		b.options.ClustersServiceClient,
 		activeOperationLister,
 		backendInformers,
 	)
 
 	maestroCreateClusterScopedReadonlyBundlesController := controllers.NewCreateClusterScopedMaestroReadonlyBundlesController(
-		activeOperationLister, b.options.ARMResourcesDBClient, b.options.ClustersServiceClient,
+		activeOperationLister, b.options.ResourcesDBClient, b.options.ClustersServiceClient,
 		backendInformers, b.options.MaestroSourceEnvironmentIdentifier, maestroClientBuilder,
 	)
 	maestroReadAndPersistClusterScopedReadonlyBundlesContentController := controllers.NewReadAndPersistClusterScopedMaestroReadonlyBundlesContentController(
-		activeOperationLister, b.options.ARMResourcesDBClient, b.options.ClustersServiceClient,
+		activeOperationLister, b.options.ResourcesDBClient, b.options.ClustersServiceClient,
 		backendInformers, b.options.MaestroSourceEnvironmentIdentifier, maestroClientBuilder,
 	)
 
 	maestroCreateNodePoolScopedReadonlyBundlesController := controllers.NewCreateNodePoolScopedMaestroReadonlyBundlesController(
-		activeOperationLister, b.options.ARMResourcesDBClient, b.options.ClustersServiceClient,
+		activeOperationLister, b.options.ResourcesDBClient, b.options.ClustersServiceClient,
 		backendInformers, b.options.MaestroSourceEnvironmentIdentifier, maestroClientBuilder,
 	)
 	maestroReadAndPersistNodePoolScopedReadonlyBundlesContentController := controllers.NewReadAndPersistNodePoolScopedMaestroReadonlyBundlesContentController(
-		activeOperationLister, b.options.ARMResourcesDBClient, b.options.ClustersServiceClient,
+		activeOperationLister, b.options.ResourcesDBClient, b.options.ClustersServiceClient,
 		backendInformers, b.options.MaestroSourceEnvironmentIdentifier, maestroClientBuilder,
 	)
 
 	maestroDeleteOrphanedReadonlyBundlesController := controllers.NewDeleteOrphanedMaestroReadonlyBundlesController(
-		b.options.ARMResourcesDBClient,
+		b.options.ResourcesDBClient,
 		b.options.ClustersServiceClient,
 		maestroClientBuilder,
 		b.options.MaestroSourceEnvironmentIdentifier,
@@ -543,45 +543,45 @@ func (b *Backend) runBackendControllersUnderLeaderElection(ctx context.Context, 
 	azureRPRegistrationValidationController := validationcontrollers.NewClusterValidationController(
 		validations.NewAzureResourceProvidersRegistrationValidation(b.options.FPAClientBuilder),
 		activeOperationLister,
-		b.options.ARMResourcesDBClient,
+		b.options.ResourcesDBClient,
 		backendInformers,
 	)
 	azureClusterResourceGroupExistenceValidationController := validationcontrollers.NewClusterValidationController(
 		validations.NewAzureClusterResourceGroupExistenceValidation(b.options.FPAClientBuilder),
 		activeOperationLister,
-		b.options.ARMResourcesDBClient,
+		b.options.ResourcesDBClient,
 		backendInformers,
 	)
 	azureClusterManagedIdentitiesExistenceValidationController := validationcontrollers.NewClusterValidationController(
 		validations.NewAzureClusterManagedIdentitiesExistenceValidation(b.options.SMIClientBuilder),
 		activeOperationLister,
-		b.options.ARMResourcesDBClient,
+		b.options.ResourcesDBClient,
 		backendInformers,
 	)
 
 	nodePoolVersionController := upgradecontrollers.NewNodePoolVersionController(
-		b.options.ARMResourcesDBClient,
+		b.options.ResourcesDBClient,
 		b.options.ClustersServiceClient,
 		activeOperationLister,
 		backendInformers,
 	)
 
 	triggerNodePoolUpgradeController := upgradecontrollers.NewTriggerNodePoolUpgradeController(
-		b.options.ARMResourcesDBClient,
+		b.options.ResourcesDBClient,
 		b.options.ClustersServiceClient,
 		activeOperationLister,
 		backendInformers,
 	)
 
 	nodePoolPropertiesSyncController := nodepoolpropertiescontroller.NewNodePoolPropertiesSyncController(
-		b.options.ARMResourcesDBClient,
+		b.options.ResourcesDBClient,
 		b.options.ClustersServiceClient,
 		activeOperationLister,
 		backendInformers,
 	)
 
 	nodePoolCustomerPropertiesMigrationController := nodepoolpropertiescontroller.NewNodePoolCustomerPropertiesMigrationController(
-		b.options.ARMResourcesDBClient,
+		b.options.ResourcesDBClient,
 		b.options.ClustersServiceClient,
 		activeOperationLister,
 		backendInformers,

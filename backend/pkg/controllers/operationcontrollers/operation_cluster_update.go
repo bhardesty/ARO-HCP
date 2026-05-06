@@ -40,7 +40,7 @@ import (
 )
 
 type operationClusterUpdate struct {
-	cosmosClient                    database.ARMResourcesDBClient
+	cosmosClient                    database.ResourcesDBClient
 	clusterServiceClient            ocm.ClusterServiceClientSpec
 	notificationClient              *http.Client
 	clock                           clock.PassiveClock
@@ -62,7 +62,7 @@ type operationClusterUpdate struct {
 // any of "Succeeded", "Failed", or "Canceled". Once the operation status reaches
 // a terminal value, there will be no further updates to the operation document.
 func NewOperationClusterUpdateController(
-	cosmosClient database.ARMResourcesDBClient,
+	cosmosClient database.ResourcesDBClient,
 	clusterServiceClient ocm.ClusterServiceClientSpec,
 	notificationClient *http.Client,
 	activeOperationInformer cache.SharedIndexInformer,

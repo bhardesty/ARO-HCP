@@ -28,7 +28,7 @@ import (
 
 type subscriptionNonClusterDataDump struct {
 	cooldownChecker controllerutils.CooldownChecker
-	cosmosClient    database.ARMResourcesDBClient
+	cosmosClient    database.ResourcesDBClient
 
 	// nextDataDumpChecker ensures we don't hotloop from any source.
 	nextDataDumpChecker controllerutils.CooldownChecker
@@ -36,7 +36,7 @@ type subscriptionNonClusterDataDump struct {
 
 // NewSubscriptionNonClusterDataDumpController periodically dumps data for a subscription that is NOT related to a cluster.
 func NewSubscriptionNonClusterDataDumpController(
-	cosmosClient database.ARMResourcesDBClient,
+	cosmosClient database.ResourcesDBClient,
 	activeOperationLister listers.ActiveOperationLister,
 	backendInformers informers.BackendInformers,
 ) controllerutils.Controller {

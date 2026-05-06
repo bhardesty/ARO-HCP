@@ -27,28 +27,28 @@ import (
 type MockCosmosIntegrationTestInfo struct {
 	ArtifactsDir string
 
-	MockARMResourcesDBClient *databasetesting.MockARMResourcesDBClient
-	MockLocksDBClient        *databasetesting.MockLocksDBClient
+	mockResourcesDBClient *databasetesting.MockResourcesDBClient
+	MockLocksDBClient     *databasetesting.MockLocksDBClient
 }
 
 func NewMockCosmosFromTestingEnv(ctx context.Context, t *testing.T) (StorageIntegrationTestInfo, error) {
-	mockARMResourcesDBClient := databasetesting.NewMockARMResourcesDBClient()
+	mockResourcesDBClient := databasetesting.NewMockResourcesDBClient()
 	mockLocksDBClient := databasetesting.NewMockLocksDBClient()
 
 	testInfo := &MockCosmosIntegrationTestInfo{
-		ArtifactsDir:             path.Join(getArtifactDir(), t.Name()),
-		MockARMResourcesDBClient: mockARMResourcesDBClient,
-		MockLocksDBClient:        mockLocksDBClient,
+		ArtifactsDir:          path.Join(getArtifactDir(), t.Name()),
+		mockResourcesDBClient: mockResourcesDBClient,
+		MockLocksDBClient:     mockLocksDBClient,
 	}
 	return testInfo, nil
 }
 
-func (m *MockCosmosIntegrationTestInfo) CosmosClient() database.ARMResourcesDBClient {
-	return m.MockARMResourcesDBClient
+func (m *MockCosmosIntegrationTestInfo) CosmosClient() database.ResourcesDBClient {
+	return m.mockResourcesDBClient
 }
 
 func (m *MockCosmosIntegrationTestInfo) BillingClient() database.BillingDBClient {
-	return databasetesting.NewMockBillingDBClient(m.MockARMResourcesDBClient)
+	return databasetesting.NewMockBillingDBClient(m.mockResourcesDBClient)
 }
 
 func (m *MockCosmosIntegrationTestInfo) LocksClient() database.LocksDBClient {
@@ -56,18 +56,18 @@ func (m *MockCosmosIntegrationTestInfo) LocksClient() database.LocksDBClient {
 }
 
 func (m *MockCosmosIntegrationTestInfo) LoadContent(ctx context.Context, content []byte) error {
-	return m.MockARMResourcesDBClient.LoadContent(ctx, content)
+	return m.mockResourcesDBClient.LoadContent(ctx, content)
 }
 
 func (m *MockCosmosIntegrationTestInfo) ListAllDocuments(ctx context.Context) ([]*database.TypedDocument, error) {
-	return m.MockARMResourcesDBClient.ListAllDocuments(ctx)
+	return m.mockResourcesDBClient.ListAllDocuments(ctx)
 }
 
 func (m *MockCosmosIntegrationTestInfo) Cleanup(ctx context.Context) {
 	logger := utils.LoggerFromContext(ctx)
 
 	// Save all database content before deleting
-	if err := saveAllDatabaseContent(ctx, m.MockARMResourcesDBClient, m.ArtifactsDir); err != nil {
+	if err := saveAllDatabaseContent(ctx, m.mockResourcesDBClient, m.ArtifactsDir); err != nil {
 		logger.Error(err, "Failed to save database content")
 		// Continue with deletion even if saving fails
 	}

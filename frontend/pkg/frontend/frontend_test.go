@@ -90,7 +90,7 @@ func TestSubscriptionsGET(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			mockARMResourcesDBClient := databasetesting.NewMockARMResourcesDBClient()
+			mockResourcesDBClient := databasetesting.NewMockResourcesDBClient()
 			reg := prometheus.NewRegistry()
 
 			f := NewFrontend(
@@ -99,7 +99,7 @@ func TestSubscriptionsGET(t *testing.T) {
 				nil,
 				reg,
 				reg,
-				mockARMResourcesDBClient,
+				mockResourcesDBClient,
 				databasetesting.NewMockLocksDBClient(),
 				nil,
 				newNoopAuditClient(t),
@@ -113,7 +113,7 @@ func TestSubscriptionsGET(t *testing.T) {
 				subs[api.TestSubscriptionID] = test.subDoc
 			}
 			ctx := utils.ContextWithLogger(t.Context(), testr.New(t))
-			ts := newHTTPServer(ctx, f, mockARMResourcesDBClient, subs)
+			ts := newHTTPServer(ctx, f, mockResourcesDBClient, subs)
 
 			rs, err := ts.Client().Get(ts.URL + api.TestSubscriptionResourceID + "?api-version=" + arm.SubscriptionAPIVersion)
 			require.NoError(t, err)
@@ -240,7 +240,7 @@ func TestSubscriptionsPUT(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			mockARMResourcesDBClient := databasetesting.NewMockARMResourcesDBClient()
+			mockResourcesDBClient := databasetesting.NewMockResourcesDBClient()
 			reg := prometheus.NewRegistry()
 
 			f := NewFrontend(
@@ -249,7 +249,7 @@ func TestSubscriptionsPUT(t *testing.T) {
 				nil,
 				reg,
 				reg,
-				mockARMResourcesDBClient,
+				mockResourcesDBClient,
 				databasetesting.NewMockLocksDBClient(),
 				nil,
 				newNoopAuditClient(t),
@@ -265,7 +265,7 @@ func TestSubscriptionsPUT(t *testing.T) {
 				subs[api.TestSubscriptionID] = test.subDoc
 			}
 			ctx := utils.ContextWithLogger(t.Context(), testr.New(t))
-			ts := newHTTPServer(ctx, f, mockARMResourcesDBClient, subs)
+			ts := newHTTPServer(ctx, f, mockResourcesDBClient, subs)
 
 			urlPath := test.urlPath + "?api-version=" + arm.SubscriptionAPIVersion
 			req, err := http.NewRequest(http.MethodPut, ts.URL+urlPath, bytes.NewReader(body))
@@ -456,7 +456,7 @@ func TestDeploymentPreflight(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			preflightPath := path.Join(api.TestDeploymentResourceID, "preflight")
 
-			mockARMResourcesDBClient := databasetesting.NewMockARMResourcesDBClient()
+			mockResourcesDBClient := databasetesting.NewMockResourcesDBClient()
 			reg := prometheus.NewRegistry()
 
 			f := NewFrontend(
@@ -465,7 +465,7 @@ func TestDeploymentPreflight(t *testing.T) {
 				nil,
 				reg,
 				reg,
-				mockARMResourcesDBClient,
+				mockResourcesDBClient,
 				databasetesting.NewMockLocksDBClient(),
 				nil,
 				newNoopAuditClient(t),
@@ -477,7 +477,7 @@ func TestDeploymentPreflight(t *testing.T) {
 				api.TestSubscriptionID: newTestSubscription(api.TestSubscriptionID, arm.SubscriptionStateRegistered, nil),
 			}
 			ctx := utils.ContextWithLogger(t.Context(), testr.New(t))
-			ts := newHTTPServer(ctx, f, mockARMResourcesDBClient, subs)
+			ts := newHTTPServer(ctx, f, mockResourcesDBClient, subs)
 
 			resource, err := json.Marshal(&test.resource)
 			require.NoError(t, err)
@@ -583,7 +583,7 @@ func TestRequestAdminCredential(t *testing.T) {
 			requestPath := path.Join(clusterResourceID.String(), "requestAdminCredential")
 
 			reg := prometheus.NewRegistry()
-			mockARMResourcesDBClient := databasetesting.NewMockARMResourcesDBClient()
+			mockResourcesDBClient := databasetesting.NewMockResourcesDBClient()
 
 			f := NewFrontend(
 				testr.New(t),
@@ -591,7 +591,7 @@ func TestRequestAdminCredential(t *testing.T) {
 				nil,
 				reg,
 				reg,
-				mockARMResourcesDBClient,
+				mockResourcesDBClient,
 				databasetesting.NewMockLocksDBClient(),
 				nil,
 				newNoopAuditClient(t),
@@ -614,7 +614,7 @@ func TestRequestAdminCredential(t *testing.T) {
 					RevokeCredentialsOperationID: test.revokeCredentialsOperationID,
 				},
 			}
-			_, err := mockARMResourcesDBClient.HCPClusters(clusterResourceID.SubscriptionID, clusterResourceID.ResourceGroupName).Create(ctx, cluster, nil)
+			_, err := mockResourcesDBClient.HCPClusters(clusterResourceID.SubscriptionID, clusterResourceID.ResourceGroupName).Create(ctx, cluster, nil)
 			require.NoError(t, err)
 
 			// Add active revoke operation if needed
@@ -632,14 +632,14 @@ func TestRequestAdminCredential(t *testing.T) {
 					InternalID:  clusterInternalID,
 					Status:      arm.ProvisioningStateDeleting,
 				}
-				_, err := mockARMResourcesDBClient.Operations(clusterResourceID.SubscriptionID).Create(ctx, revokeOp, nil)
+				_, err := mockResourcesDBClient.Operations(clusterResourceID.SubscriptionID).Create(ctx, revokeOp, nil)
 				require.NoError(t, err)
 			}
 
 			subs := map[string]*arm.Subscription{
 				api.TestSubscriptionID: newTestSubscription(api.TestSubscriptionID, arm.SubscriptionStateRegistered, nil),
 			}
-			ts := newHTTPServer(ctx, f, mockARMResourcesDBClient, subs)
+			ts := newHTTPServer(ctx, f, mockResourcesDBClient, subs)
 
 			url := ts.URL + requestPath + "?api-version=" + api.TestAPIVersion
 			resp, err := ts.Client().Post(url, "", nil)
@@ -694,7 +694,7 @@ func TestRevokeCredentials(t *testing.T) {
 			requestPath := path.Join(clusterResourceID.String(), "revokeCredentials")
 
 			reg := prometheus.NewRegistry()
-			mockARMResourcesDBClient := databasetesting.NewMockARMResourcesDBClient()
+			mockResourcesDBClient := databasetesting.NewMockResourcesDBClient()
 
 			f := NewFrontend(
 				testr.New(t),
@@ -702,7 +702,7 @@ func TestRevokeCredentials(t *testing.T) {
 				nil,
 				reg,
 				reg,
-				mockARMResourcesDBClient,
+				mockResourcesDBClient,
 				databasetesting.NewMockLocksDBClient(),
 				nil,
 				newNoopAuditClient(t),
@@ -725,7 +725,7 @@ func TestRevokeCredentials(t *testing.T) {
 					RevokeCredentialsOperationID: test.revokeCredentialsOperationID,
 				},
 			}
-			_, err := mockARMResourcesDBClient.HCPClusters(clusterResourceID.SubscriptionID, clusterResourceID.ResourceGroupName).Create(ctx, cluster, nil)
+			_, err := mockResourcesDBClient.HCPClusters(clusterResourceID.SubscriptionID, clusterResourceID.ResourceGroupName).Create(ctx, cluster, nil)
 			require.NoError(t, err)
 
 			// Add active revoke operation if needed
@@ -743,7 +743,7 @@ func TestRevokeCredentials(t *testing.T) {
 					InternalID:  clusterInternalID,
 					Status:      arm.ProvisioningStateDeleting,
 				}
-				_, err := mockARMResourcesDBClient.Operations(clusterResourceID.SubscriptionID).Create(ctx, revokeOp, nil)
+				_, err := mockResourcesDBClient.Operations(clusterResourceID.SubscriptionID).Create(ctx, revokeOp, nil)
 				require.NoError(t, err)
 			}
 
@@ -762,7 +762,7 @@ func TestRevokeCredentials(t *testing.T) {
 					InternalID:  clusterInternalID,
 					Status:      arm.ProvisioningStateProvisioning,
 				}
-				_, err := mockARMResourcesDBClient.Operations(clusterResourceID.SubscriptionID).Create(ctx, requestOp, nil)
+				_, err := mockResourcesDBClient.Operations(clusterResourceID.SubscriptionID).Create(ctx, requestOp, nil)
 				require.NoError(t, err)
 			}
 
@@ -776,7 +776,7 @@ func TestRevokeCredentials(t *testing.T) {
 					},
 				}),
 			}
-			ts := newHTTPServer(ctx, f, mockARMResourcesDBClient, subs)
+			ts := newHTTPServer(ctx, f, mockResourcesDBClient, subs)
 
 			url := ts.URL + requestPath + "?api-version=" + api.TestAPIVersion
 			resp, err := ts.Client().Post(url, "", nil)
@@ -859,14 +859,14 @@ func assertHTTPMetrics(t *testing.T, r prometheus.Gatherer, subscription *arm.Su
 // newHTTPServer returns a test HTTP server. The mock DB client will be
 // bootstrapped with the provided subscription documents for the
 // subscription collector.
-func newHTTPServer(ctx context.Context, f *Frontend, mockARMResourcesDBClient *databasetesting.MockARMResourcesDBClient, subs map[string]*arm.Subscription) *httptest.Server {
+func newHTTPServer(ctx context.Context, f *Frontend, mockResourcesDBClient *databasetesting.MockResourcesDBClient, subs map[string]*arm.Subscription) *httptest.Server {
 	ts := httptest.NewUnstartedServer(f.server.Handler)
 	ts.Config.BaseContext = f.server.BaseContext
 	ts.Start()
 
 	// Pre-populate subscriptions in the mock database for the collector
 	for _, sub := range subs {
-		_, _ = mockARMResourcesDBClient.Subscriptions().Create(ctx, sub, nil)
+		_, _ = mockResourcesDBClient.Subscriptions().Create(ctx, sub, nil)
 	}
 
 	// The initialization of the subscriptions collector is normally part of

@@ -35,7 +35,7 @@ type doNothingExample struct {
 	name string
 
 	subscriptionLister listers.SubscriptionLister
-	cosmosClient       database.ARMResourcesDBClient
+	cosmosClient       database.ResourcesDBClient
 
 	// queue is where incoming work is placed to de-dup and to allow "easy"
 	// rate limited requeues on errors
@@ -45,7 +45,7 @@ type doNothingExample struct {
 }
 
 // NewDoNothingExampleController periodically lists all clusters and for each out when the cluster was created and its state.
-func NewDoNothingExampleController(cosmosClient database.ARMResourcesDBClient, subscriptionLister listers.SubscriptionLister) controllerutils.Controller {
+func NewDoNothingExampleController(cosmosClient database.ResourcesDBClient, subscriptionLister listers.SubscriptionLister) controllerutils.Controller {
 	c := &doNothingExample{
 		name:               "DoNothingExample",
 		subscriptionLister: subscriptionLister,

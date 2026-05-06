@@ -24,11 +24,11 @@ import (
 )
 
 type CosmosDumpHandler struct {
-	cosmosClient database.ARMResourcesDBClient
+	resourcesDBClient database.ResourcesDBClient
 }
 
-func NewCosmosDumpHandler(cosmosClient database.ARMResourcesDBClient) *CosmosDumpHandler {
-	return &CosmosDumpHandler{cosmosClient: cosmosClient}
+func NewCosmosDumpHandler(cosmosClient database.ResourcesDBClient) *CosmosDumpHandler {
+	return &CosmosDumpHandler{resourcesDBClient: cosmosClient}
 }
 
 func (h *CosmosDumpHandler) ServeHTTP(w http.ResponseWriter, request *http.Request) error {
@@ -40,7 +40,7 @@ func (h *CosmosDumpHandler) ServeHTTP(w http.ResponseWriter, request *http.Reque
 		return utils.TrackError(err)
 	}
 
-	if err := serverutils.DumpDataToLogger(ctx, h.cosmosClient, resourceID); err != nil {
+	if err := serverutils.DumpDataToLogger(ctx, h.resourcesDBClient, resourceID); err != nil {
 		return utils.TrackError(err)
 	}
 
@@ -49,12 +49,12 @@ func (h *CosmosDumpHandler) ServeHTTP(w http.ResponseWriter, request *http.Reque
 }
 
 type BillingDumpHandler struct {
-	cosmosClient  database.ARMResourcesDBClient
-	billingClient database.BillingDBClient
+	resourcesDBClient database.ResourcesDBClient
+	billingDBClient   database.BillingDBClient
 }
 
-func NewBillingDumpHandler(cosmosClient database.ARMResourcesDBClient, billingClient database.BillingDBClient) *BillingDumpHandler {
-	return &BillingDumpHandler{cosmosClient: cosmosClient, billingClient: billingClient}
+func NewBillingDumpHandler(resourcesDBClient database.ResourcesDBClient, billingDBClient database.BillingDBClient) *BillingDumpHandler {
+	return &BillingDumpHandler{resourcesDBClient: resourcesDBClient, billingDBClient: billingDBClient}
 }
 
 func (h *BillingDumpHandler) ServeHTTP(w http.ResponseWriter, request *http.Request) error {
@@ -66,7 +66,7 @@ func (h *BillingDumpHandler) ServeHTTP(w http.ResponseWriter, request *http.Requ
 		return utils.TrackError(err)
 	}
 
-	if err := serverutils.DumpBillingToLogger(ctx, h.cosmosClient, h.billingClient, resourceID); err != nil {
+	if err := serverutils.DumpBillingToLogger(ctx, h.resourcesDBClient, h.billingDBClient, resourceID); err != nil {
 		return utils.TrackError(err)
 	}
 

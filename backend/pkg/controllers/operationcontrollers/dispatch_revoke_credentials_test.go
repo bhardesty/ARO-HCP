@@ -37,13 +37,13 @@ func TestDispatchRevokeCredentials_SyncrhonizeOperation(t *testing.T) {
 		name                         string
 		revokeCredentialsOperationID string
 		expectError                  bool
-		verify                       func(t *testing.T, ctx context.Context, db *databasetesting.MockARMResourcesDBClient, fixture *clusterTestFixture)
+		verify                       func(t *testing.T, ctx context.Context, db *databasetesting.MockResourcesDBClient, fixture *clusterTestFixture)
 	}{
 		{
 			name:                         "successful dispatch updates status to deleting",
 			revokeCredentialsOperationID: testOperationName,
 			expectError:                  false,
-			verify: func(t *testing.T, ctx context.Context, db *databasetesting.MockARMResourcesDBClient, fixture *clusterTestFixture) {
+			verify: func(t *testing.T, ctx context.Context, db *databasetesting.MockResourcesDBClient, fixture *clusterTestFixture) {
 				op, err := db.Operations(testSubscriptionID).Get(ctx, testOperationName)
 				require.NoError(t, err)
 				assert.Equal(t, arm.ProvisioningStateDeleting, op.Status)
@@ -53,7 +53,7 @@ func TestDispatchRevokeCredentials_SyncrhonizeOperation(t *testing.T) {
 			name:                         "mismatched revoke operation ID cancels operation",
 			revokeCredentialsOperationID: "",
 			expectError:                  false,
-			verify: func(t *testing.T, ctx context.Context, db *databasetesting.MockARMResourcesDBClient, fixture *clusterTestFixture) {
+			verify: func(t *testing.T, ctx context.Context, db *databasetesting.MockResourcesDBClient, fixture *clusterTestFixture) {
 				op, err := db.Operations(testSubscriptionID).Get(ctx, testOperationName)
 				require.NoError(t, err)
 				assert.Equal(t, arm.ProvisioningStateCanceled, op.Status)
@@ -73,7 +73,7 @@ func TestDispatchRevokeCredentials_SyncrhonizeOperation(t *testing.T) {
 			cluster.ServiceProviderProperties.RevokeCredentialsOperationID = tt.revokeCredentialsOperationID
 			operation := fixture.newOperation(database.OperationRequestRevokeCredentials)
 
-			mockDB, err := databasetesting.NewMockARMResourcesDBClientWithResources(ctx, []any{cluster, operation})
+			mockDB, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, []any{cluster, operation})
 			require.NoError(t, err)
 
 			mockCSClient := ocm.NewMockClusterServiceClientSpec(ctrl)

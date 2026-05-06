@@ -19,15 +19,15 @@ import (
 )
 
 // MockBillingDBClient implements database.BillingDBClient using the same in-memory
-// billing partition as MockARMResourcesDBClient.
+// billing partition as mockResourcesDBClient.
 type MockBillingDBClient struct {
-	arm *MockARMResourcesDBClient
+	arm *MockResourcesDBClient
 }
 
 var _ database.BillingDBClient = (*MockBillingDBClient)(nil)
 
 // NewMockBillingDBClient returns a BillingDBClient backed by the given mock ARM client’s billing store.
-func NewMockBillingDBClient(arm *MockARMResourcesDBClient) *MockBillingDBClient {
+func NewMockBillingDBClient(arm *MockResourcesDBClient) *MockBillingDBClient {
 	return &MockBillingDBClient{arm: arm}
 }
 
@@ -40,7 +40,7 @@ func (m *MockBillingDBClient) BillingGlobalListers() database.BillingGlobalListe
 }
 
 type mockBillingDBGlobalListers struct {
-	arm *MockARMResourcesDBClient
+	arm *MockResourcesDBClient
 }
 
 var _ database.BillingGlobalListers = (*mockBillingDBGlobalListers)(nil)

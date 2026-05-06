@@ -32,7 +32,7 @@ import (
 
 type dispatchRequestCredential struct {
 	clock                 utilsclock.PassiveClock
-	cosmosClient          database.ARMResourcesDBClient
+	cosmosClient          database.ResourcesDBClient
 	clustersServiceClient ocm.ClusterServiceClientSpec
 }
 
@@ -47,7 +47,7 @@ type dispatchRequestCredential struct {
 //	  InternalID: an empty value
 func NewDispatchRequestCredentialController(
 	clock utilsclock.PassiveClock,
-	cosmosClient database.ARMResourcesDBClient,
+	cosmosClient database.ResourcesDBClient,
 	clustersServiceClient ocm.ClusterServiceClientSpec,
 	activeOperationInformer cache.SharedIndexInformer,
 ) controllerutils.Controller {

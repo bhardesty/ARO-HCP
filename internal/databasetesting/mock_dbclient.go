@@ -34,9 +34,9 @@ import (
 	"github.com/Azure/ARO-HCP/internal/database"
 )
 
-// MockARMResourcesDBClient implements the database.ARMResourcesDBClient interface for unit testing.
+// MockResourcesDBClient implements the database.ResourcesDBClient interface for unit testing.
 // It stores documents in memory and supports loading from cosmos-record context directories.
-type MockARMResourcesDBClient struct {
+type MockResourcesDBClient struct {
 	mu sync.RWMutex
 
 	// documents stores all documents keyed by their cosmos ID
@@ -46,12 +46,12 @@ type MockARMResourcesDBClient struct {
 	billing map[string]*database.BillingDocument
 
 	// globalListers is an optional custom global listers implementation for testing
-	globalListers database.ARMResourcesGlobalListers
+	globalListers database.ResourcesGlobalListers
 }
 
-// NewMockARMResourcesDBClient creates a new mock ARMResourcesDBClient with empty storage.
-func NewMockARMResourcesDBClient() *MockARMResourcesDBClient {
-	return &MockARMResourcesDBClient{
+// NewMockResourcesDBClient creates a new mock ResourcesDBClient with empty storage.
+func NewMockResourcesDBClient() *MockResourcesDBClient {
+	return &MockResourcesDBClient{
 		documents: make(map[string]json.RawMessage),
 		billing:   make(map[string]*database.BillingDocument),
 	}
@@ -59,22 +59,22 @@ func NewMockARMResourcesDBClient() *MockARMResourcesDBClient {
 
 // SetARMResourcesGlobalListers sets a custom global listers implementation for testing.
 // This allows tests to provide custom ARMResourcesGlobalListers that return errors or paginate.
-func (m *MockARMResourcesDBClient) SetARMResourcesGlobalListers(globalListers database.ARMResourcesGlobalListers) {
+func (m *MockResourcesDBClient) SetARMResourcesGlobalListers(globalListers database.ResourcesGlobalListers) {
 	m.globalListers = globalListers
 }
 
 // NewTransaction creates a new mock transaction.
-func (m *MockARMResourcesDBClient) NewTransaction(pk string) database.DBTransaction {
+func (m *MockResourcesDBClient) NewTransaction(pk string) database.DBTransaction {
 	return newMockTransaction(pk, m)
 }
 
 // UntypedCRUD provides access to untyped resource operations.
-func (m *MockARMResourcesDBClient) UntypedCRUD(parentResourceID azcorearm.ResourceID) (database.UntypedResourceCRUD, error) {
+func (m *MockResourcesDBClient) UntypedCRUD(parentResourceID azcorearm.ResourceID) (database.UntypedResourceCRUD, error) {
 	return newMockUntypedCRUD(m, parentResourceID), nil
 }
 
 // HCPClusters returns a CRUD interface for HCPCluster resources.
-func (m *MockARMResourcesDBClient) HCPClusters(subscriptionID, resourceGroupName string) database.HCPClusterCRUD {
+func (m *MockResourcesDBClient) HCPClusters(subscriptionID, resourceGroupName string) database.HCPClusterCRUD {
 	parts := []string{
 		"/subscriptions",
 		strings.ToLower(subscriptionID),
@@ -90,7 +90,7 @@ func (m *MockARMResourcesDBClient) HCPClusters(subscriptionID, resourceGroupName
 }
 
 // Operations returns a CRUD interface for operation resources.
-func (m *MockARMResourcesDBClient) Operations(subscriptionID string) database.OperationCRUD {
+func (m *MockResourcesDBClient) Operations(subscriptionID string) database.OperationCRUD {
 	parts := []string{
 		"/subscriptions",
 		strings.ToLower(subscriptionID),
@@ -101,35 +101,35 @@ func (m *MockARMResourcesDBClient) Operations(subscriptionID string) database.Op
 }
 
 // Subscriptions returns a CRUD interface for subscription resources.
-func (m *MockARMResourcesDBClient) Subscriptions() database.SubscriptionCRUD {
+func (m *MockResourcesDBClient) Subscriptions() database.SubscriptionCRUD {
 	return newMockSubscriptionCRUD(m)
 }
 
-// ARMResourcesGlobalListers returns interfaces for listing all resources of a particular
-// type across all partitions. If a custom ARMResourcesGlobalListers was set via SetARMResourcesGlobalListers,
+// ResourcesGlobalListers returns interfaces for listing all resources of a particular
+// type across all partitions. If a custom ResourcesGlobalListers was set via SetARMResourcesGlobalListers,
 // that is returned instead.
-func (m *MockARMResourcesDBClient) ARMResourcesGlobalListers() database.ARMResourcesGlobalListers {
+func (m *MockResourcesDBClient) ResourcesGlobalListers() database.ResourcesGlobalListers {
 	if m.globalListers != nil {
 		return m.globalListers
 	}
-	return &mockARMResourcesGlobalListers{client: m}
+	return &mockResourcesGlobalListers{client: m}
 }
 
 // ServiceProviderClusters returns a CRUD interface for service provider cluster resources.
-func (m *MockARMResourcesDBClient) ServiceProviderClusters(subscriptionID, resourceGroupName, clusterName string) database.ServiceProviderClusterCRUD {
+func (m *MockResourcesDBClient) ServiceProviderClusters(subscriptionID, resourceGroupName, clusterName string) database.ServiceProviderClusterCRUD {
 	clusterResourceID := database.NewClusterResourceID(subscriptionID, resourceGroupName, clusterName)
 	return newMockServiceProviderClusterCRUD(m, clusterResourceID)
 }
 
 // ServiceProviderNodePools returns a CRUD interface for service provider node pool resources.
-func (m *MockARMResourcesDBClient) ServiceProviderNodePools(subscriptionID, resourceGroupName, clusterName, nodePoolName string) database.ServiceProviderNodePoolCRUD {
+func (m *MockResourcesDBClient) ServiceProviderNodePools(subscriptionID, resourceGroupName, clusterName, nodePoolName string) database.ServiceProviderNodePoolCRUD {
 	nodePoolResourceID := database.NewNodePoolResourceID(subscriptionID, resourceGroupName, clusterName, nodePoolName)
 	return newMockServiceProviderNodePoolCRUD(m, nodePoolResourceID)
 }
 
 // LoadFromDirectory loads cosmos-record context data from a directory.
 // It reads all JSON files that match the pattern for "load" directories.
-func (m *MockARMResourcesDBClient) LoadFromDirectory(dirPath string) error {
+func (m *MockResourcesDBClient) LoadFromDirectory(dirPath string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -171,7 +171,7 @@ func (m *MockARMResourcesDBClient) LoadFromDirectory(dirPath string) error {
 
 // LoadContent loads a single JSON document into the mock database.
 // This implements the ContentLoader interface from integrationutils.
-func (m *MockARMResourcesDBClient) LoadContent(ctx context.Context, content []byte) error {
+func (m *MockResourcesDBClient) LoadContent(ctx context.Context, content []byte) error {
 	// Parse as TypedDocument to get the ID
 	var typedDoc database.TypedDocument
 	if err := json.Unmarshal(content, &typedDoc); err != nil {
@@ -190,7 +190,7 @@ func (m *MockARMResourcesDBClient) LoadContent(ctx context.Context, content []by
 
 // ListAllDocuments returns all documents in the mock database.
 // This implements the DocumentLister interface from integrationutils.
-func (m *MockARMResourcesDBClient) ListAllDocuments(ctx context.Context) ([]*database.TypedDocument, error) {
+func (m *MockResourcesDBClient) ListAllDocuments(ctx context.Context) ([]*database.TypedDocument, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -206,14 +206,14 @@ func (m *MockARMResourcesDBClient) ListAllDocuments(ctx context.Context) ([]*dat
 }
 
 // StoreDocument stores a raw JSON document in the mock database.
-func (m *MockARMResourcesDBClient) StoreDocument(cosmosID string, data json.RawMessage) {
+func (m *MockResourcesDBClient) StoreDocument(cosmosID string, data json.RawMessage) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.documents[strings.ToLower(cosmosID)] = data
 }
 
 // GetDocument retrieves a raw JSON document from the mock database.
-func (m *MockARMResourcesDBClient) GetDocument(cosmosID string) (json.RawMessage, bool) {
+func (m *MockResourcesDBClient) GetDocument(cosmosID string) (json.RawMessage, bool) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	data, ok := m.documents[strings.ToLower(cosmosID)]
@@ -221,14 +221,14 @@ func (m *MockARMResourcesDBClient) GetDocument(cosmosID string) (json.RawMessage
 }
 
 // DeleteDocument removes a document from the mock database.
-func (m *MockARMResourcesDBClient) DeleteDocument(cosmosID string) {
+func (m *MockResourcesDBClient) DeleteDocument(cosmosID string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	delete(m.documents, strings.ToLower(cosmosID))
 }
 
 // ListDocuments returns all documents matching the given resource type and prefix.
-func (m *MockARMResourcesDBClient) ListDocuments(resourceType *azcorearm.ResourceType, prefix string) []json.RawMessage {
+func (m *MockResourcesDBClient) ListDocuments(resourceType *azcorearm.ResourceType, prefix string) []json.RawMessage {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -260,7 +260,7 @@ func (m *MockARMResourcesDBClient) ListDocuments(resourceType *azcorearm.Resourc
 }
 
 // Clear removes all documents from the mock database.
-func (m *MockARMResourcesDBClient) Clear() {
+func (m *MockResourcesDBClient) Clear() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.documents = make(map[string]json.RawMessage)
@@ -268,7 +268,7 @@ func (m *MockARMResourcesDBClient) Clear() {
 }
 
 // GetAllDocuments returns a copy of all documents (for testing purposes).
-func (m *MockARMResourcesDBClient) GetAllDocuments() map[string]json.RawMessage {
+func (m *MockResourcesDBClient) GetAllDocuments() map[string]json.RawMessage {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -280,7 +280,7 @@ func (m *MockARMResourcesDBClient) GetAllDocuments() map[string]json.RawMessage 
 }
 
 // GetBillingDocuments returns a copy of all billing documents (for testing purposes).
-func (m *MockARMResourcesDBClient) GetBillingDocuments() map[string]*database.BillingDocument {
+func (m *MockResourcesDBClient) GetBillingDocuments() map[string]*database.BillingDocument {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -291,12 +291,12 @@ func (m *MockARMResourcesDBClient) GetBillingDocuments() map[string]*database.Bi
 	return result
 }
 
-var _ database.ARMResourcesDBClient = &MockARMResourcesDBClient{}
+var _ database.ResourcesDBClient = &MockResourcesDBClient{}
 
 // mockTransaction implements database.DBTransaction for the mock client.
 type mockTransaction struct {
 	pk        string
-	client    *MockARMResourcesDBClient
+	client    *MockResourcesDBClient
 	steps     []mockTransactionStep
 	onSuccess []database.DBTransactionCallback
 }
@@ -306,7 +306,7 @@ type mockTransactionStep struct {
 	execute func() (string, json.RawMessage, error)
 }
 
-func newMockTransaction(pk string, client *MockARMResourcesDBClient) *mockTransaction {
+func newMockTransaction(pk string, client *MockResourcesDBClient) *mockTransaction {
 	return &mockTransaction{
 		pk:     strings.ToLower(pk),
 		client: client,
@@ -403,7 +403,7 @@ func (r *mockTransactionResult) GetItem(cosmosUID string) (any, error) {
 
 var _ database.DBTransactionResult = &mockTransactionResult{}
 
-// mockIterator implements database.ARMResourcesDBClientIterator for in-memory iteration.
+// mockIterator implements database.DBClientIterator for in-memory iteration.
 type mockIterator[T any] struct {
 	items             []*T
 	ids               []string
@@ -420,7 +420,7 @@ func newMockIterator[T any](ids []string, items []*T) *mockIterator[T] {
 	}
 }
 
-func (iter *mockIterator[T]) Items(ctx context.Context) database.ARMResourcesDBClientIteratorItem[T] {
+func (iter *mockIterator[T]) Items(ctx context.Context) database.DBClientIteratorItem[T] {
 	return func(yield func(string, *T) bool) {
 		for i, item := range iter.items {
 			if !yield(iter.ids[i], item) {
@@ -438,7 +438,7 @@ func (iter *mockIterator[T]) GetError() error {
 	return iter.err
 }
 
-var _ database.ARMResourcesDBClientIterator[api.HCPOpenShiftCluster] = &mockIterator[api.HCPOpenShiftCluster]{}
+var _ database.DBClientIterator[api.HCPOpenShiftCluster] = &mockIterator[api.HCPOpenShiftCluster]{}
 
 // MockLockClient implements database.LockClientInterface for testing.
 type MockLockClient struct {
@@ -534,11 +534,11 @@ var _ database.LocksDBClient = &MockLocksDBClient{}
 
 // mockBillingDocCRUD implements database.BillingDocCRUD for testing.
 type mockBillingDocCRUD struct {
-	mockDB         *MockARMResourcesDBClient
+	mockDB         *MockResourcesDBClient
 	subscriptionID string
 }
 
-func newMockBillingDocCRUD(mockDB *MockARMResourcesDBClient, subscriptionID string) *mockBillingDocCRUD {
+func newMockBillingDocCRUD(mockDB *MockResourcesDBClient, subscriptionID string) *mockBillingDocCRUD {
 	return &mockBillingDocCRUD{
 		mockDB:         mockDB,
 		subscriptionID: subscriptionID,
@@ -573,7 +573,7 @@ func (m *mockBillingDocCRUD) GetByID(ctx context.Context, billingDocID string) (
 	return doc, nil
 }
 
-func (m *mockBillingDocCRUD) List(ctx context.Context) (database.ARMResourcesDBClientIterator[database.BillingDocument], error) {
+func (m *mockBillingDocCRUD) List(ctx context.Context) (database.DBClientIterator[database.BillingDocument], error) {
 	m.mockDB.mu.RLock()
 	defer m.mockDB.mu.RUnlock()
 

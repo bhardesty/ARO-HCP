@@ -34,7 +34,7 @@ import (
 )
 
 type ControllerInitializationInput struct {
-	CosmosClient         database.ARMResourcesDBClient
+	CosmosClient         database.ResourcesDBClient
 	BillingClient        database.BillingDBClient
 	SubscriptionLister   listers.SubscriptionLister
 	ClusterServiceClient ocm.ClusterServiceClientSpec

@@ -34,7 +34,7 @@ import (
 type nodePoolPropertiesSyncer struct {
 	cooldownChecker      controllerutils.CooldownChecker
 	nodePoolLister       listers.NodePoolLister
-	cosmosClient         database.ARMResourcesDBClient
+	cosmosClient         database.ResourcesDBClient
 	clusterServiceClient ocm.ClusterServiceClientSpec
 }
 
@@ -43,7 +43,7 @@ var _ controllerutils.NodePoolSyncer = (*nodePoolPropertiesSyncer)(nil)
 // NewNodePoolPropertiesSyncController creates a new controller that synchronizes
 // node pool properties from Cluster Service to Cosmos DB.
 func NewNodePoolPropertiesSyncController(
-	cosmosClient database.ARMResourcesDBClient,
+	cosmosClient database.ResourcesDBClient,
 	clusterServiceClient ocm.ClusterServiceClientSpec,
 	activeOperationLister listers.ActiveOperationLister,
 	informers informers.BackendInformers,

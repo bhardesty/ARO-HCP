@@ -39,7 +39,7 @@ import (
 //   - CustomerProperties.DNS.BaseDomainPrefix
 type clusterPropertiesSyncer struct {
 	cooldownChecker      controllerutils.CooldownChecker
-	cosmosClient         database.ARMResourcesDBClient
+	cosmosClient         database.ResourcesDBClient
 	clusterServiceClient ocm.ClusterServiceClientSpec
 }
 
@@ -50,7 +50,7 @@ var _ controllerutils.ClusterSyncer = (*clusterPropertiesSyncer)(nil)
 // It periodically checks each cluster and populates the Console.URL, DNS.BaseDomain,
 // ManagedIdentitiesDataPlaneIdentityURL, Platform.IssuerURL, and DNS.BaseDomainPrefix fields if they are not set.
 func NewClusterPropertiesSyncController(
-	cosmosClient database.ARMResourcesDBClient,
+	cosmosClient database.ResourcesDBClient,
 	clusterServiceClient ocm.ClusterServiceClientSpec,
 	activeOperationLister listers.ActiveOperationLister,
 	informers informers.BackendInformers,

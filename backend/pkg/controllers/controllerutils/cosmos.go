@@ -43,7 +43,7 @@ func MarkBillingDocumentDeleted(ctx context.Context, billingClient database.Bill
 	return err
 }
 
-func DeleteRecursively(ctx context.Context, cosmosClient database.ARMResourcesDBClient, rootResourceID *azcorearm.ResourceID) error {
+func DeleteRecursively(ctx context.Context, cosmosClient database.ResourcesDBClient, rootResourceID *azcorearm.ResourceID) error {
 	// now delete everything related to this item.  Operations will be cleaned up when ttl expires.
 	// this does not do any advanced cleanup of content.  As we migrate more to cosmos, this will become more and more
 	// stale.  Feel free to refactor if we can do a better job of cleanup at some point.

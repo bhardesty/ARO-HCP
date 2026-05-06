@@ -37,7 +37,7 @@ type externalAuthWatchingController struct {
 	name   string
 	syncer ExternalAuthSyncer
 
-	cosmosClient database.ARMResourcesDBClient
+	cosmosClient database.ResourcesDBClient
 }
 
 // NewExternalAuthWatchingController periodically looks up all ExternalAuths and queues them
@@ -47,7 +47,7 @@ type externalAuthWatchingController struct {
 // This does NOT prevent us from re-executing on errors, so errors will continue to trigger fast checks as expected.
 func NewExternalAuthWatchingController(
 	name string,
-	cosmosClient database.ARMResourcesDBClient,
+	cosmosClient database.ResourcesDBClient,
 	informers informers.BackendInformers,
 	resyncDuration time.Duration,
 	syncer ExternalAuthSyncer,

@@ -37,7 +37,7 @@ type clusterServiceClusterMatching struct {
 	name string
 
 	subscriptionLister   listers.SubscriptionLister
-	cosmosClient         database.ARMResourcesDBClient
+	cosmosClient         database.ResourcesDBClient
 	clusterServiceClient ocm.ClusterServiceClientSpec
 
 	// queue is where incoming work is placed to de-dup and to allow "easy"
@@ -46,7 +46,7 @@ type clusterServiceClusterMatching struct {
 }
 
 // NewClusterServiceClusterMatchingController periodically looks for mismatched cluster-service and cosmos clusters
-func NewClusterServiceClusterMatchingController(cosmosClient database.ARMResourcesDBClient, subscriptionLister listers.SubscriptionLister, clusterServiceClient ocm.ClusterServiceClientSpec) controllerutils.Controller {
+func NewClusterServiceClusterMatchingController(cosmosClient database.ResourcesDBClient, subscriptionLister listers.SubscriptionLister, clusterServiceClient ocm.ClusterServiceClientSpec) controllerutils.Controller {
 	c := &clusterServiceClusterMatching{
 		name:                 "ClusterServiceMatchingClusters",
 		subscriptionLister:   subscriptionLister,

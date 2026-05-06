@@ -35,14 +35,14 @@ type nodePoolCustomerPropertiesMigrationController struct {
 	cooldownChecker controllerutils.CooldownChecker
 
 	nodePoolLister       listers.NodePoolLister
-	cosmosClient         database.ARMResourcesDBClient
+	cosmosClient         database.ResourcesDBClient
 	clusterServiceClient ocm.ClusterServiceClientSpec
 }
 
 var _ controllerutils.NodePoolSyncer = (*nodePoolCustomerPropertiesMigrationController)(nil)
 
 func NewNodePoolCustomerPropertiesMigrationController(
-	cosmosClient database.ARMResourcesDBClient,
+	cosmosClient database.ResourcesDBClient,
 	clusterServiceClient ocm.ClusterServiceClientSpec,
 	activeOperationLister listers.ActiveOperationLister,
 	informers informers.BackendInformers,

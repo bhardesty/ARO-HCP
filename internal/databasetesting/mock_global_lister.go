@@ -26,53 +26,53 @@ import (
 	"github.com/Azure/ARO-HCP/internal/database"
 )
 
-// mockARMResourcesGlobalListers implements database.ARMResourcesGlobalListers for the mock client.
-type mockARMResourcesGlobalListers struct {
-	client *MockARMResourcesDBClient
+// mockResourcesGlobalListers implements database.ResourcesGlobalListers for the mock client.
+type mockResourcesGlobalListers struct {
+	client *MockResourcesDBClient
 }
 
-var _ database.ARMResourcesGlobalListers = &mockARMResourcesGlobalListers{}
+var _ database.ResourcesGlobalListers = &mockResourcesGlobalListers{}
 
-func (g *mockARMResourcesGlobalListers) Subscriptions() database.GlobalLister[arm.Subscription] {
+func (g *mockResourcesGlobalListers) Subscriptions() database.GlobalLister[arm.Subscription] {
 	return &mockSubscriptionGlobalLister{client: g.client}
 }
 
-func (g *mockARMResourcesGlobalListers) Clusters() database.GlobalLister[api.HCPOpenShiftCluster] {
+func (g *mockResourcesGlobalListers) Clusters() database.GlobalLister[api.HCPOpenShiftCluster] {
 	return &mockTypedGlobalLister[api.HCPOpenShiftCluster, database.HCPCluster]{
 		client:       g.client,
 		resourceType: api.ClusterResourceType,
 	}
 }
 
-func (g *mockARMResourcesGlobalListers) NodePools() database.GlobalLister[api.HCPOpenShiftClusterNodePool] {
+func (g *mockResourcesGlobalListers) NodePools() database.GlobalLister[api.HCPOpenShiftClusterNodePool] {
 	return &mockTypedGlobalLister[api.HCPOpenShiftClusterNodePool, database.NodePool]{
 		client:       g.client,
 		resourceType: api.NodePoolResourceType,
 	}
 }
 
-func (g *mockARMResourcesGlobalListers) ExternalAuths() database.GlobalLister[api.HCPOpenShiftClusterExternalAuth] {
+func (g *mockResourcesGlobalListers) ExternalAuths() database.GlobalLister[api.HCPOpenShiftClusterExternalAuth] {
 	return &mockTypedGlobalLister[api.HCPOpenShiftClusterExternalAuth, database.ExternalAuth]{
 		client:       g.client,
 		resourceType: api.ExternalAuthResourceType,
 	}
 }
 
-func (g *mockARMResourcesGlobalListers) ServiceProviderClusters() database.GlobalLister[api.ServiceProviderCluster] {
+func (g *mockResourcesGlobalListers) ServiceProviderClusters() database.GlobalLister[api.ServiceProviderCluster] {
 	return &mockTypedGlobalLister[api.ServiceProviderCluster, database.GenericDocument[api.ServiceProviderCluster]]{
 		client:       g.client,
 		resourceType: api.ServiceProviderClusterResourceType,
 	}
 }
 
-func (g *mockARMResourcesGlobalListers) ServiceProviderNodePools() database.GlobalLister[api.ServiceProviderNodePool] {
+func (g *mockResourcesGlobalListers) ServiceProviderNodePools() database.GlobalLister[api.ServiceProviderNodePool] {
 	return &mockTypedGlobalLister[api.ServiceProviderNodePool, database.GenericDocument[api.ServiceProviderNodePool]]{
 		client:       g.client,
 		resourceType: api.ServiceProviderNodePoolResourceType,
 	}
 }
 
-func (g *mockARMResourcesGlobalListers) Controllers() database.GlobalLister[api.Controller] {
+func (g *mockResourcesGlobalListers) Controllers() database.GlobalLister[api.Controller] {
 	return &mockControllerGlobalLister{
 		client: g.client,
 		resourceTypes: []azcorearm.ResourceType{
@@ -83,7 +83,7 @@ func (g *mockARMResourcesGlobalListers) Controllers() database.GlobalLister[api.
 	}
 }
 
-func (g *mockARMResourcesGlobalListers) ManagementClusterContents() database.GlobalLister[api.ManagementClusterContent] {
+func (g *mockResourcesGlobalListers) ManagementClusterContents() database.GlobalLister[api.ManagementClusterContent] {
 	return &mockManagementClusterContentGlobalLister{
 		client: g.client,
 		resourceTypes: []azcorearm.ResourceType{
@@ -93,23 +93,23 @@ func (g *mockARMResourcesGlobalListers) ManagementClusterContents() database.Glo
 	}
 }
 
-func (g *mockARMResourcesGlobalListers) Operations() database.GlobalLister[api.Operation] {
+func (g *mockResourcesGlobalListers) Operations() database.GlobalLister[api.Operation] {
 	return &mockTypedGlobalLister[api.Operation, database.GenericDocument[api.Operation]]{
 		client:       g.client,
 		resourceType: api.OperationStatusResourceType,
 	}
 }
 
-func (g *mockARMResourcesGlobalListers) ActiveOperations() database.GlobalLister[api.Operation] {
+func (g *mockResourcesGlobalListers) ActiveOperations() database.GlobalLister[api.Operation] {
 	return &mockActiveOperationsGlobalLister{client: g.client}
 }
 
 // mockSubscriptionGlobalLister lists all subscriptions across all partitions.
 type mockSubscriptionGlobalLister struct {
-	client *MockARMResourcesDBClient
+	client *MockResourcesDBClient
 }
 
-func (l *mockSubscriptionGlobalLister) List(ctx context.Context, options *database.ARMResourcesDBClientListResourceDocsOptions) (database.ARMResourcesDBClientIterator[arm.Subscription], error) {
+func (l *mockSubscriptionGlobalLister) List(ctx context.Context, options *database.DBClientListResourceDocsOptions) (database.DBClientIterator[arm.Subscription], error) {
 	documents := l.client.ListDocuments(&azcorearm.SubscriptionResourceType, "")
 
 	var ids []string
@@ -136,11 +136,11 @@ func (l *mockSubscriptionGlobalLister) List(ctx context.Context, options *databa
 // mockTypedGlobalLister is a generic mock global lister that lists all resources
 // of a given type across all partitions.
 type mockTypedGlobalLister[InternalAPIType, CosmosAPIType any] struct {
-	client       *MockARMResourcesDBClient
+	client       *MockResourcesDBClient
 	resourceType azcorearm.ResourceType
 }
 
-func (l *mockTypedGlobalLister[InternalAPIType, CosmosAPIType]) List(ctx context.Context, options *database.ARMResourcesDBClientListResourceDocsOptions) (database.ARMResourcesDBClientIterator[InternalAPIType], error) {
+func (l *mockTypedGlobalLister[InternalAPIType, CosmosAPIType]) List(ctx context.Context, options *database.DBClientListResourceDocsOptions) (database.DBClientIterator[InternalAPIType], error) {
 	documents := l.client.ListDocuments(&l.resourceType, "")
 
 	var ids []string
@@ -172,10 +172,10 @@ func (l *mockTypedGlobalLister[InternalAPIType, CosmosAPIType]) List(ctx context
 // mockActiveOperationsGlobalLister lists operations with non-terminal status
 // across all partitions.
 type mockActiveOperationsGlobalLister struct {
-	client *MockARMResourcesDBClient
+	client *MockResourcesDBClient
 }
 
-func (l *mockActiveOperationsGlobalLister) List(ctx context.Context, options *database.ARMResourcesDBClientListResourceDocsOptions) (database.ARMResourcesDBClientIterator[api.Operation], error) {
+func (l *mockActiveOperationsGlobalLister) List(ctx context.Context, options *database.DBClientListResourceDocsOptions) (database.DBClientIterator[api.Operation], error) {
 	allDocs := l.client.GetAllDocuments()
 
 	var ids []string
@@ -218,11 +218,11 @@ func (l *mockActiveOperationsGlobalLister) List(ctx context.Context, options *da
 
 // mockControllerGlobalLister lists controllers across all partitions.
 type mockControllerGlobalLister struct {
-	client        *MockARMResourcesDBClient
+	client        *MockResourcesDBClient
 	resourceTypes []azcorearm.ResourceType
 }
 
-func (l *mockControllerGlobalLister) List(ctx context.Context, options *database.ARMResourcesDBClientListResourceDocsOptions) (database.ARMResourcesDBClientIterator[api.Controller], error) {
+func (l *mockControllerGlobalLister) List(ctx context.Context, options *database.DBClientListResourceDocsOptions) (database.DBClientIterator[api.Controller], error) {
 	allDocs := l.client.GetAllDocuments()
 
 	var ids []string
@@ -265,10 +265,10 @@ func (l *mockControllerGlobalLister) List(ctx context.Context, options *database
 
 // mockBillingGlobalLister lists all billing documents across all partitions.
 type mockBillingGlobalLister struct {
-	client *MockARMResourcesDBClient
+	client *MockResourcesDBClient
 }
 
-func (l *mockBillingGlobalLister) List(ctx context.Context, options *database.ARMResourcesDBClientListResourceDocsOptions) (database.ARMResourcesDBClientIterator[database.BillingDocument], error) {
+func (l *mockBillingGlobalLister) List(ctx context.Context, options *database.DBClientListResourceDocsOptions) (database.DBClientIterator[database.BillingDocument], error) {
 	l.client.mu.RLock()
 	defer l.client.mu.RUnlock()
 
@@ -285,11 +285,11 @@ func (l *mockBillingGlobalLister) List(ctx context.Context, options *database.AR
 
 // mockManagementClusterContentGlobalLister lists management cluster content for cluster-scoped and node-pool-scoped documents.
 type mockManagementClusterContentGlobalLister struct {
-	client        *MockARMResourcesDBClient
+	client        *MockResourcesDBClient
 	resourceTypes []azcorearm.ResourceType
 }
 
-func (l *mockManagementClusterContentGlobalLister) List(ctx context.Context, options *database.ARMResourcesDBClientListResourceDocsOptions) (database.ARMResourcesDBClientIterator[api.ManagementClusterContent], error) {
+func (l *mockManagementClusterContentGlobalLister) List(ctx context.Context, options *database.DBClientListResourceDocsOptions) (database.DBClientIterator[api.ManagementClusterContent], error) {
 	allDocs := l.client.GetAllDocuments()
 
 	var ids []string

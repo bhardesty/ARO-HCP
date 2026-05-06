@@ -45,7 +45,7 @@ type CosmosIntegrationTestInfo struct {
 	ArtifactsDir string
 
 	CosmosDatabaseClient *azcosmos.DatabaseClient
-	ARMResourcesDBClient database.ARMResourcesDBClient
+	ResourcesDBClient    database.ResourcesDBClient
 	BillingDBClient      database.BillingDBClient
 	LocksDBClient        database.LocksDBClient
 	cosmosClient         *azcosmos.Client
@@ -60,7 +60,7 @@ func NewCosmosFromTestingEnv(ctx context.Context, t *testing.T) (StorageIntegrat
 	if err != nil {
 		return nil, fmt.Errorf("failed to Initialize Cosmos DB: %w", err)
 	}
-	armResourcesDBClient, err := database.NewARMResourcesDBClient(cosmosDatabaseClient)
+	resourcesDBClient, err := database.NewResourcesDBClient(cosmosDatabaseClient)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create the ARM resources database client: %w", err)
 	}
@@ -76,7 +76,7 @@ func NewCosmosFromTestingEnv(ctx context.Context, t *testing.T) (StorageIntegrat
 	testInfo := &CosmosIntegrationTestInfo{
 		ArtifactsDir:         path.Join(getArtifactDir(), t.Name()),
 		CosmosDatabaseClient: cosmosDatabaseClient,
-		ARMResourcesDBClient: armResourcesDBClient,
+		ResourcesDBClient:    resourcesDBClient,
 		BillingDBClient:      billingDBClient,
 		LocksDBClient:        locksDBClient,
 		cosmosClient:         cosmosClient,
@@ -114,8 +114,8 @@ func (s *CosmosIntegrationTestInfo) ListAllDocuments(ctx context.Context) ([]*da
 	return NewCosmosContentLoader(s.CosmosResourcesContainer()).ListAllDocuments(ctx)
 }
 
-func (s *CosmosIntegrationTestInfo) CosmosClient() database.ARMResourcesDBClient {
-	return s.ARMResourcesDBClient
+func (s *CosmosIntegrationTestInfo) CosmosClient() database.ResourcesDBClient {
+	return s.ResourcesDBClient
 }
 
 func (s *CosmosIntegrationTestInfo) BillingClient() database.BillingDBClient {

@@ -33,14 +33,14 @@ func TestBillingDumpController_SyncOnce(t *testing.T) {
 	clusterResourceID, err := azcorearm.ParseResourceID("/subscriptions/sub-1/resourceGroups/rg-1/providers/Microsoft.RedHatOpenShift/hcpOpenShiftClusters/cluster-1")
 	require.NoError(t, err)
 
-	mockDB := databasetesting.NewMockARMResourcesDBClient()
+	mockDB := databasetesting.NewMockResourcesDBClient()
 
 	mockBilling := databasetesting.NewMockBillingDBClient(mockDB)
 	syncer := &billingDump{
-		cooldownChecker:    &alwaysSyncCooldownChecker{},
-		armResourcesClient: mockDB,
-		billingClient:      mockBilling,
-		nextDumpChecker:    &alwaysSyncCooldownChecker{},
+		cooldownChecker:   &alwaysSyncCooldownChecker{},
+		resourcesDBClient: mockDB,
+		billingDBClient:   mockBilling,
+		nextDumpChecker:   &alwaysSyncCooldownChecker{},
 	}
 
 	key := controllerutils.HCPClusterKey{
@@ -55,14 +55,14 @@ func TestBillingDumpController_SyncOnce(t *testing.T) {
 }
 
 func TestBillingDumpController_CooldownChecker(t *testing.T) {
-	mockDB := databasetesting.NewMockARMResourcesDBClient()
+	mockDB := databasetesting.NewMockResourcesDBClient()
 
 	mockBilling := databasetesting.NewMockBillingDBClient(mockDB)
 	syncer := &billingDump{
-		cooldownChecker:    &alwaysSyncCooldownChecker{},
-		armResourcesClient: mockDB,
-		billingClient:      mockBilling,
-		nextDumpChecker:    &alwaysSyncCooldownChecker{},
+		cooldownChecker:   &alwaysSyncCooldownChecker{},
+		resourcesDBClient: mockDB,
+		billingDBClient:   mockBilling,
+		nextDumpChecker:   &alwaysSyncCooldownChecker{},
 	}
 
 	// Should return a cooldown checker
@@ -75,7 +75,7 @@ func TestNewBillingDumpController(t *testing.T) {
 	// Note: We can't easily test the wrapped controller without backendInformers,
 	// so we just verify the syncer directly in other tests
 	require.NotPanics(t, func() {
-		// The constructor would require backendInformers which needs ARMResourcesGlobalListers
+		// The constructor would require backendInformers which needs ResourcesGlobalListers
 		// This is tested indirectly through other tests
 	})
 }
@@ -86,7 +86,7 @@ func TestBillingDumpController_SyncOnce_WithBillingDoc(t *testing.T) {
 	clusterResourceID, err := azcorearm.ParseResourceID("/subscriptions/sub-1/resourceGroups/rg-1/providers/Microsoft.RedHatOpenShift/hcpOpenShiftClusters/cluster-1")
 	require.NoError(t, err)
 
-	mockDB := databasetesting.NewMockARMResourcesDBClient()
+	mockDB := databasetesting.NewMockResourcesDBClient()
 	mockBilling := databasetesting.NewMockBillingDBClient(mockDB)
 
 	// Create billing document
@@ -95,10 +95,10 @@ func TestBillingDumpController_SyncOnce_WithBillingDoc(t *testing.T) {
 	require.NoError(t, err)
 
 	syncer := &billingDump{
-		cooldownChecker:    &alwaysSyncCooldownChecker{},
-		armResourcesClient: mockDB,
-		billingClient:      mockBilling,
-		nextDumpChecker:    &alwaysSyncCooldownChecker{},
+		cooldownChecker:   &alwaysSyncCooldownChecker{},
+		resourcesDBClient: mockDB,
+		billingDBClient:   mockBilling,
+		nextDumpChecker:   &alwaysSyncCooldownChecker{},
 	}
 
 	key := controllerutils.HCPClusterKey{
@@ -118,7 +118,7 @@ func TestBillingDumpController_CooldownRespected(t *testing.T) {
 	clusterResourceID, err := azcorearm.ParseResourceID("/subscriptions/sub-1/resourceGroups/rg-1/providers/Microsoft.RedHatOpenShift/hcpOpenShiftClusters/cluster-1")
 	require.NoError(t, err)
 
-	mockDB := databasetesting.NewMockARMResourcesDBClient()
+	mockDB := databasetesting.NewMockResourcesDBClient()
 
 	// neverSyncChecker prevents sync
 	neverSyncChecker := cooldownCheckerFunc(func(ctx context.Context, key any) bool {
@@ -128,10 +128,10 @@ func TestBillingDumpController_CooldownRespected(t *testing.T) {
 	// Test that cooldown prevents sync
 	mockBilling := databasetesting.NewMockBillingDBClient(mockDB)
 	syncer := &billingDump{
-		cooldownChecker:    &alwaysSyncCooldownChecker{},
-		armResourcesClient: mockDB,
-		billingClient:      mockBilling,
-		nextDumpChecker:    neverSyncChecker,
+		cooldownChecker:   &alwaysSyncCooldownChecker{},
+		resourcesDBClient: mockDB,
+		billingDBClient:   mockBilling,
+		nextDumpChecker:   neverSyncChecker,
 	}
 
 	key := controllerutils.HCPClusterKey{

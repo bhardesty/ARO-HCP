@@ -45,7 +45,7 @@ import (
 type nodePoolVersionSyncer struct {
 	cooldownChecker                       controllerutils.CooldownChecker
 	clusterManagementClusterContentLister listers.ManagementClusterContentLister
-	cosmosClient                          database.ARMResourcesDBClient
+	cosmosClient                          database.ResourcesDBClient
 	clusterServiceClient                  ocm.ClusterServiceClientSpec
 
 	cincinnatiClientCache cincinnati.ClientCache
@@ -57,7 +57,7 @@ var _ controllerutils.NodePoolSyncer = (*nodePoolVersionSyncer)(nil)
 // from Cluster Service.
 // TODO: improve this description
 func NewNodePoolVersionController(
-	cosmosClient database.ARMResourcesDBClient,
+	cosmosClient database.ResourcesDBClient,
 	clusterServiceClient ocm.ClusterServiceClientSpec,
 	activeOperationLister listers.ActiveOperationLister,
 	informers informers.BackendInformers,

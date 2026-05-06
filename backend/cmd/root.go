@@ -377,7 +377,7 @@ func (f *BackendRootCmdFlags) ToBackendOptions(ctx context.Context, cmd *cobra.C
 
 	smiClientBuilder := app.NewServiceManagedIdentityClientBuilder(fpaMIDataplaneClientBuilder, azureConfig)
 
-	armResourcesCosmosDBClient, billingDBClient, err := app.NewCosmosDBClients(
+	resourcesCosmosDBClient, billingDBClient, err := app.NewCosmosDBClients(
 		ctx,
 		f.AzureCosmosDBURL,
 		f.AzureCosmosDBName,
@@ -399,7 +399,7 @@ func (f *BackendRootCmdFlags) ToBackendOptions(ctx context.Context, cmd *cobra.C
 		AppVersion:                         cmd.Version,
 		AzureLocation:                      f.AzureLocation,
 		LeaderElectionLock:                 leaderElectionLock,
-		ARMResourcesDBClient:               armResourcesCosmosDBClient,
+		ResourcesDBClient:                  resourcesCosmosDBClient,
 		BillingDBClient:                    billingDBClient,
 		ClustersServiceClient:              clustersServiceClient,
 		MetricsServerListenAddress:         f.MetricsServerListenAddress,

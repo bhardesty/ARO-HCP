@@ -40,7 +40,7 @@ import (
 // content (HostedCluster status persisted from Maestro readonly bundles).
 type controlPlaneActiveVersionSyncer struct {
 	cooldownChecker controllerutils.CooldownChecker
-	cosmosClient    database.ARMResourcesDBClient
+	cosmosClient    database.ResourcesDBClient
 }
 
 var _ controllerutils.ClusterSyncer = (*controlPlaneActiveVersionSyncer)(nil)
@@ -49,7 +49,7 @@ var _ controllerutils.ClusterSyncer = (*controlPlaneActiveVersionSyncer)(nil)
 // Status.ControlPlaneVersion.ActiveVersions from the management cluster content
 // (HostedCluster status stored in ManagementClusterContent).
 func NewControlPlaneActiveVersionController(
-	cosmosClient database.ARMResourcesDBClient,
+	cosmosClient database.ResourcesDBClient,
 	activeOperationLister listers.ActiveOperationLister,
 	informers informers.BackendInformers,
 ) controllerutils.Controller {

@@ -53,7 +53,7 @@ func (f *fakeControllerCRUD) Get(ctx context.Context, resourceID string) (*api.C
 	return nil, database.NewNotFoundError()
 }
 
-func (f *fakeControllerCRUD) List(ctx context.Context, opts *database.ARMResourcesDBClientListResourceDocsOptions) (database.ARMResourcesDBClientIterator[api.Controller], error) {
+func (f *fakeControllerCRUD) List(ctx context.Context, opts *database.DBClientListResourceDocsOptions) (database.DBClientIterator[api.Controller], error) {
 	return nil, nil
 }
 
