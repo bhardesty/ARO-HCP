@@ -1,10 +1,14 @@
 {
-	"id": "/subscriptions/6b690bec-0c16-4ecb-8f67-781caf40bba7/resourceGroups/resourceGroupName/providers/Microsoft.RedHatOpenShift/hcpOpenShiftClusters/patch-tags",
+	"id": "/subscriptions/6b690bec-0c16-4ecb-8f67-781caf40bba7/resourceGroups/resourceGroupName/providers/Microsoft.RedHatOpenShift/hcpOpenShiftClusters/patch-identity",
 	"identity": {
-		"type": "UserAssigned"
+		"type": "UserAssigned",
+		"userAssignedIdentities": {
+			"/subscriptions/6b690bec-0c16-4ecb-8f67-781caf40bba7/resourceGroups/bar/providers/Microsoft.ManagedIdentity/userAssignedIdentities/cluster-api-azure": {},
+			"/subscriptions/6b690bec-0c16-4ecb-8f67-781caf40bba7/resourceGroups/bar/providers/Microsoft.ManagedIdentity/userAssignedIdentities/service-managed-identity": {}
+		}
 	},
 	"location": "fake-location",
-	"name": "patch-tags",
+	"name": "patch-identity",
 	"properties": {
 		"api": {
 			"visibility": "Public"
@@ -42,6 +46,14 @@
 		"platform": {
 			"managedResourceGroup": "managed-resource-group-name",
 			"networkSecurityGroupId": "/subscriptions/6b690bec-0c16-4ecb-8f67-781caf40bba7/resourceGroups/bar/providers/Microsoft.Network/networkSecurityGroups/nsg",
+			"operatorsAuthentication": {
+				"userAssignedIdentities": {
+					"controlPlaneOperators": {
+						"some-key": "/subscriptions/6b690bec-0c16-4ecb-8f67-781caf40bba7/resourceGroups/bar/providers/Microsoft.ManagedIdentity/userAssignedIdentities/cluster-api-azure"
+					},
+					"serviceManagedIdentity": "/subscriptions/6b690bec-0c16-4ecb-8f67-781caf40bba7/resourceGroups/bar/providers/Microsoft.ManagedIdentity/userAssignedIdentities/service-managed-identity"
+				}
+			},
 			"outboundType": "LoadBalancer",
 			"subnetId": "/subscriptions/6b690bec-0c16-4ecb-8f67-781caf40bba7/resourceGroups/bar/providers/Microsoft.Network/virtualNetworks/vnet/subnets/subnet"
 		},
@@ -56,9 +68,6 @@
 		"createdByType": "Application",
 		"lastModifiedBy": "Unknown-ARO-HCP-frontend",
 		"lastModifiedByType": "Application"
-	},
-	"tags": {
-		"apple": "adam"
 	},
 	"type": "Microsoft.RedHatOpenShift/hcpOpenShiftClusters"
 }
