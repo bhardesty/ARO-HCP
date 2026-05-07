@@ -40,13 +40,13 @@ type backfillClusterUID struct {
 
 // NewBackfillClusterUIDController creates a controller that populates ClusterUID
 // for existing clusters that don't have it set.
-func NewBackfillClusterUIDController(clock utilsclock.PassiveClock, resourcesDBClient database.ResourcesDBClient, billingClient database.BillingDBClient, clusterLister listers.ClusterLister) controllerutils.ClusterSyncer {
+func NewBackfillClusterUIDController(clock utilsclock.PassiveClock, resourcesDBClient database.ResourcesDBClient, billingDBClient database.BillingDBClient, clusterLister listers.ClusterLister) controllerutils.ClusterSyncer {
 	c := &backfillClusterUID{
 		clock:             clock,
 		cooldownChecker:   controllerutils.NewTimeBasedCooldownChecker(60 * time.Minute),
 		clusterLister:     clusterLister,
 		resourcesDBClient: resourcesDBClient,
-		billingDBClient:   billingClient,
+		billingDBClient:   billingDBClient,
 	}
 
 	return c

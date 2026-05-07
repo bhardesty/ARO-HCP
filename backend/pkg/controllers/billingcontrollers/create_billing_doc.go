@@ -43,7 +43,7 @@ type createBillingDoc struct {
 
 // NewCreateBillingDocController creates a controller that ensures a billing document
 // exists for clusters that have a ClusterUID and are in the Succeeded provisioning state.
-func NewCreateBillingDocController(clock utilsclock.PassiveClock, azureLocation string, resourcesDBClient database.ResourcesDBClient, billingClient database.BillingDBClient, clusterLister listers.ClusterLister, billingLister listers.BillingLister) controllerutils.ClusterSyncer {
+func NewCreateBillingDocController(clock utilsclock.PassiveClock, azureLocation string, resourcesDBClient database.ResourcesDBClient, billingDBClient database.BillingDBClient, clusterLister listers.ClusterLister, billingLister listers.BillingLister) controllerutils.ClusterSyncer {
 	return &createBillingDoc{
 		clock:             clock,
 		cooldownChecker:   controllerutils.NewTimeBasedCooldownChecker(60 * time.Second),
@@ -51,7 +51,7 @@ func NewCreateBillingDocController(clock utilsclock.PassiveClock, azureLocation 
 		clusterLister:     clusterLister,
 		billingLister:     billingLister,
 		resourcesDBClient: resourcesDBClient,
-		billingDBClient:   billingClient,
+		billingDBClient:   billingDBClient,
 	}
 }
 

@@ -35,7 +35,7 @@ type cosmosClusterMatching struct {
 	clock                utilsclock.PassiveClock
 	cooldownChecker      controllerutils.CooldownChecker
 	resourcesDBClient    database.ResourcesDBClient
-	billingClient        database.BillingDBClient
+	billingDBClient        database.BillingDBClient
 	clusterServiceClient ocm.ClusterServiceClientSpec
 }
 
@@ -45,7 +45,7 @@ func NewCosmosClusterMatchingController(clock utilsclock.PassiveClock, resources
 		clock:                clock,
 		cooldownChecker:      controllerutils.NewTimeBasedCooldownChecker(1 * time.Hour),
 		resourcesDBClient:    resourcesDBClient,
-		billingClient:        billingDBClient,
+		billingDBClient:        billingDBClient,
 		clusterServiceClient: clusterServiceClient,
 	}
 
@@ -91,7 +91,7 @@ func (c *cosmosClusterMatching) synchronizeClusters(ctx context.Context, keyObj 
 	)
 
 	// we need to cleanup the cosmosCluster, finalizing billing first
-	if err := controllerutils.MarkBillingDocumentDeleted(ctx, c.billingClient, cosmosCluster.ID, c.clock.Now()); err != nil {
+	if err := controllerutils.MarkBillingDocumentDeleted(ctx, c.billingDBClient, cosmosCluster.ID, c.clock.Now()); err != nil {
 		// We are purposefully ignoring billing document errors while the cardinality of billing documents
 		// is being addressed to ensure that one billing document corresponds with one resourceID/cluster doc
 		logger.Error(err, "failed to mark billing document as deleted",
