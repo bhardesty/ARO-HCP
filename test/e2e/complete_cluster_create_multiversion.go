@@ -110,7 +110,7 @@ var _ = Describe("ARO-HCP", func() {
 				GinkgoLogr,
 				*resourceGroup.Name,
 				clusterParams,
-				framework.ClusterCreationTimeout,
+				45*time.Minute,
 			)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -161,7 +161,7 @@ var _ = Describe("ARO-HCP", func() {
 				*resourceGroup.Name,
 				clusterName,
 				nodePoolParams,
-				framework.NodePoolCreationTimeout,
+				45*time.Minute,
 			)
 			Expect(err).NotTo(HaveOccurred())
 
