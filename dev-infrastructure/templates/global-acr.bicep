@@ -72,6 +72,23 @@ module ocpCaching '../modules/acr/cache.bicep' = {
   ]
 }
 
+module ocpPublicCaching '../modules/acr/public-cache.bicep' = {
+  name: '${ocpAcrName}-public-caching'
+  params: {
+    acrName: ocpAcrName
+    publicRepositoriesToCache: [
+      {
+        ruleName: 'redhat-user-workloads-cpo'
+        sourceRepo: 'quay.io/redhat-user-workloads/crt-redhat-acm-tenant/*'
+        targetRepo: 'redhat-user-workloads/crt-redhat-acm-tenant/*'
+      }
+    ]
+  }
+  dependsOn: [
+    ocpAcr
+  ]
+}
+
 module ocpRedhatProdCaching '../modules/acr/cache.bicep' = {
   name: '${ocpAcrName}-redhat-prod-caching'
   params: {
