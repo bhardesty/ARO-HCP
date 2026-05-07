@@ -90,7 +90,7 @@ All pull requests must follow these standards. Reviewers will check for complian
 - Convert to "Ready for Review" only when all checks pass and self-review is done.
 
 ### 9. Keep Commit History Clean
-- Use `git rebase` or `git squash` to maintain a clean, logical commit history.
+- Use interactive rebase (`git rebase -i`) to squash or fixup commits into a clean, logical history.
 - Each commit message should be meaningful — no "fix typo" or "wip" commits in the final history.
 - The PR will be squashed before merging, unless splitting into multiple commits is explicitly
   needed to separate changes and allow later `git bisect`.
@@ -111,9 +111,9 @@ All pull requests must follow these standards. Reviewers will check for complian
 
 ## AI Skills
 
-This repository includes AI agent skills — structured instructions that coding agents (Claude Code, Crush, Cursor, GitHub Copilot) follow for specific workflows like creating or reviewing PRs.
+This repository includes AI agent skills — structured instructions that coding agents follow for specific workflows like creating or reviewing PRs.
 
-Skills live in `.claude/skills/` as `SKILL.md` files with YAML frontmatter. Most AI coding tools auto-load skills from this directory — no configuration needed. For GitHub Copilot, a condensed version lives in `.github/copilot-instructions.md`.
+Skills live in `.claude/skills/` as `SKILL.md` files with YAML frontmatter. Claude Code, Crush, and Cursor all auto-load skills from this directory — no configuration needed. For GitHub Copilot, a condensed version lives in `.github/copilot-instructions.md`.
 
 ### Adding New Skills
 

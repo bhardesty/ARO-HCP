@@ -7,7 +7,7 @@ description: Use when creating, reviewing, or preparing a pull request — enfor
 
 All PR rules are maintained in a single source of truth. Read and enforce every rule in:
 
-**[CONTRIBUTING.md — Pull Request Standards](../../CONTRIBUTING.md#pull-request-standards)**
+**[CONTRIBUTING.md — Pull Request Standards](../../../CONTRIBUTING.md#pull-request-standards)**
 
 Do not duplicate the rules here. Always read CONTRIBUTING.md before creating or reviewing a PR.
 
