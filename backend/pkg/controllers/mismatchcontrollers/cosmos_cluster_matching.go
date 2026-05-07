@@ -35,7 +35,7 @@ type cosmosClusterMatching struct {
 	clock                utilsclock.PassiveClock
 	cooldownChecker      controllerutils.CooldownChecker
 	resourcesDBClient    database.ResourcesDBClient
-	billingDBClient        database.BillingDBClient
+	billingDBClient      database.BillingDBClient
 	clusterServiceClient ocm.ClusterServiceClientSpec
 }
 
@@ -45,7 +45,7 @@ func NewCosmosClusterMatchingController(clock utilsclock.PassiveClock, resources
 		clock:                clock,
 		cooldownChecker:      controllerutils.NewTimeBasedCooldownChecker(1 * time.Hour),
 		resourcesDBClient:    resourcesDBClient,
-		billingDBClient:        billingDBClient,
+		billingDBClient:      billingDBClient,
 		clusterServiceClient: clusterServiceClient,
 	}
 
