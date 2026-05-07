@@ -117,7 +117,7 @@ var _ = Describe("Service Provider", func() {
 					GinkgoLogr,
 					*resourceGroup.Name,
 					clusterParams,
-					framework.ClusterCreationTimeout,
+					45*time.Minute,
 				)
 				if createErr == nil {
 					return true, nil
