@@ -143,7 +143,7 @@ type resourcesCosmosDBClient struct {
 	resources *azcosmos.ContainerClient
 }
 
-// NewResourcesDBClient instantiates an ResourcesDBClient from a Cosmos DatabaseClient instance
+// NewResourcesDBClient instantiates a ResourcesDBClient from a Cosmos DatabaseClient instance
 // targeting the Frontends async database (Resources container).
 func NewResourcesDBClient(database *azcosmos.DatabaseClient) (ResourcesDBClient, error) {
 	resources, err := database.NewContainer(resourcesContainer)
