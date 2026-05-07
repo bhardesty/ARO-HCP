@@ -77,8 +77,8 @@ func TestControllerNotifications(t *testing.T) {
 			frontendErrCh <- testInfo.Frontend.Run(ctx)
 		}()
 
-		cosmosClient := testInfo.CosmosClient()
-		backendInformers := informers.NewBackendInformersWithRelistDuration(ctx, cosmosClient.ResourcesGlobalListers(), testInfo.BillingClient().BillingGlobalListers(), ptr.To(100*time.Millisecond))
+		cosmosClient := testInfo.ResourcesDBClient()
+		backendInformers := informers.NewBackendInformersWithRelistDuration(ctx, cosmosClient.ResourcesGlobalListers(), testInfo.BillingDBClient().BillingGlobalListers(), ptr.To(100*time.Millisecond))
 
 		_, activeOperationLister := backendInformers.ActiveOperations()
 		testSyncer := newTestController(activeOperationLister)

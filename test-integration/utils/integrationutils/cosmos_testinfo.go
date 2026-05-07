@@ -45,9 +45,9 @@ type CosmosIntegrationTestInfo struct {
 	ArtifactsDir string
 
 	CosmosDatabaseClient *azcosmos.DatabaseClient
-	ResourcesDBClient    database.ResourcesDBClient
-	BillingDBClient      database.BillingDBClient
-	LocksDBClient        database.LocksDBClient
+	resourcesDBClient    database.ResourcesDBClient
+	billingDBClient      database.BillingDBClient
+	locksDBClient        database.LocksDBClient
 	cosmosClient         *azcosmos.Client
 }
 
@@ -62,7 +62,7 @@ func NewCosmosFromTestingEnv(ctx context.Context, t *testing.T) (StorageIntegrat
 	}
 	resourcesDBClient, err := database.NewResourcesDBClient(cosmosDatabaseClient)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create the ARM resources database client: %w", err)
+		return nil, fmt.Errorf("failed to create the resources database client: %w", err)
 	}
 	billingDBClient, err := database.NewBillingDBClient(cosmosDatabaseClient)
 	if err != nil {
@@ -76,9 +76,9 @@ func NewCosmosFromTestingEnv(ctx context.Context, t *testing.T) (StorageIntegrat
 	testInfo := &CosmosIntegrationTestInfo{
 		ArtifactsDir:         path.Join(getArtifactDir(), t.Name()),
 		CosmosDatabaseClient: cosmosDatabaseClient,
-		ResourcesDBClient:    resourcesDBClient,
-		BillingDBClient:      billingDBClient,
-		LocksDBClient:        locksDBClient,
+		resourcesDBClient:    resourcesDBClient,
+		billingDBClient:      billingDBClient,
+		locksDBClient:        locksDBClient,
 		cosmosClient:         cosmosClient,
 	}
 	return testInfo, nil
@@ -114,16 +114,16 @@ func (s *CosmosIntegrationTestInfo) ListAllDocuments(ctx context.Context) ([]*da
 	return NewCosmosContentLoader(s.CosmosResourcesContainer()).ListAllDocuments(ctx)
 }
 
-func (s *CosmosIntegrationTestInfo) CosmosClient() database.ResourcesDBClient {
-	return s.ResourcesDBClient
+func (s *CosmosIntegrationTestInfo) ResourcesDBClient() database.ResourcesDBClient {
+	return s.resourcesDBClient
 }
 
-func (s *CosmosIntegrationTestInfo) BillingClient() database.BillingDBClient {
-	return s.BillingDBClient
+func (s *CosmosIntegrationTestInfo) BillingDBClient() database.BillingDBClient {
+	return s.billingDBClient
 }
 
-func (s *CosmosIntegrationTestInfo) LocksClient() database.LocksDBClient {
-	return s.LocksDBClient
+func (s *CosmosIntegrationTestInfo) LocksDBClient() database.LocksDBClient {
+	return s.locksDBClient
 }
 
 func LoadCosmosContent(ctx context.Context, cosmosContainer *azcosmos.ContainerClient, content []byte) error {

@@ -81,17 +81,17 @@ func TestBackendExposesMetrics(t *testing.T) {
 
 		registry := prometheus.NewRegistry()
 
-		dbClient := storageIntegrationTestInfo.CosmosClient()
-		billingClient := storageIntegrationTestInfo.BillingClient()
+		resourcesDBClient := storageIntegrationTestInfo.ResourcesDBClient()
+		billingDBClient := storageIntegrationTestInfo.BillingDBClient()
 		clusterResourceID := api.Must(azcorearm.ParseResourceID("/subscriptions/sub-1/resourceGroups/rg/providers/Microsoft.RedHatOpenShift/hcpOpenShiftClusters/cluster-1"))
 		now := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 
 		cluster := newMetricsTestCluster(clusterResourceID, arm.ProvisioningStateProvisioning, &now)
-		_, err = dbClient.HCPClusters(clusterResourceID.SubscriptionID, clusterResourceID.ResourceGroupName).Create(ctx, cluster, nil)
+		_, err = resourcesDBClient.HCPClusters(clusterResourceID.SubscriptionID, clusterResourceID.ResourceGroupName).Create(ctx, cluster, nil)
 		require.NoError(t, err)
 
 		operation := newMetricsTestOperation(t, clusterResourceID.SubscriptionID, "op-1", clusterResourceID, api.OperationRequestCreate, arm.ProvisioningStateSucceeded, now, now)
-		_, err = dbClient.Operations(clusterResourceID.SubscriptionID).Create(ctx, operation, nil)
+		_, err = resourcesDBClient.Operations(clusterResourceID.SubscriptionID).Create(ctx, operation, nil)
 		require.NoError(t, err)
 
 		metricsListener := newMetricsTestListener(t)
@@ -101,8 +101,8 @@ func TestBackendExposesMetrics(t *testing.T) {
 			AppVersion:                         "test",
 			AzureLocation:                      "fake-location",
 			LeaderElectionLock:                 newFakeLeaderElectionLock("metrics-test"),
-			ResourcesDBClient:                  dbClient,
-			BillingDBClient:                    billingClient,
+			ResourcesDBClient:                  resourcesDBClient,
+			BillingDBClient:                    billingDBClient,
 			ClustersServiceClient:              clusterServiceMock.MockClusterServiceClient,
 			MetricsRegisterer:                  registry,
 			MetricsGatherer:                    registry,

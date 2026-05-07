@@ -94,7 +94,7 @@ func TestDispatchRequestCredential_SyncrhonizeOperation(t *testing.T) {
 
 			controller := &dispatchRequestCredential{
 				clock:                 utilsclock.RealClock{},
-				cosmosClient:          mockDB,
+				resourcesDBClient:     mockDB,
 				clustersServiceClient: mockCSClient,
 			}
 

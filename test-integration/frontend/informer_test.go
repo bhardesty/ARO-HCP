@@ -148,7 +148,7 @@ func testInformerEvents(t *testing.T, withMock bool) {
 			require.NoError(t, err)
 			defer storageInfo.Cleanup(context.Background())
 
-			dbClient := storageInfo.CosmosClient()
+			dbClient := storageInfo.ResourcesDBClient()
 			tc.seedDB(t, ctx, dbClient)
 
 			informer := tc.createInformer(dbClient)
@@ -210,7 +210,7 @@ func testInformerResync(t *testing.T, withMock bool) {
 			require.NoError(t, err)
 			defer storageInfo.Cleanup(context.Background())
 
-			dbClient := storageInfo.CosmosClient()
+			dbClient := storageInfo.ResourcesDBClient()
 			tc.seedDB(t, ctx, dbClient)
 
 			informer := tc.createInformer(dbClient)

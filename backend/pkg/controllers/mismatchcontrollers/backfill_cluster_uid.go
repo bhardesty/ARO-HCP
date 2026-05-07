@@ -35,7 +35,7 @@ type backfillClusterUID struct {
 	cooldownChecker   controllerutils.CooldownChecker
 	clusterLister     listers.ClusterLister
 	resourcesDBClient database.ResourcesDBClient
-	billingClient     database.BillingDBClient
+	billingDBClient   database.BillingDBClient
 }
 
 // NewBackfillClusterUIDController creates a controller that populates ClusterUID
@@ -46,7 +46,7 @@ func NewBackfillClusterUIDController(clock utilsclock.PassiveClock, resourcesDBC
 		cooldownChecker:   controllerutils.NewTimeBasedCooldownChecker(60 * time.Minute),
 		clusterLister:     clusterLister,
 		resourcesDBClient: resourcesDBClient,
-		billingClient:     billingClient,
+		billingDBClient:   billingClient,
 	}
 
 	return c
@@ -94,7 +94,7 @@ func (c *backfillClusterUID) SyncOnce(ctx context.Context, keyObj controllerutil
 		"clusterResourceID", existingCluster.ID,
 	)
 
-	billingDocs, err := c.billingClient.BillingDocs(existingCluster.ID.SubscriptionID).ListActiveForCluster(ctx, existingCluster.ID)
+	billingDocs, err := c.billingDBClient.BillingDocs(existingCluster.ID.SubscriptionID).ListActiveForCluster(ctx, existingCluster.ID)
 	if err != nil {
 		return utils.TrackError(err)
 	}

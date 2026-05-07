@@ -220,8 +220,8 @@ func TestControlPlaneActiveVersionSyncer_SyncOnce(t *testing.T) {
 			tt.seedDB(t, runCtx, mockDB)
 
 			syncer := &controlPlaneActiveVersionSyncer{
-				cooldownChecker: &alwaysSyncCooldownChecker{},
-				cosmosClient:    mockDB,
+				cooldownChecker:   &alwaysSyncCooldownChecker{},
+				resourcesDBClient: mockDB,
 			}
 
 			err := syncer.SyncOnce(runCtx, testKey)
@@ -260,8 +260,8 @@ func TestControlPlaneActiveVersionSyncer_NoReplaceWhenVersionsUnchanged(t *testi
 	beforeETag := before.CosmosETag
 
 	syncer := &controlPlaneActiveVersionSyncer{
-		cooldownChecker: &alwaysSyncCooldownChecker{},
-		cosmosClient:    mockDB,
+		cooldownChecker:   &alwaysSyncCooldownChecker{},
+		resourcesDBClient: mockDB,
 	}
 	require.NoError(t, syncer.SyncOnce(runCtx, controllerutils.HCPClusterKey{
 		SubscriptionID:    testSubscriptionID,

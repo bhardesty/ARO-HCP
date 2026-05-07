@@ -200,7 +200,7 @@ func TestOrphanedBillingCleanup_SyncOnce(t *testing.T) {
 				billingLister: &listertesting.SliceBillingLister{
 					BillingDocuments: tt.billingDocuments,
 				},
-				billingClient: mockBillingDBClient,
+				billingDBClient: mockBillingDBClient,
 			}
 
 			err := controller.SyncOnce(ctx, "default")

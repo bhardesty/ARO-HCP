@@ -157,7 +157,7 @@ func TestOperationNodePoolDelete_SynchronizeOperation(t *testing.T) {
 			mockCSClient := tt.setupMock(ctrl, fixture)
 
 			controller := &operationNodePoolDelete{
-				cosmosClient:         mockDB,
+				resourcesDBClient:    mockDB,
 				clusterServiceClient: mockCSClient,
 				notificationClient:   nil,
 			}

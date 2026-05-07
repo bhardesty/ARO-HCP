@@ -87,9 +87,8 @@ func (iter *queryResourcesIterator[InternalAPIType, CosmosAPIType]) Items(ctx co
 }
 
 // GetContinuationToken returns a continuation token that can be used to obtain
-// the next page of results. It is only non-empty for iterators from
-// newQueryResourcesSinglePageIterator: after reading the first page, if Cosmos returns
-// a continuation token, it is stored here so callers can pass it into the next query.
+// the next page of results. This is only set when the iterator was created with
+// newQueryResourcesSinglePageIterator and additional items are available.
 func (iter queryResourcesIterator[InternalAPIType, CosmosAPIType]) GetContinuationToken() string {
 	return iter.continuationToken
 }

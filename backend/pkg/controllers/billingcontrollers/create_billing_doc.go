@@ -38,7 +38,7 @@ type createBillingDoc struct {
 	clusterLister     listers.ClusterLister
 	billingLister     listers.BillingLister
 	resourcesDBClient database.ResourcesDBClient
-	billingClient     database.BillingDBClient
+	billingDBClient   database.BillingDBClient
 }
 
 // NewCreateBillingDocController creates a controller that ensures a billing document
@@ -51,7 +51,7 @@ func NewCreateBillingDocController(clock utilsclock.PassiveClock, azureLocation 
 		clusterLister:     clusterLister,
 		billingLister:     billingLister,
 		resourcesDBClient: resourcesDBClient,
-		billingClient:     billingClient,
+		billingDBClient:   billingClient,
 	}
 }
 
@@ -108,7 +108,7 @@ func (c *createBillingDoc) SyncOnce(ctx context.Context, keyObj controllerutils.
 		"clusterUID", existingCluster.ServiceProviderProperties.ClusterUID,
 	)
 
-	billingDocCRUD := c.billingClient.BillingDocs(existingCluster.ID.SubscriptionID)
+	billingDocCRUD := c.billingDBClient.BillingDocs(existingCluster.ID.SubscriptionID)
 	clusterUID := existingCluster.ServiceProviderProperties.ClusterUID
 
 	// Try cache first

@@ -39,8 +39,8 @@ import (
 func TestReadAndPersistClusterScopedMaestroReadonlyBundlesContentSyncer_SyncOnce_ClusterNotFound(t *testing.T) {
 	mockResourcesDBClient := databasetesting.NewMockResourcesDBClient()
 	syncer := &readAndPersistClusterScopedMaestroReadonlyBundlesContentSyncer{
-		cooldownChecker: &alwaysSyncCooldownChecker{},
-		cosmosClient:    mockResourcesDBClient,
+		cooldownChecker:   &alwaysSyncCooldownChecker{},
+		resourcesDBClient: mockResourcesDBClient,
 	}
 
 	key := controllerutils.HCPClusterKey{
@@ -87,8 +87,8 @@ func TestReadAndPersistClusterScopedMaestroReadonlyBundlesContentSyncer_SyncOnce
 	}
 
 	syncer := &readAndPersistClusterScopedMaestroReadonlyBundlesContentSyncer{
-		cooldownChecker: &alwaysSyncCooldownChecker{},
-		cosmosClient:    mockResourcesDBClient,
+		cooldownChecker:   &alwaysSyncCooldownChecker{},
+		resourcesDBClient: mockResourcesDBClient,
 	}
 
 	err = syncer.SyncOnce(ctx, key)
@@ -100,8 +100,8 @@ func TestReadAndPersistClusterScopedMaestroReadonlyBundlesContentSyncer_SyncOnce
 	ctx := context.Background()
 	mockResourcesDBClient := databasetesting.NewMockResourcesDBClient()
 	syncer := &readAndPersistClusterScopedMaestroReadonlyBundlesContentSyncer{
-		cooldownChecker: &alwaysSyncCooldownChecker{},
-		cosmosClient:    mockResourcesDBClient,
+		cooldownChecker:   &alwaysSyncCooldownChecker{},
+		resourcesDBClient: mockResourcesDBClient,
 	}
 
 	key := controllerutils.HCPClusterKey{
@@ -143,7 +143,7 @@ func TestReadAndPersistClusterScopedMaestroReadonlyBundlesContentSyncer_SyncOnce
 
 	syncer := &readAndPersistClusterScopedMaestroReadonlyBundlesContentSyncer{
 		cooldownChecker:      &alwaysSyncCooldownChecker{},
-		cosmosClient:         mockResourcesDBClient,
+		resourcesDBClient:    mockResourcesDBClient,
 		clusterServiceClient: mockClusterService,
 	}
 
@@ -198,7 +198,7 @@ func TestReadAndPersistClusterScopedMaestroReadonlyBundlesContentSyncer_SyncOnce
 
 	syncer := &readAndPersistClusterScopedMaestroReadonlyBundlesContentSyncer{
 		cooldownChecker:                    &alwaysSyncCooldownChecker{},
-		cosmosClient:                       mockResourcesDBClient,
+		resourcesDBClient:                  mockResourcesDBClient,
 		clusterServiceClient:               mockClusterService,
 		maestroClientBuilder:               mockMaestroBuilder,
 		maestroSourceEnvironmentIdentifier: "test-env",

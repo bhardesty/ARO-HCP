@@ -28,7 +28,6 @@ import (
 	azcorearm "github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos"
 
-	arohcpv1alpha1 "github.com/openshift-online/ocm-sdk-go/arohcp/v1alpha1"
 	ocmerrors "github.com/openshift-online/ocm-sdk-go/errors"
 
 	"github.com/Azure/ARO-HCP/internal/api"
@@ -149,11 +148,6 @@ func (f *Frontend) CreateOrUpdateExternalAuth(writer http.ResponseWriter, reques
 
 	updating := oldInternalExternalAuth != nil
 	if updating {
-		// re-write oldInternalCluster for as long as cluster-service needs to be consulted for pre-existing state.
-		oldInternalExternalAuth, err = f.readInternalExternalAuthFromClusterService(ctx, oldInternalExternalAuth)
-		if err != nil {
-			return utils.TrackError(err)
-		}
 		if err := checkForProvisioningStateConflict(ctx, f.resourcesDBClient, database.OperationRequestUpdate, oldInternalExternalAuth.ID, oldInternalExternalAuth.Properties.ProvisioningState); err != nil {
 			return utils.TrackError(err)
 		}
@@ -654,22 +648,6 @@ func (f *Frontend) addDeleteExternalAuthToTransaction(ctx context.Context, write
 	return nil
 }
 
-// the necessary conversions for the API version of the request.
-// TODO this overwrite will transformed into a "set" function as we transition fields to ownership in cosmos
-func mergeToInternalExternalAuth(csExternalAuth *arohcpv1alpha1.ExternalAuth, internalObj *api.HCPOpenShiftClusterExternalAuth) (*api.HCPOpenShiftClusterExternalAuth, error) {
-	mergedExternalAuth, err := ocm.ConvertCStoExternalAuth(internalObj.ID, csExternalAuth)
-	if err != nil {
-		return nil, utils.TrackError(err)
-	}
-
-	// this does not use conversion.CopyReadOnly* because some ServiceProvider properties come from cluster-service-only or live reads
-	mergedExternalAuth.SystemData = internalObj.SystemData.DeepCopy()
-	mergedExternalAuth.Properties.ProvisioningState = internalObj.Properties.ProvisioningState
-	mergedExternalAuth.ServiceProviderProperties = *internalObj.ServiceProviderProperties.DeepCopy()
-
-	return mergedExternalAuth, nil
-}
-
 func (f *Frontend) getInternalExternalAuthFromStorage(ctx context.Context, resourceID *azcorearm.ResourceID) (*api.HCPOpenShiftClusterExternalAuth, error) {
 	internalExternalAuth, err := f.resourcesDBClient.HCPClusters(resourceID.SubscriptionID, resourceID.ResourceGroupName).ExternalAuth(resourceID.Parent.Name).Get(ctx, resourceID.Name)
 	if database.IsNotFoundError(err) {
@@ -698,23 +676,5 @@ func (f *Frontend) getInternalExternalAuthFromStorage(ctx context.Context, resou
 	}
 	internalExternalAuth.ID = resourceID
 
-	return f.readInternalExternalAuthFromClusterService(ctx, internalExternalAuth)
-
-}
-
-// readInternalExternalAuthFromClusterService takes an internal ExternalAuth read from cosmos, retrieves the corresponding cluster-service data,
-// merges the states together, and returns the internal representation.
-func (f *Frontend) readInternalExternalAuthFromClusterService(ctx context.Context, oldInternalExternalAuth *api.HCPOpenShiftClusterExternalAuth) (*api.HCPOpenShiftClusterExternalAuth, error) {
-	oldClusterServiceExternalAuth, err := f.clusterServiceClient.GetExternalAuth(ctx, oldInternalExternalAuth.ServiceProviderProperties.ClusterServiceID)
-	if err != nil {
-		return nil, utils.TrackError(err)
-	}
-
-	// TODO this overwrite will transformed into a "set" function as we transition fields to ownership in cosmos
-	oldInternalExternalAuth, err = mergeToInternalExternalAuth(oldClusterServiceExternalAuth, oldInternalExternalAuth)
-	if err != nil {
-		return nil, utils.TrackError(err)
-	}
-
-	return oldInternalExternalAuth, nil
+	return internalExternalAuth, nil
 }

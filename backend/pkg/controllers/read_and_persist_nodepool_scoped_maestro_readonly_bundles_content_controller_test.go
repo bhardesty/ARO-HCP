@@ -68,8 +68,8 @@ func (e *errorInjectingSPNPCRUD) Get(ctx context.Context, resourceID string) (*a
 func TestReadAndPersistNodePoolScopedMaestroReadonlyBundlesContentSyncer_SyncOnce_NodePoolNotFound(t *testing.T) {
 	mockResourcesDBClient := databasetesting.NewMockResourcesDBClient()
 	syncer := &readAndPersistNodePoolScopedMaestroReadonlyBundlesContentSyncer{
-		cooldownChecker: &alwaysSyncCooldownChecker{},
-		cosmosClient:    mockResourcesDBClient,
+		cooldownChecker:   &alwaysSyncCooldownChecker{},
+		resourcesDBClient: mockResourcesDBClient,
 	}
 
 	key := controllerutils.HCPNodePoolKey{
@@ -93,7 +93,7 @@ func TestReadAndPersistNodePoolScopedMaestroReadonlyBundlesContentSyncer_SyncOnc
 
 	syncer := &readAndPersistNodePoolScopedMaestroReadonlyBundlesContentSyncer{
 		cooldownChecker:      &alwaysSyncCooldownChecker{},
-		cosmosClient:         mockResourcesDBClient,
+		resourcesDBClient:    mockResourcesDBClient,
 		clusterServiceClient: mockClusterService,
 	}
 
@@ -177,8 +177,8 @@ func TestReadAndPersistNodePoolScopedMaestroReadonlyBundlesContentSyncer_SyncOnc
 	}
 
 	syncer := &readAndPersistNodePoolScopedMaestroReadonlyBundlesContentSyncer{
-		cooldownChecker: &alwaysSyncCooldownChecker{},
-		cosmosClient:    mockResourcesDBClient,
+		cooldownChecker:   &alwaysSyncCooldownChecker{},
+		resourcesDBClient: mockResourcesDBClient,
 	}
 
 	err = syncer.SyncOnce(ctx, key)
@@ -190,8 +190,8 @@ func TestReadAndPersistNodePoolScopedMaestroReadonlyBundlesContentSyncer_SyncOnc
 	ctx := context.Background()
 	mockResourcesDBClient := databasetesting.NewMockResourcesDBClient()
 	syncer := &readAndPersistNodePoolScopedMaestroReadonlyBundlesContentSyncer{
-		cooldownChecker: &alwaysSyncCooldownChecker{},
-		cosmosClient:    mockResourcesDBClient,
+		cooldownChecker:   &alwaysSyncCooldownChecker{},
+		resourcesDBClient: mockResourcesDBClient,
 	}
 
 	key := controllerutils.HCPNodePoolKey{
@@ -240,7 +240,7 @@ func TestReadAndPersistNodePoolScopedMaestroReadonlyBundlesContentSyncer_SyncOnc
 
 	syncer := &readAndPersistNodePoolScopedMaestroReadonlyBundlesContentSyncer{
 		cooldownChecker:      &alwaysSyncCooldownChecker{},
-		cosmosClient:         mockResourcesDBClient,
+		resourcesDBClient:    mockResourcesDBClient,
 		clusterServiceClient: mockClusterService,
 	}
 
@@ -302,7 +302,7 @@ func TestReadAndPersistNodePoolScopedMaestroReadonlyBundlesContentSyncer_SyncOnc
 
 	syncer := &readAndPersistNodePoolScopedMaestroReadonlyBundlesContentSyncer{
 		cooldownChecker:                    &alwaysSyncCooldownChecker{},
-		cosmosClient:                       mockResourcesDBClient,
+		resourcesDBClient:                  mockResourcesDBClient,
 		clusterServiceClient:               mockClusterService,
 		maestroClientBuilder:               mockMaestroBuilder,
 		maestroSourceEnvironmentIdentifier: "test-env",

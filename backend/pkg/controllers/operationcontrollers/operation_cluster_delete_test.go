@@ -164,18 +164,18 @@ func TestOperationClusterDelete_SynchronizeOperation(t *testing.T) {
 			billingDoc.Location = testAzureLocation
 			billingDoc.TenantID = testTenantID
 
-			mockDB, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, []any{cluster, operation})
+			mockResourcesDBClient, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, []any{cluster, operation})
 			require.NoError(t, err)
-			mockBilling := databasetesting.NewMockBillingDBClient()
-			err = mockBilling.BillingDocs(fixture.clusterResourceID.SubscriptionID).Create(ctx, billingDoc)
+			mockBillingDBClient := databasetesting.NewMockBillingDBClient()
+			err = mockBillingDBClient.BillingDocs(fixture.clusterResourceID.SubscriptionID).Create(ctx, billingDoc)
 			require.NoError(t, err)
 
 			mockCSClient := tt.setupMock(ctrl, fixture)
 
 			controller := &operationClusterDelete{
 				clock:                clocktesting.NewFakePassiveClock(fixedTime),
-				cosmosClient:         mockDB,
-				billingClient:        mockBilling,
+				resourcesDBClient:    mockResourcesDBClient,
+				billingDBClient:      mockBillingDBClient,
 				clusterServiceClient: mockCSClient,
 				notificationClient:   nil,
 			}
@@ -189,7 +189,7 @@ func TestOperationClusterDelete_SynchronizeOperation(t *testing.T) {
 			}
 
 			if tt.verify != nil {
-				tt.verify(t, ctx, mockDB, fixture)
+				tt.verify(t, ctx, mockResourcesDBClient, fixture)
 			}
 		})
 	}

@@ -34,24 +34,24 @@ import (
 type cosmosClusterMatching struct {
 	clock                utilsclock.PassiveClock
 	cooldownChecker      controllerutils.CooldownChecker
-	cosmosClient         database.ResourcesDBClient
+	resourcesDBClient    database.ResourcesDBClient
 	billingClient        database.BillingDBClient
 	clusterServiceClient ocm.ClusterServiceClientSpec
 }
 
 // NewCosmosClusterMatchingController periodically looks for mismatched cluster-service and cosmos externalauths
-func NewCosmosClusterMatchingController(clock utilsclock.PassiveClock, cosmosClient database.ResourcesDBClient, billingClient database.BillingDBClient, clusterServiceClient ocm.ClusterServiceClientSpec, informers informers.BackendInformers) controllerutils.Controller {
+func NewCosmosClusterMatchingController(clock utilsclock.PassiveClock, resourcesDBClient database.ResourcesDBClient, billingDBClient database.BillingDBClient, clusterServiceClient ocm.ClusterServiceClientSpec, informers informers.BackendInformers) controllerutils.Controller {
 	syncer := &cosmosClusterMatching{
 		clock:                clock,
 		cooldownChecker:      controllerutils.NewTimeBasedCooldownChecker(1 * time.Hour),
-		cosmosClient:         cosmosClient,
-		billingClient:        billingClient,
+		resourcesDBClient:    resourcesDBClient,
+		billingClient:        billingDBClient,
 		clusterServiceClient: clusterServiceClient,
 	}
 
 	controller := controllerutils.NewClusterWatchingController(
 		"CosmosMatchingClusters",
-		cosmosClient,
+		resourcesDBClient,
 		informers,
 		60*time.Minute,
 		syncer,
@@ -63,7 +63,7 @@ func NewCosmosClusterMatchingController(clock utilsclock.PassiveClock, cosmosCli
 func (c *cosmosClusterMatching) synchronizeClusters(ctx context.Context, keyObj controllerutils.HCPClusterKey) error {
 	logger := utils.LoggerFromContext(ctx)
 
-	cosmosCluster, err := c.cosmosClient.HCPClusters(keyObj.SubscriptionID, keyObj.ResourceGroupName).Get(ctx, keyObj.HCPClusterName)
+	cosmosCluster, err := c.resourcesDBClient.HCPClusters(keyObj.SubscriptionID, keyObj.ResourceGroupName).Get(ctx, keyObj.HCPClusterName)
 	if database.IsNotFoundError(err) {
 		return nil // no work to do
 	}
@@ -100,7 +100,7 @@ func (c *cosmosClusterMatching) synchronizeClusters(ctx context.Context, keyObj 
 		)
 	}
 
-	if err := controllerutils.DeleteRecursively(ctx, c.cosmosClient, cosmosCluster.ID); err != nil {
+	if err := controllerutils.DeleteRecursively(ctx, c.resourcesDBClient, cosmosCluster.ID); err != nil {
 		return utils.TrackError(err)
 	}
 

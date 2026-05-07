@@ -312,10 +312,10 @@ func getOrCreateControllerDocument(
 // On create conflict (HTTP 409), it re-reads and returns the existing document (same pattern as
 // database.GetOrCreateServiceProviderCluster).
 func GetOrCreateController(
-	ctx context.Context, dbClient database.ResourcesDBClient, parentResourceID *azcorearm.ResourceID,
+	ctx context.Context, resourcesDBClient database.ResourcesDBClient, parentResourceID *azcorearm.ResourceID,
 	controllerName string, initialControllerFn InitialControllerFunc,
 ) (*api.Controller, error) {
-	controllerCRUD, err := controllerCRUDForParent(dbClient, parentResourceID)
+	controllerCRUD, err := controllerCRUDForParent(resourcesDBClient, parentResourceID)
 	if err != nil {
 		return nil, utils.TrackError(err)
 	}

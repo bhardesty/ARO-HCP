@@ -156,10 +156,10 @@ func TestCSStateDump_SyncOnce(t *testing.T) {
 			mockCSClient := ocm.NewMockClusterServiceClientSpec(ctrl)
 
 			syncer := &csStateDump{
-				cooldownChecker: &alwaysSyncCooldownChecker{},
-				cosmosClient:    mockResourcesDBClient,
-				csClient:        mockCSClient,
-				nextDumpChecker: &alwaysSyncCooldownChecker{},
+				cooldownChecker:   &alwaysSyncCooldownChecker{},
+				resourcesDBClient: mockResourcesDBClient,
+				csClient:          mockCSClient,
+				nextDumpChecker:   &alwaysSyncCooldownChecker{},
 			}
 
 			key := controllerutils.HCPClusterKey{

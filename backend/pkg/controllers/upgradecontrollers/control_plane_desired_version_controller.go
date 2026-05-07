@@ -53,7 +53,7 @@ const controlPlaneDesiredVersionControllerName = "ControlPlaneDesiredVersion"
 type controlPlaneDesiredVersionSyncer struct {
 	cooldownChecker                       controllerutils.CooldownChecker
 	clusterManagementClusterContentLister listers.ManagementClusterContentLister
-	cosmosClient                          database.ResourcesDBClient
+	resourcesDBClient                     database.ResourcesDBClient
 	clusterServiceClient                  ocm.ClusterServiceClientSpec
 	subscriptionLister                    listers.SubscriptionLister
 
@@ -66,7 +66,7 @@ var _ controllerutils.ClusterSyncer = (*controlPlaneDesiredVersionSyncer)(nil)
 // control plane version. It periodically checks each cluster and sets the desired version
 // based on the OCPVersion logic documented in the ServiceProviderCluster type.
 func NewControlPlaneDesiredVersionController(
-	cosmosClient database.ResourcesDBClient,
+	resourcesDBClient database.ResourcesDBClient,
 	clusterServiceClient ocm.ClusterServiceClientSpec,
 	activeOperationLister listers.ActiveOperationLister,
 	informers informers.BackendInformers,
@@ -76,15 +76,15 @@ func NewControlPlaneDesiredVersionController(
 	syncer := &controlPlaneDesiredVersionSyncer{
 		cooldownChecker:                       controllerutils.DefaultActiveOperationPrioritizingCooldown(activeOperationLister),
 		clusterManagementClusterContentLister: clusterManagementClusterContentLister,
-		cosmosClient:                          cosmosClient,
 		cincinnatiClientCache:                 cincinnati.NewClientCache(),
+		resourcesDBClient:                     resourcesDBClient,
 		clusterServiceClient:                  clusterServiceClient,
 		subscriptionLister:                    subscriptionLister,
 	}
 
 	controller := controllerutils.NewClusterWatchingController(
 		controlPlaneDesiredVersionControllerName,
-		cosmosClient,
+		resourcesDBClient,
 		informers,
 		5*time.Minute, // Check for upgrades every 5 minutes
 		syncer,
@@ -107,7 +107,7 @@ func (c *controlPlaneDesiredVersionSyncer) CooldownChecker() controllerutils.Coo
 //     - Update the DesiredVersion field
 //  5. Save the updated service provider cluster state
 func (c *controlPlaneDesiredVersionSyncer) SyncOnce(ctx context.Context, key controllerutils.HCPClusterKey) error {
-	existingCluster, err := c.cosmosClient.HCPClusters(key.SubscriptionID, key.ResourceGroupName).Get(ctx, key.HCPClusterName)
+	existingCluster, err := c.resourcesDBClient.HCPClusters(key.SubscriptionID, key.ResourceGroupName).Get(ctx, key.HCPClusterName)
 	if database.IsNotFoundError(err) {
 		return nil // cluster doesn't exist, no work to do
 	}
@@ -120,7 +120,7 @@ func (c *controlPlaneDesiredVersionSyncer) SyncOnce(ctx context.Context, key con
 		return nil
 	}
 
-	existingServiceProviderCluster, err := database.GetOrCreateServiceProviderCluster(ctx, c.cosmosClient, key.GetResourceID())
+	existingServiceProviderCluster, err := database.GetOrCreateServiceProviderCluster(ctx, c.resourcesDBClient, key.GetResourceID())
 	if err != nil {
 		return utils.TrackError(fmt.Errorf("failed to get or create ServiceProviderCluster: %w", err))
 	}
@@ -158,7 +158,7 @@ func (c *controlPlaneDesiredVersionSyncer) SyncOnce(ctx context.Context, key con
 		persistIntentFailed := cincinnati.IsCincinnatiVersionNotFoundError(err) || !errors.As(err, &cincinnatiErr)
 		if persistIntentFailed {
 			logger.Error(err, "desired version resolution failed, persisting IntentFailed condition")
-			controllerCRUD := c.cosmosClient.HCPClusters(key.SubscriptionID, key.ResourceGroupName).Controllers(key.HCPClusterName)
+			controllerCRUD := c.resourcesDBClient.HCPClusters(key.SubscriptionID, key.ResourceGroupName).Controllers(key.HCPClusterName)
 			if writeErr := controllerutils.WriteController(ctx, controllerCRUD, controlPlaneDesiredVersionControllerName, key.InitialController,
 				func(ctrl *api.Controller) {
 					apimeta.SetStatusCondition(&ctrl.Status.Conditions, metav1.Condition{
@@ -187,14 +187,14 @@ func (c *controlPlaneDesiredVersionSyncer) SyncOnce(ctx context.Context, key con
 	// update the ServiceProviderCluster first and only afterwards
 	// clear the IntentFailed condition
 	if desiredVersionUpdated {
-		serviceProviderClustersCosmosClient := c.cosmosClient.ServiceProviderClusters(key.SubscriptionID, key.ResourceGroupName, key.HCPClusterName)
+		serviceProviderClustersCosmosClient := c.resourcesDBClient.ServiceProviderClusters(key.SubscriptionID, key.ResourceGroupName, key.HCPClusterName)
 		_, err := serviceProviderClustersCosmosClient.Replace(ctx, existingServiceProviderCluster, nil)
 		if err != nil {
 			return utils.TrackError(fmt.Errorf("failed to replace ServiceProviderCluster: %w", err))
 		}
 	}
 
-	controllerCRUD := c.cosmosClient.HCPClusters(key.SubscriptionID, key.ResourceGroupName).Controllers(key.HCPClusterName)
+	controllerCRUD := c.resourcesDBClient.HCPClusters(key.SubscriptionID, key.ResourceGroupName).Controllers(key.HCPClusterName)
 	if err = controllerutils.WriteController(ctx, controllerCRUD, controlPlaneDesiredVersionControllerName, key.InitialController,
 		func(ctrl *api.Controller) {
 			apimeta.SetStatusCondition(&ctrl.Status.Conditions, metav1.Condition{
@@ -284,7 +284,7 @@ func (c *controlPlaneDesiredVersionSyncer) desiredControlPlaneZVersion(ctx conte
 		if err := validation.OpenshiftVersionAtMostOneMinorSkew(actualLatestMinorVersion.String(), desiredMinorVersion.String()); err != nil {
 			return nil, utils.TrackError(err)
 		}
-		if err := admission.ValidateClusterNodePoolsMinorVersionSkew(ctx, c.cosmosClient, clusterResourceID, desiredMinorVersion); err != nil {
+		if err := admission.ValidateClusterNodePoolsMinorVersionSkew(ctx, c.resourcesDBClient, clusterResourceID, desiredMinorVersion); err != nil {
 			return nil, utils.TrackError(err)
 		}
 	}

@@ -442,7 +442,7 @@ func TestNodePoolVersionSyncer_SyncOnce(t *testing.T) {
 			syncer := &nodePoolVersionSyncer{
 				cooldownChecker:                       &alwaysSyncCooldownChecker{},
 				clusterManagementClusterContentLister: contentLister,
-				cosmosClient:                          mockDB,
+				resourcesDBClient:                     mockDB,
 				clusterServiceClient:                  mockCS,
 				cincinnatiClientCache:                 mockClientCache,
 			}
@@ -795,7 +795,7 @@ func TestNodePoolVersionSyncer_SyncOnce_SkipMinorVersionFails(t *testing.T) {
 	syncer := &nodePoolVersionSyncer{
 		cooldownChecker:                       &alwaysSyncCooldownChecker{},
 		clusterManagementClusterContentLister: newValidHostedClusterContentLister(t),
-		cosmosClient:                          mockDB,
+		resourcesDBClient:                     mockDB,
 		clusterServiceClient:                  mockCS,
 		cincinnatiClientCache:                 mockClientCache,
 	}
@@ -842,7 +842,7 @@ func TestNodePoolVersionSyncer_SyncOnce_DesiredExceedsControlPlaneFails(t *testi
 	syncer := &nodePoolVersionSyncer{
 		cooldownChecker:                       &alwaysSyncCooldownChecker{},
 		clusterManagementClusterContentLister: newValidHostedClusterContentLister(t),
-		cosmosClient:                          mockDB,
+		resourcesDBClient:                     mockDB,
 		clusterServiceClient:                  mockCS,
 		cincinnatiClientCache:                 mockClientCache,
 	}
@@ -899,7 +899,7 @@ func TestNodePoolVersionSyncer_SyncOnce_NoUpgradePathInCincinnatiFails(t *testin
 	syncer := &nodePoolVersionSyncer{
 		cooldownChecker:                       &alwaysSyncCooldownChecker{},
 		clusterManagementClusterContentLister: newValidHostedClusterContentLister(t),
-		cosmosClient:                          mockDB,
+		resourcesDBClient:                     mockDB,
 		clusterServiceClient:                  mockCS,
 		cincinnatiClientCache:                 mockClientCache,
 	}
@@ -946,7 +946,7 @@ func TestNodePoolVersionSyncer_SyncOnce_DowngradeFails(t *testing.T) {
 	syncer := &nodePoolVersionSyncer{
 		cooldownChecker:                       &alwaysSyncCooldownChecker{},
 		clusterManagementClusterContentLister: newValidHostedClusterContentLister(t),
-		cosmosClient:                          mockDB,
+		resourcesDBClient:                     mockDB,
 		clusterServiceClient:                  mockCS,
 		cincinnatiClientCache:                 mockClientCache,
 	}
@@ -1007,7 +1007,7 @@ func TestNodePoolVersionSyncer_SyncOnce_UpgradePathExistsSucceeds(t *testing.T) 
 	syncer := &nodePoolVersionSyncer{
 		cooldownChecker:                       &alwaysSyncCooldownChecker{},
 		clusterManagementClusterContentLister: newValidHostedClusterContentLister(t),
-		cosmosClient:                          mockDB,
+		resourcesDBClient:                     mockDB,
 		clusterServiceClient:                  mockCS,
 		cincinnatiClientCache:                 mockClientCache,
 	}
@@ -1070,7 +1070,7 @@ func TestNodePoolVersionSyncer_SyncOnce_DesiredVersionUnchangedOnFailure_Changed
 	syncer := &nodePoolVersionSyncer{
 		cooldownChecker:                       &alwaysSyncCooldownChecker{},
 		clusterManagementClusterContentLister: newValidHostedClusterContentLister(t),
-		cosmosClient:                          mockDB,
+		resourcesDBClient:                     mockDB,
 		clusterServiceClient:                  mockCS,
 		cincinnatiClientCache:                 mockClientCache,
 	}

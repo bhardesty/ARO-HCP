@@ -29,7 +29,7 @@ type MockCosmosIntegrationTestInfo struct {
 
 	mockResourcesDBClient *databasetesting.MockResourcesDBClient
 	mockBillingDBClient   *databasetesting.MockBillingDBClient
-	MockLocksDBClient     *databasetesting.MockLocksDBClient
+	mockLocksDBClient     *databasetesting.MockLocksDBClient
 }
 
 func NewMockCosmosFromTestingEnv(ctx context.Context, t *testing.T) (StorageIntegrationTestInfo, error) {
@@ -41,21 +41,21 @@ func NewMockCosmosFromTestingEnv(ctx context.Context, t *testing.T) (StorageInte
 		ArtifactsDir:          path.Join(getArtifactDir(), t.Name()),
 		mockResourcesDBClient: mockResourcesDBClient,
 		mockBillingDBClient:   mockBillingDBClient,
-		MockLocksDBClient:     mockLocksDBClient,
+		mockLocksDBClient:     mockLocksDBClient,
 	}
 	return testInfo, nil
 }
 
-func (m *MockCosmosIntegrationTestInfo) CosmosClient() database.ResourcesDBClient {
+func (m *MockCosmosIntegrationTestInfo) ResourcesDBClient() database.ResourcesDBClient {
 	return m.mockResourcesDBClient
 }
 
-func (m *MockCosmosIntegrationTestInfo) BillingClient() database.BillingDBClient {
+func (m *MockCosmosIntegrationTestInfo) BillingDBClient() database.BillingDBClient {
 	return m.mockBillingDBClient
 }
 
-func (m *MockCosmosIntegrationTestInfo) LocksClient() database.LocksDBClient {
-	return m.MockLocksDBClient
+func (m *MockCosmosIntegrationTestInfo) LocksDBClient() database.LocksDBClient {
+	return m.mockLocksDBClient
 }
 
 func (m *MockCosmosIntegrationTestInfo) LoadContent(ctx context.Context, content []byte) error {

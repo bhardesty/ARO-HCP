@@ -136,7 +136,7 @@ func TestOperationNodePoolUpdate_SynchronizeOperation(t *testing.T) {
 				Return(nodePoolStatus, nil)
 
 			controller := &operationNodePoolUpdate{
-				cosmosClient:         mockDB,
+				resourcesDBClient:    mockDB,
 				clusterServiceClient: mockCSClient,
 				notificationClient:   nil,
 			}

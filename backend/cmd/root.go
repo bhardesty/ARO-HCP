@@ -384,7 +384,7 @@ func (f *BackendRootCmdFlags) ToBackendOptions(ctx context.Context, cmd *cobra.C
 		*azureConfig.CloudEnvironment.AZCoreClientOptions(),
 	)
 	if err != nil {
-		return nil, err
+		return nil, utils.TrackError(err)
 	}
 
 	clustersServiceClient, err := app.NewClustersServiceClient(ctx, f.ClustersServiceURL, f.ClustersServiceTLSInsecure)

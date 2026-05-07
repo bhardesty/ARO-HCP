@@ -512,7 +512,7 @@ func TestCreateClusterScopedMaestroReadonlyBundlesSyncer_SyncOnce_ClusterNotFoun
 	mockResourcesDBClient := databasetesting.NewMockResourcesDBClient()
 	syncer := &createClusterScopedMaestroReadonlyBundlesSyncer{
 		cooldownChecker:                      &alwaysSyncCooldownChecker{},
-		cosmosClient:                         mockResourcesDBClient,
+		resourcesDBClient:                    mockResourcesDBClient,
 		maestroSourceEnvironmentIdentifier:   "test-env",
 		maestroAPIMaestroBundleNameGenerator: maestro.NewMaestroAPIMaestroBundleNameGenerator(),
 	}
@@ -565,7 +565,7 @@ func TestCreateClusterScopedMaestroReadonlyBundlesSyncer_SyncOnce_GetServiceProv
 
 	syncer := &createClusterScopedMaestroReadonlyBundlesSyncer{
 		cooldownChecker:                      &alwaysSyncCooldownChecker{},
-		cosmosClient:                         mockResourcesDBClient,
+		resourcesDBClient:                    mockResourcesDBClient,
 		maestroSourceEnvironmentIdentifier:   "test-env",
 		maestroAPIMaestroBundleNameGenerator: maestro.NewMaestroAPIMaestroBundleNameGenerator(),
 	}
@@ -580,7 +580,7 @@ func TestCreateClusterScopedMaestroReadonlyBundlesSyncer_SyncOnce_AllBundlesAlre
 	mockResourcesDBClient := databasetesting.NewMockResourcesDBClient()
 	syncer := &createClusterScopedMaestroReadonlyBundlesSyncer{
 		cooldownChecker:                      &alwaysSyncCooldownChecker{},
-		cosmosClient:                         mockResourcesDBClient,
+		resourcesDBClient:                    mockResourcesDBClient,
 		maestroSourceEnvironmentIdentifier:   "test-env",
 		maestroAPIMaestroBundleNameGenerator: maestro.NewMaestroAPIMaestroBundleNameGenerator(),
 	}
@@ -647,7 +647,7 @@ func TestCreateClusterScopedMaestroReadonlyBundlesSyncer_SyncOnce_SyncLoopExecut
 
 	syncer := &createClusterScopedMaestroReadonlyBundlesSyncer{
 		cooldownChecker:                      &alwaysSyncCooldownChecker{},
-		cosmosClient:                         mockResourcesDBClient,
+		resourcesDBClient:                    mockResourcesDBClient,
 		clusterServiceClient:                 mockClusterService,
 		maestroClientBuilder:                 mockMaestroBuilder,
 		maestroSourceEnvironmentIdentifier:   "test-env",
@@ -762,7 +762,7 @@ func TestCreateClusterScopedMaestroReadonlyBundlesSyncer_SyncOnce_ProcessesParti
 
 	syncer := &createClusterScopedMaestroReadonlyBundlesSyncer{
 		cooldownChecker:                      &alwaysSyncCooldownChecker{},
-		cosmosClient:                         mockResourcesDBClient,
+		resourcesDBClient:                    mockResourcesDBClient,
 		clusterServiceClient:                 mockClusterService,
 		maestroClientBuilder:                 mockMaestroBuilder,
 		maestroSourceEnvironmentIdentifier:   "test-env",

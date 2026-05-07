@@ -231,7 +231,7 @@ func TestNodePoolPropertiesSyncer_SyncOnce(t *testing.T) {
 			syncer := &nodePoolPropertiesSyncer{
 				cooldownChecker:      &alwaysSyncCooldownChecker{},
 				nodePoolLister:       &listertesting.SliceNodePoolLister{NodePools: nodePoolsForLister},
-				cosmosClient:         mockDB,
+				resourcesDBClient:    mockDB,
 				clusterServiceClient: mockCSClient,
 			}
 

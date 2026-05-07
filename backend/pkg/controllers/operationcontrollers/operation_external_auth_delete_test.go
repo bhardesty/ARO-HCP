@@ -107,7 +107,7 @@ func TestOperationExternalAuthDelete_SynchronizeOperation(t *testing.T) {
 			mockCSClient := tt.setupMock(ctrl, fixture)
 
 			controller := &operationExternalAuthDelete{
-				cosmosClient:         mockDB,
+				resourcesDBClient:    mockDB,
 				clusterServiceClient: mockCSClient,
 				notificationClient:   nil,
 			}

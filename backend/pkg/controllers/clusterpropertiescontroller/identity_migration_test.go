@@ -235,7 +235,7 @@ func TestIdentityMigrationSyncer_SyncOnce(t *testing.T) {
 			syncer := &identityMigrationSyncer{
 				cooldownChecker:      &alwaysSyncCooldownChecker{},
 				clusterLister:        sliceClusterLister,
-				cosmosClient:         mockDB,
+				resourcesDBClient:    mockDB,
 				clusterServiceClient: mockCSClient,
 			}
 

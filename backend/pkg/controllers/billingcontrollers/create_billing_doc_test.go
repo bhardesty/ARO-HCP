@@ -197,7 +197,7 @@ func TestCreateBillingDoc_SyncOnce(t *testing.T) {
 				clock:             clocktesting.NewFakePassiveClock(fixedTime),
 				azureLocation:     testAzureLocation,
 				resourcesDBClient: mockDB,
-				billingClient:     mockBillingDBClient,
+				billingDBClient:   mockBillingDBClient,
 				clusterLister: &listertesting.SliceClusterLister{
 					Clusters: []*api.HCPOpenShiftCluster{tt.cluster},
 				},
@@ -244,7 +244,7 @@ func TestCreateBillingDoc_Idempotent(t *testing.T) {
 		clock:             clocktesting.NewFakePassiveClock(fixedTime),
 		azureLocation:     testAzureLocation,
 		resourcesDBClient: mockResourcesDBClient,
-		billingClient:     mockBillingDBClient,
+		billingDBClient:   mockBillingDBClient,
 		clusterLister:     clusterLister,
 		billingLister: &listertesting.SliceBillingLister{
 			BillingDocuments: []*database.BillingDocument{},
@@ -320,7 +320,7 @@ func TestCreateBillingDoc_ExistingBillingDocButMissingClusterRef(t *testing.T) {
 				clock:             clocktesting.NewFakePassiveClock(fixedTime),
 				azureLocation:     testAzureLocation,
 				resourcesDBClient: mockDB,
-				billingClient:     mockBillingDBClient,
+				billingDBClient:   mockBillingDBClient,
 				clusterLister: &listertesting.SliceClusterLister{
 					Clusters: []*api.HCPOpenShiftCluster{cluster},
 				},

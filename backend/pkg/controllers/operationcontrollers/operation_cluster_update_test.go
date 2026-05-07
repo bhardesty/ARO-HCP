@@ -254,7 +254,7 @@ func TestOperationClusterUpdate_SynchronizeOperation(t *testing.T) {
 
 			fakeClock := clocktesting.NewFakeClock(testClockNow)
 			controller := &operationClusterUpdate{
-				cosmosClient:                    mockDB,
+				resourcesDBClient:               mockDB,
 				clusterServiceClient:            mockCSClient,
 				notificationClient:              nil,
 				clock:                           fakeClock,

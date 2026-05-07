@@ -142,7 +142,7 @@ func TestOperationNodePoolCreate_SynchronizeOperation(t *testing.T) {
 				Return(nodePoolStatus, nil)
 
 			controller := &operationNodePoolCreate{
-				cosmosClient:         mockDB,
+				resourcesDBClient:    mockDB,
 				clusterServiceClient: mockCSClient,
 				notificationClient:   nil,
 			}

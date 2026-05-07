@@ -123,7 +123,7 @@ func TestOperationClusterCreate_SynchronizeOperation(t *testing.T) {
 			})
 
 			controller := &operationClusterCreate{
-				cosmosClient:         mockDB,
+				resourcesDBClient:    mockDB,
 				clusterServiceClient: mockCSClient,
 				notificationClient:   nil,
 				clusterLister: &listertesting.SliceClusterLister{

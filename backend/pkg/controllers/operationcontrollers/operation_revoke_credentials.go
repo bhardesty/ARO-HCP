@@ -53,13 +53,13 @@ type operationRevokeCredentials struct {
 // any of "Succeeded", "Failed", or "Canceled". Once the operation status reaches
 // a terminal value, there will be no further updates to the operation document.
 func NewOperationRevokeCredentialsController(
-	cosmosClient database.ResourcesDBClient,
+	resourcesDBClient database.ResourcesDBClient,
 	clustersServiceClient ocm.ClusterServiceClientSpec,
 	notificationClient *http.Client,
 	activeOperationInformer cache.SharedIndexInformer,
 ) controllerutils.Controller {
 	syncer := &operationRevokeCredentials{
-		resourcesDBClient:     cosmosClient,
+		resourcesDBClient:     resourcesDBClient,
 		clustersServiceClient: clustersServiceClient,
 		notificationClient:    notificationClient,
 	}
@@ -69,7 +69,7 @@ func NewOperationRevokeCredentialsController(
 		syncer,
 		10*time.Second,
 		activeOperationInformer,
-		cosmosClient,
+		resourcesDBClient,
 	)
 
 	return controller

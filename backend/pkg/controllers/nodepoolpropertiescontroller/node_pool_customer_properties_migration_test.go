@@ -130,7 +130,7 @@ func TestNodePoolCustomerPropertiesMigrationController_SyncOnce(t *testing.T) {
 			syncer := &nodePoolCustomerPropertiesMigrationController{
 				cooldownChecker:      &alwaysSyncCooldownChecker{},
 				nodePoolLister:       sliceNodePoolLister,
-				cosmosClient:         mockDB,
+				resourcesDBClient:    mockDB,
 				clusterServiceClient: mockCSClient,
 			}
 

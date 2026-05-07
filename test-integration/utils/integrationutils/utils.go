@@ -131,7 +131,7 @@ func NewIntegrationTestInfoFromEnv(ctx context.Context, t *testing.T, withMock b
 	}
 	fakeAuditClient := &FakeOTELClient{}
 	metricsRegistry := prometheus.NewRegistry()
-	aroHCPFrontend := frontend.NewFrontend(logger, frontendListener, frontendMetricsListener, metricsRegistry, metricsRegistry, storageIntegrationTestInfo.CosmosClient(), storageIntegrationTestInfo.LocksClient(), clusterServiceMockInfo.MockClusterServiceClient, fakeAuditClient, "fake-location", "", false, false, true)
+	aroHCPFrontend := frontend.NewFrontend(logger, frontendListener, frontendMetricsListener, metricsRegistry, metricsRegistry, storageIntegrationTestInfo.ResourcesDBClient(), storageIntegrationTestInfo.LocksDBClient(), clusterServiceMockInfo.MockClusterServiceClient, fakeAuditClient, "fake-location", "", false, false, true)
 
 	// admin api setup
 	adminListener, err := net.Listen("tcp4", "127.0.0.1:0")
@@ -147,8 +147,8 @@ func NewIntegrationTestInfoFromEnv(ctx context.Context, t *testing.T, withMock b
 		"fake-location",
 		adminListener,
 		adminMetricsListener,
-		storageIntegrationTestInfo.CosmosClient(),
-		storageIntegrationTestInfo.BillingClient(),
+		storageIntegrationTestInfo.ResourcesDBClient(),
+		storageIntegrationTestInfo.BillingDBClient(),
 		clusterServiceMockInfo.MockClusterServiceClient,
 		nil,
 		nil,

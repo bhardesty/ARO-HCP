@@ -325,7 +325,7 @@ func TestDeleteOrphanedMaestroReadonlyBundles_getAllServiceProviderClusters(t *t
 			if tt.setupDB != nil {
 				tt.setupDB(t, ctx, mockDB)
 			}
-			c := &deleteOrphanedMaestroReadonlyBundles{cosmosClient: mockDB}
+			c := &deleteOrphanedMaestroReadonlyBundles{resourcesDBClient: mockDB}
 			all, err := c.getAllServiceProviderClusters(ctx)
 			require.NoError(t, err)
 			require.Len(t, all, tt.wantLen)
@@ -375,7 +375,7 @@ func TestDeleteOrphanedMaestroReadonlyBundles_getAllServiceProviderNodePools(t *
 			if tt.setupDB != nil {
 				tt.setupDB(t, ctx, mockDB)
 			}
-			c := &deleteOrphanedMaestroReadonlyBundles{cosmosClient: mockDB}
+			c := &deleteOrphanedMaestroReadonlyBundles{resourcesDBClient: mockDB}
 			all, err := c.getAllServiceProviderNodePools(ctx)
 			require.NoError(t, err)
 			require.Len(t, all, tt.wantLen)
@@ -776,7 +776,7 @@ func TestDeleteOrphanedMaestroReadonlyBundles_mapServiceProviderClustersByProvis
 					CosmosMetadata: arm.CosmosMetadata{ResourceID: spcResourceID},
 					ResourceID:     *spcResourceID,
 				}
-				return &deleteOrphanedMaestroReadonlyBundles{cosmosClient: mockDB, clusterServiceClient: mockCS},
+				return &deleteOrphanedMaestroReadonlyBundles{resourcesDBClient: mockDB, clusterServiceClient: mockCS},
 					map[string]*shardMaestroClient{"unused-shard": noopMaestroShardClient},
 					[]*api.ServiceProviderCluster{spc}
 			},
@@ -792,7 +792,7 @@ func TestDeleteOrphanedMaestroReadonlyBundles_mapServiceProviderClustersByProvis
 					CosmosMetadata: arm.CosmosMetadata{ResourceID: spcResourceID},
 					ResourceID:     *spcResourceID,
 				}
-				return &deleteOrphanedMaestroReadonlyBundles{cosmosClient: mockDB, clusterServiceClient: mockCS},
+				return &deleteOrphanedMaestroReadonlyBundles{resourcesDBClient: mockDB, clusterServiceClient: mockCS},
 					map[string]*shardMaestroClient{"unused-shard": noopMaestroShardClient},
 					[]*api.ServiceProviderCluster{spc}
 			},
@@ -818,7 +818,7 @@ func TestDeleteOrphanedMaestroReadonlyBundles_mapServiceProviderClustersByProvis
 					ResourceID:     *spcResourceID,
 				}
 				mockCS.EXPECT().GetClusterProvisionShard(gomock.Any(), *cluster.ServiceProviderProperties.ClusterServiceID).Return(nil, fmt.Errorf("provision shard error"))
-				return &deleteOrphanedMaestroReadonlyBundles{cosmosClient: mockDB, clusterServiceClient: mockCS},
+				return &deleteOrphanedMaestroReadonlyBundles{resourcesDBClient: mockDB, clusterServiceClient: mockCS},
 					map[string]*shardMaestroClient{"unused-shard": noopMaestroShardClient},
 					[]*api.ServiceProviderCluster{spc}
 			},
@@ -858,7 +858,7 @@ func TestDeleteOrphanedMaestroReadonlyBundles_mapServiceProviderClustersByProvis
 				clients := map[string]*shardMaestroClient{
 					shardInClientsMap.ID(): noopMaestroShardClient,
 				}
-				return &deleteOrphanedMaestroReadonlyBundles{cosmosClient: mockDB, clusterServiceClient: mockCS}, clients, []*api.ServiceProviderCluster{spc}
+				return &deleteOrphanedMaestroReadonlyBundles{resourcesDBClient: mockDB, clusterServiceClient: mockCS}, clients, []*api.ServiceProviderCluster{spc}
 			},
 			wantErr:   true,
 			errSubstr: "not present in provision shards map",
@@ -883,7 +883,7 @@ func TestDeleteOrphanedMaestroReadonlyBundles_mapServiceProviderClustersByProvis
 				provisionShard := buildTestProvisionShard("test-consumer")
 				mockCS.EXPECT().GetClusterProvisionShard(gomock.Any(), *cluster.ServiceProviderProperties.ClusterServiceID).Return(provisionShard, nil)
 				clients := map[string]*shardMaestroClient{provisionShard.ID(): noopMaestroShardClient}
-				return &deleteOrphanedMaestroReadonlyBundles{cosmosClient: mockDB, clusterServiceClient: mockCS}, clients, []*api.ServiceProviderCluster{spc}
+				return &deleteOrphanedMaestroReadonlyBundles{resourcesDBClient: mockDB, clusterServiceClient: mockCS}, clients, []*api.ServiceProviderCluster{spc}
 			},
 			validateOut: func(t *testing.T, shardToSPCs map[string][]*api.ServiceProviderCluster) {
 				provisionShard := buildTestProvisionShard("test-consumer")
@@ -949,7 +949,7 @@ func TestDeleteOrphanedMaestroReadonlyBundles_mapServiceProviderClustersByProvis
 					shard1.ID(): noopMaestroShardClient,
 					shard2.ID(): noopMaestroShardClient,
 				}
-				return &deleteOrphanedMaestroReadonlyBundles{cosmosClient: mockDB, clusterServiceClient: mockCS}, clients, []*api.ServiceProviderCluster{spc1, spc2}
+				return &deleteOrphanedMaestroReadonlyBundles{resourcesDBClient: mockDB, clusterServiceClient: mockCS}, clients, []*api.ServiceProviderCluster{spc1, spc2}
 			},
 			validateOut: func(t *testing.T, shardToSPCs map[string][]*api.ServiceProviderCluster) {
 				require.Len(t, shardToSPCs, 2)
@@ -1050,7 +1050,7 @@ func TestDeleteOrphanedMaestroReadonlyBundles_mapServiceProviderNodePoolsByProvi
 					CosmosMetadata: arm.CosmosMetadata{ResourceID: &broken},
 					ResourceID:     broken,
 				}
-				return &deleteOrphanedMaestroReadonlyBundles{cosmosClient: mockDB, clusterServiceClient: mockCS},
+				return &deleteOrphanedMaestroReadonlyBundles{resourcesDBClient: mockDB, clusterServiceClient: mockCS},
 					map[string]*shardMaestroClient{"unused-shard": noopMaestroShardClient},
 					[]*api.ServiceProviderNodePool{spnp}
 			},
@@ -1070,7 +1070,7 @@ func TestDeleteOrphanedMaestroReadonlyBundles_mapServiceProviderNodePoolsByProvi
 					CosmosMetadata: arm.CosmosMetadata{ResourceID: &noGrand},
 					ResourceID:     noGrand,
 				}
-				return &deleteOrphanedMaestroReadonlyBundles{cosmosClient: mockDB, clusterServiceClient: mockCS},
+				return &deleteOrphanedMaestroReadonlyBundles{resourcesDBClient: mockDB, clusterServiceClient: mockCS},
 					map[string]*shardMaestroClient{"unused-shard": noopMaestroShardClient},
 					[]*api.ServiceProviderNodePool{spnp}
 			},
@@ -1089,7 +1089,7 @@ func TestDeleteOrphanedMaestroReadonlyBundles_mapServiceProviderNodePoolsByProvi
 					CosmosMetadata: arm.CosmosMetadata{ResourceID: spnpResourceID},
 					ResourceID:     *spnpResourceID,
 				}
-				return &deleteOrphanedMaestroReadonlyBundles{cosmosClient: mockDB, clusterServiceClient: mockCS},
+				return &deleteOrphanedMaestroReadonlyBundles{resourcesDBClient: mockDB, clusterServiceClient: mockCS},
 					map[string]*shardMaestroClient{"unused-shard": noopMaestroShardClient},
 					[]*api.ServiceProviderNodePool{spnp}
 			},
@@ -1105,7 +1105,7 @@ func TestDeleteOrphanedMaestroReadonlyBundles_mapServiceProviderNodePoolsByProvi
 					CosmosMetadata: arm.CosmosMetadata{ResourceID: spnpResourceID},
 					ResourceID:     *spnpResourceID,
 				}
-				return &deleteOrphanedMaestroReadonlyBundles{cosmosClient: mockDB, clusterServiceClient: mockCS},
+				return &deleteOrphanedMaestroReadonlyBundles{resourcesDBClient: mockDB, clusterServiceClient: mockCS},
 					map[string]*shardMaestroClient{"unused-shard": noopMaestroShardClient},
 					[]*api.ServiceProviderNodePool{spnp}
 			},
@@ -1131,7 +1131,7 @@ func TestDeleteOrphanedMaestroReadonlyBundles_mapServiceProviderNodePoolsByProvi
 					ResourceID:     *spnpResourceID,
 				}
 				mockCS.EXPECT().GetClusterProvisionShard(gomock.Any(), *cluster.ServiceProviderProperties.ClusterServiceID).Return(nil, fmt.Errorf("provision shard error"))
-				return &deleteOrphanedMaestroReadonlyBundles{cosmosClient: mockDB, clusterServiceClient: mockCS},
+				return &deleteOrphanedMaestroReadonlyBundles{resourcesDBClient: mockDB, clusterServiceClient: mockCS},
 					map[string]*shardMaestroClient{"unused-shard": noopMaestroShardClient},
 					[]*api.ServiceProviderNodePool{spnp}
 			},
@@ -1171,7 +1171,7 @@ func TestDeleteOrphanedMaestroReadonlyBundles_mapServiceProviderNodePoolsByProvi
 				clients := map[string]*shardMaestroClient{
 					shardInClientsMap.ID(): noopMaestroShardClient,
 				}
-				return &deleteOrphanedMaestroReadonlyBundles{cosmosClient: mockDB, clusterServiceClient: mockCS}, clients, []*api.ServiceProviderNodePool{spnp}
+				return &deleteOrphanedMaestroReadonlyBundles{resourcesDBClient: mockDB, clusterServiceClient: mockCS}, clients, []*api.ServiceProviderNodePool{spnp}
 			},
 			wantErr:   true,
 			errSubstr: "not present in provision shards map",
@@ -1196,7 +1196,7 @@ func TestDeleteOrphanedMaestroReadonlyBundles_mapServiceProviderNodePoolsByProvi
 				provisionShard := buildTestProvisionShard("test-consumer")
 				mockCS.EXPECT().GetClusterProvisionShard(gomock.Any(), *cluster.ServiceProviderProperties.ClusterServiceID).Return(provisionShard, nil)
 				clients := map[string]*shardMaestroClient{provisionShard.ID(): noopMaestroShardClient}
-				return &deleteOrphanedMaestroReadonlyBundles{cosmosClient: mockDB, clusterServiceClient: mockCS}, clients, []*api.ServiceProviderNodePool{spnp}
+				return &deleteOrphanedMaestroReadonlyBundles{resourcesDBClient: mockDB, clusterServiceClient: mockCS}, clients, []*api.ServiceProviderNodePool{spnp}
 			},
 			validateOut: func(t *testing.T, shardToSPNPs map[string][]*api.ServiceProviderNodePool) {
 				provisionShard := buildTestProvisionShard("test-consumer")
@@ -1262,7 +1262,7 @@ func TestDeleteOrphanedMaestroReadonlyBundles_mapServiceProviderNodePoolsByProvi
 					shard1.ID(): noopMaestroShardClient,
 					shard2.ID(): noopMaestroShardClient,
 				}
-				return &deleteOrphanedMaestroReadonlyBundles{cosmosClient: mockDB, clusterServiceClient: mockCS}, clients, []*api.ServiceProviderNodePool{spnp1, spnp2}
+				return &deleteOrphanedMaestroReadonlyBundles{resourcesDBClient: mockDB, clusterServiceClient: mockCS}, clients, []*api.ServiceProviderNodePool{spnp1, spnp2}
 			},
 			validateOut: func(t *testing.T, shardToSPNPs map[string][]*api.ServiceProviderNodePool) {
 				require.Len(t, shardToSPNPs, 2)
@@ -1509,7 +1509,7 @@ func TestDeleteOrphanedMaestroReadonlyBundles_ensureClusterScopedOrphanedMaestro
 			mockCS := ocm.NewMockClusterServiceClientSpec(ctrl)
 			shard := buildTestProvisionShard("test-consumer")
 			clients := tt.setupMock(t, mockMaestro, mockDB, mockCS, shard)
-			c := &deleteOrphanedMaestroReadonlyBundles{cosmosClient: mockDB, clusterServiceClient: mockCS}
+			c := &deleteOrphanedMaestroReadonlyBundles{resourcesDBClient: mockDB, clusterServiceClient: mockCS}
 			err := c.ensureClusterScopedOrphanedMaestroReadonlyBundlesAreDeleted(ctx, clients)
 			if tt.wantErr {
 				require.Error(t, err)
@@ -1670,7 +1670,7 @@ func TestDeleteOrphanedMaestroReadonlyBundles_ensureOrphanedNodePoolScopedMaestr
 			mockCS := ocm.NewMockClusterServiceClientSpec(ctrl)
 			shard := buildTestProvisionShard("test-consumer")
 			clients := tt.setupMock(t, mockMaestro, mockDB, mockCS, shard)
-			c := &deleteOrphanedMaestroReadonlyBundles{cosmosClient: mockDB, clusterServiceClient: mockCS}
+			c := &deleteOrphanedMaestroReadonlyBundles{resourcesDBClient: mockDB, clusterServiceClient: mockCS}
 			err := c.ensureOrphanedNodePoolScopedMaestroReadonlyBundlesAreDeleted(ctx, clients)
 			if tt.wantErr {
 				require.Error(t, err)
@@ -1760,7 +1760,7 @@ func TestDeleteOrphanedMaestroReadonlyBundles_ensureClusterScopedOrphanedMaestro
 	mockShard2.EXPECT().List(gomock.Any(), gomock.Any()).Return(bundleListShard2, nil)
 	mockShard2.EXPECT().Delete(gomock.Any(), "bundle-X", metav1.DeleteOptions{}).Return(nil)
 
-	c := &deleteOrphanedMaestroReadonlyBundles{cosmosClient: mockDB, clusterServiceClient: mockCS}
+	c := &deleteOrphanedMaestroReadonlyBundles{resourcesDBClient: mockDB, clusterServiceClient: mockCS}
 	err = c.ensureClusterScopedOrphanedMaestroReadonlyBundlesAreDeleted(ctx, clients)
 	require.NoError(t, err)
 }
@@ -1839,7 +1839,7 @@ func TestDeleteOrphanedMaestroReadonlyBundles_ensureClusterScopedOrphanedMaestro
 	mockShardA.EXPECT().List(gomock.Any(), gomock.Any()).Return(bundleListShardA, nil)
 	mockShardB.EXPECT().List(gomock.Any(), gomock.Any()).Return(&workv1.ManifestWorkList{Items: []workv1.ManifestWork{}}, nil)
 
-	c := &deleteOrphanedMaestroReadonlyBundles{cosmosClient: mockDB, clusterServiceClient: mockCS}
+	c := &deleteOrphanedMaestroReadonlyBundles{resourcesDBClient: mockDB, clusterServiceClient: mockCS}
 	err = c.ensureClusterScopedOrphanedMaestroReadonlyBundlesAreDeleted(ctx, clients)
 	require.NoError(t, err)
 }
@@ -1901,7 +1901,7 @@ func TestDeleteOrphanedMaestroReadonlyBundles_ensureClusterScopedOrphanedMaestro
 	}
 	mockMaestro.EXPECT().List(gomock.Any(), gomock.Any()).Return(bundleList, nil)
 
-	c := &deleteOrphanedMaestroReadonlyBundles{cosmosClient: mockDB, clusterServiceClient: mockCS}
+	c := &deleteOrphanedMaestroReadonlyBundles{resourcesDBClient: mockDB, clusterServiceClient: mockCS}
 	err = c.ensureClusterScopedOrphanedMaestroReadonlyBundlesAreDeleted(ctx, clients)
 	require.NoError(t, err)
 }

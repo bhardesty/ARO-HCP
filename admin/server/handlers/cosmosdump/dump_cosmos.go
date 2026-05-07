@@ -27,8 +27,8 @@ type CosmosDumpHandler struct {
 	resourcesDBClient database.ResourcesDBClient
 }
 
-func NewCosmosDumpHandler(cosmosClient database.ResourcesDBClient) *CosmosDumpHandler {
-	return &CosmosDumpHandler{resourcesDBClient: cosmosClient}
+func NewCosmosDumpHandler(resourcesDBClient database.ResourcesDBClient) *CosmosDumpHandler {
+	return &CosmosDumpHandler{resourcesDBClient: resourcesDBClient}
 }
 
 func (h *CosmosDumpHandler) ServeHTTP(w http.ResponseWriter, request *http.Request) error {

@@ -98,7 +98,7 @@ func TestOperationRequestCredential_SyncrhonizeOperation(t *testing.T) {
 				Return(breakGlassCredential, nil)
 
 			controller := &operationRequestCredential{
-				cosmosClient:          mockDB,
+				resourcesDBClient:     mockDB,
 				clustersServiceClient: mockCSClient,
 			}
 

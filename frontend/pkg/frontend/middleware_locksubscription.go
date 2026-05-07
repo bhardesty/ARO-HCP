@@ -25,12 +25,12 @@ import (
 )
 
 type middlewareLockSubscription struct {
-	locksClient database.LocksDBClient
+	locksDBClient database.LocksDBClient
 }
 
-func newMiddlewareLockSubscription(locksClient database.LocksDBClient) *middlewareLockSubscription {
+func newMiddlewareLockSubscription(locksDBClient database.LocksDBClient) *middlewareLockSubscription {
 	return &middlewareLockSubscription{
-		locksClient: locksClient,
+		locksDBClient: locksDBClient,
 	}
 }
 
@@ -41,10 +41,10 @@ func (h *middlewareLockSubscription) handleRequest(w http.ResponseWriter, r *htt
 
 	subscriptionID := r.PathValue(PathSegmentSubscriptionID)
 
-	// This may be nil when running "go test" or when LocksDBClient is not configured.
+	// This may be nil when running "go test".
 	var lockClient database.LockClientInterface
-	if h.locksClient != nil {
-		lockClient = h.locksClient.LockClient()
+	if h.locksDBClient != nil {
+		lockClient = h.locksDBClient.LockClient()
 	}
 
 	if lockClient == nil {

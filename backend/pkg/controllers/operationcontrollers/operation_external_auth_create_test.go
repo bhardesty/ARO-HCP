@@ -97,7 +97,7 @@ func TestOperationExternalAuthCreate_SynchronizeOperation(t *testing.T) {
 			mockCSClient := tt.setupMock(ctrl, fixture)
 
 			controller := &operationExternalAuthCreate{
-				cosmosClient:         mockDB,
+				resourcesDBClient:    mockDB,
 				clusterServiceClient: mockCSClient,
 				notificationClient:   nil,
 			}

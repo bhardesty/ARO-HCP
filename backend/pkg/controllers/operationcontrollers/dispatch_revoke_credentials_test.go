@@ -85,7 +85,7 @@ func TestDispatchRevokeCredentials_SyncrhonizeOperation(t *testing.T) {
 
 			controller := &dispatchRevokeCredentials{
 				clock:                 utilsclock.RealClock{},
-				cosmosClient:          mockDB,
+				resourcesDBClient:     mockDB,
 				clustersServiceClient: mockCSClient,
 			}
 

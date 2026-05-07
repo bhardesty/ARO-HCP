@@ -423,6 +423,6 @@ func NewCosmosStepInput(storageInfo integrationutils.StorageIntegrationTestInfo)
 	return &StepInput{
 		ContentLoader:     storageInfo,
 		DocumentLister:    storageInfo,
-		ResourcesDBClient: storageInfo.CosmosClient(),
+		ResourcesDBClient: storageInfo.ResourcesDBClient(),
 	}
 }

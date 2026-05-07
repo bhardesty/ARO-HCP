@@ -188,7 +188,7 @@ func (opts *FrontendOpts) Run() error {
 		return fmt.Errorf("could not initialize opentelemetry sdk: %w", err)
 	}
 
-	// Create Cosmos async database, ARM resources client (Resources), and locks client (Locks).
+	// Create the database client.
 	clientOpts := azsdk.NewClientOptions(azsdk.ComponentFrontend)
 	// FIXME Cloud should be determined by other means.
 	clientOpts.Cloud = cloud.AzurePublic
@@ -205,7 +205,7 @@ func (opts *FrontendOpts) Run() error {
 
 	resourcesDBClient, err := database.NewResourcesDBClient(cosmosDatabaseClient)
 	if err != nil {
-		return fmt.Errorf("failed to create the ARM resources database client: %w", err)
+		return fmt.Errorf("failed to create the resources database client: %w", err)
 	}
 
 	locksDBClient, err := database.NewLocksDBClient(ctx, cosmosDatabaseClient)
