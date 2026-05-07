@@ -283,7 +283,7 @@ func TestDesiredControlPlaneZVersion_ZStreamManagedUpgrade(t *testing.T) {
 			mockCincinnatiClient := cincinnati.NewMockClient(ctrl)
 			tt.mockSetup(mockCincinnatiClient)
 
-			syncer := &controlPlaneDesiredVersionSyncer{cosmosClient: databasetesting.NewMockDBClient()}
+			syncer := &controlPlaneDesiredVersionSyncer{resourcesDBClient: databasetesting.NewMockResourcesDBClient()}
 
 			ctx := context.Background()
 			result, err := syncer.desiredControlPlaneZVersion(ctx, mockCincinnatiClient, api.Must(api.ToClusterResourceID("6b690bec-0c16-4ecb-8f67-781caf40bba7", "test-rg", "test-cluster")), tt.customerDesiredMinor, tt.channelGroup, tt.activeVersions, false)
@@ -500,9 +500,9 @@ func TestDesiredControlPlaneZVersion_NextYStreamUpgrade(t *testing.T) {
 			tt.mockSetup(mockCincinnatiClient)
 
 			ctx := context.Background()
-			mockDB, err := databasetesting.NewMockDBClientWithResources(ctx, tt.cosmosResources)
+			mockResourcesDBClient, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, tt.cosmosResources)
 			require.NoError(t, err)
-			syncer := &controlPlaneDesiredVersionSyncer{cosmosClient: mockDB}
+			syncer := &controlPlaneDesiredVersionSyncer{resourcesDBClient: mockResourcesDBClient}
 
 			result, err := syncer.desiredControlPlaneZVersion(ctx, mockCincinnatiClient, api.Must(api.ToClusterResourceID("6b690bec-0c16-4ecb-8f67-781caf40bba7", "test-rg", "test-cluster")), tt.customerDesiredMinor, tt.channelGroup, tt.activeVersions, false)
 
@@ -628,9 +628,9 @@ func TestDesiredControlPlaneZVersion_Validations(t *testing.T) {
 			tt.mockSetup(mockCincinnatiClient)
 
 			ctx := context.Background()
-			mockDB, err := databasetesting.NewMockDBClientWithResources(ctx, tt.cosmosResources)
+			mockResourcesDBClient, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, tt.cosmosResources)
 			require.NoError(t, err)
-			syncer := &controlPlaneDesiredVersionSyncer{cosmosClient: mockDB}
+			syncer := &controlPlaneDesiredVersionSyncer{resourcesDBClient: mockResourcesDBClient}
 
 			result, err := syncer.desiredControlPlaneZVersion(ctx, mockCincinnatiClient, api.Must(api.ToClusterResourceID("6b690bec-0c16-4ecb-8f67-781caf40bba7", "test-rg", "test-cluster")), tt.customerDesiredMinor, tt.channelGroup, tt.activeVersions, tt.experimentalReleaseFeatures)
 
@@ -728,9 +728,9 @@ func TestDesiredControlPlaneZVersion_CrossMajorUpgrade(t *testing.T) {
 			tt.mockSetup(mockCincinnatiClient)
 
 			ctx := context.Background()
-			mockDB, err := databasetesting.NewMockDBClientWithResources(ctx, tt.cosmosResources)
+			mockResourcesDBClient, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, tt.cosmosResources)
 			require.NoError(t, err)
-			syncer := &controlPlaneDesiredVersionSyncer{cosmosClient: mockDB}
+			syncer := &controlPlaneDesiredVersionSyncer{resourcesDBClient: mockResourcesDBClient}
 
 			result, err := syncer.desiredControlPlaneZVersion(ctx, mockCincinnatiClient, api.Must(api.ToClusterResourceID("6b690bec-0c16-4ecb-8f67-781caf40bba7", "test-rg", "test-cluster")), tt.customerDesiredMinor, tt.channelGroup, tt.activeVersions, tt.experimentalReleaseFeatures)
 
@@ -870,7 +870,7 @@ func TestDesiredControlPlaneZVersion_InitialVersionSelection(t *testing.T) {
 			mockCincinnatiClient := cincinnati.NewMockClient(ctrl)
 			tt.mockSetup(mockCincinnatiClient)
 
-			syncer := &controlPlaneDesiredVersionSyncer{cosmosClient: databasetesting.NewMockDBClient()}
+			syncer := &controlPlaneDesiredVersionSyncer{resourcesDBClient: databasetesting.NewMockResourcesDBClient()}
 
 			// Empty active versions - simulating a new cluster
 			activeVersions := []api.HCPClusterActiveVersion{}
@@ -900,9 +900,9 @@ func assertVersionResult(t *testing.T, result *semver.Version, err error, expect
 	}
 }
 
-func createTestHCPClusterWithCustomerVersion(t *testing.T, ctx context.Context, mockDB *databasetesting.MockDBClient, customerVersionID, channelGroup string) {
+func createTestHCPClusterWithCustomerVersion(t *testing.T, ctx context.Context, mockResourcesDBClient *databasetesting.MockResourcesDBClient, customerVersionID, channelGroup string) {
 	t.Helper()
-	createTestSubscription(t, ctx, mockDB)
+	createTestSubscription(t, ctx, mockResourcesDBClient)
 	clusterResourceID := api.Must(azcorearm.ParseResourceID("/subscriptions/" + testSubscriptionID +
 		"/resourceGroups/" + testResourceGroupName +
 		"/providers/Microsoft.RedHatOpenShift/hcpOpenShiftClusters/" + testClusterName))
@@ -928,7 +928,7 @@ func createTestHCPClusterWithCustomerVersion(t *testing.T, ctx context.Context, 
 			ClusterServiceID:  &clusterInternalID,
 		},
 	}
-	_, err = mockDB.HCPClusters(testSubscriptionID, testResourceGroupName).Create(ctx, cluster, nil)
+	_, err = mockResourcesDBClient.HCPClusters(testSubscriptionID, testResourceGroupName).Create(ctx, cluster, nil)
 	require.NoError(t, err)
 }
 
@@ -1034,11 +1034,11 @@ func TestControlPlaneDesiredVersionSyncer_SyncOnce(t *testing.T) {
 
 			ctx := utils.ContextWithLogger(context.Background(), logr.Discard())
 			ctrl := gomock.NewController(t)
-			mockDB := databasetesting.NewMockDBClient()
+			mockResourcesDBClient := databasetesting.NewMockResourcesDBClient()
 			mockCS := ocm.NewMockClusterServiceClientSpec(ctrl)
 
-			createTestHCPClusterWithCustomerVersion(t, ctx, mockDB, tt.customerVersion, testChannelGroup)
-			createServiceProviderClusterWithVersion(t, ctx, mockDB, tt.controlPlaneVersion)
+			createTestHCPClusterWithCustomerVersion(t, ctx, mockResourcesDBClient, tt.customerVersion, testChannelGroup)
+			createServiceProviderClusterWithVersion(t, ctx, mockResourcesDBClient, tt.controlPlaneVersion)
 
 			mockCincinnati := cincinnati.NewMockClient(ctrl)
 			tt.setupCincinnati(mockCincinnati)
@@ -1049,7 +1049,7 @@ func TestControlPlaneDesiredVersionSyncer_SyncOnce(t *testing.T) {
 			syncer := &controlPlaneDesiredVersionSyncer{
 				cooldownChecker:                       &alwaysSyncCooldownChecker{},
 				clusterManagementClusterContentLister: newValidHostedClusterContentLister(t),
-				cosmosClient:                          mockDB,
+				resourcesDBClient:                     mockResourcesDBClient,
 				clusterServiceClient:                  mockCS,
 				subscriptionLister:                    subscriptionLister,
 				cincinnatiClientCache:                 mockClientCache,
@@ -1065,7 +1065,7 @@ func TestControlPlaneDesiredVersionSyncer_SyncOnce(t *testing.T) {
 				assert.Empty(t, tt.wantErrContains, "when wantSyncErr is false, wantErrContains must be empty")
 			}
 
-			serviceProviderCluster, getServiceProviderClusterErr := mockDB.ServiceProviderClusters(testSubscriptionID, testResourceGroupName, testClusterName).Get(ctx, api.ServiceProviderClusterResourceName)
+			serviceProviderCluster, getServiceProviderClusterErr := mockResourcesDBClient.ServiceProviderClusters(testSubscriptionID, testResourceGroupName, testClusterName).Get(ctx, api.ServiceProviderClusterResourceName)
 			require.NoError(t, getServiceProviderClusterErr)
 			gotDesired := serviceProviderCluster.Spec.ControlPlaneVersion.DesiredVersion
 			if tt.wantDesiredVersion != nil {
@@ -1075,7 +1075,7 @@ func TestControlPlaneDesiredVersionSyncer_SyncOnce(t *testing.T) {
 				assert.Nil(t, gotDesired)
 			}
 
-			controlPlaneDesiredVersionControllerDoc, getControllerDocErr := mockDB.HCPClusters(testSubscriptionID, testResourceGroupName).
+			controlPlaneDesiredVersionControllerDoc, getControllerDocErr := mockResourcesDBClient.HCPClusters(testSubscriptionID, testResourceGroupName).
 				Controllers(testClusterName).Get(ctx, controlPlaneDesiredVersionControllerName)
 			if tt.wantIntentFailed != nil {
 				require.NoError(t, getControllerDocErr)
