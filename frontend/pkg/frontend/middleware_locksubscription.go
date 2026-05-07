@@ -42,10 +42,7 @@ func (h *middlewareLockSubscription) handleRequest(w http.ResponseWriter, r *htt
 	subscriptionID := r.PathValue(PathSegmentSubscriptionID)
 
 	// This may be nil when running "go test".
-	var lockClient database.LockClientInterface
-	if h.locksDBClient != nil {
-		lockClient = h.locksDBClient.LockClient()
-	}
+	lockClient := h.locksDBClient.LockClient()
 
 	if lockClient == nil {
 		next(w, r)
