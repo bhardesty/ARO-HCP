@@ -148,7 +148,7 @@ func (c *createNodePoolScopedMaestroReadonlyBundlesSyncer) SyncOnce(ctx context.
 		return nil
 	}
 
-	serviceProviderClustersDBClient := c.resourcesDBClient.ServiceProviderNodePools(
+	serviceProviderNodePoolsDBClient := c.resourcesDBClient.ServiceProviderNodePools(
 		key.SubscriptionID,
 		key.ResourceGroupName,
 		key.HCPClusterName,
@@ -193,7 +193,7 @@ func (c *createNodePoolScopedMaestroReadonlyBundlesSyncer) SyncOnce(ctx context.
 	for _, maestroBundleInternalName := range maestroBundlesToSync {
 		updatedSPNP, syncErr := c.syncMaestroBundle(
 			ctx, maestroBundleInternalName, existingServiceProviderNodePool, existingNodePool, maestroClient,
-			serviceProviderClustersDBClient, clusterProvisionShard, csClusterDomainPrefix,
+			serviceProviderNodePoolsDBClient, clusterProvisionShard, csClusterDomainPrefix,
 		)
 		existingServiceProviderNodePool = updatedSPNP
 		if syncErr != nil {
