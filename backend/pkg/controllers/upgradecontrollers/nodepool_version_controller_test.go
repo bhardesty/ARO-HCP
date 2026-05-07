@@ -22,7 +22,6 @@ import (
 
 	"github.com/blang/semver/v4"
 	"github.com/go-logr/logr"
-	"github.com/golang/groupcache/lru"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -42,7 +41,7 @@ import (
 	"github.com/Azure/ARO-HCP/backend/pkg/listertesting"
 	"github.com/Azure/ARO-HCP/internal/api"
 	"github.com/Azure/ARO-HCP/internal/api/arm"
-	"github.com/Azure/ARO-HCP/internal/cincinatti"
+	"github.com/Azure/ARO-HCP/internal/cincinnati"
 	"github.com/Azure/ARO-HCP/internal/databasetesting"
 	"github.com/Azure/ARO-HCP/internal/ocm"
 	"github.com/Azure/ARO-HCP/internal/utils"
@@ -429,6 +428,8 @@ func TestNodePoolVersionSyncer_SyncOnce(t *testing.T) {
 
 			mockDB := databasetesting.NewMockDBClient()
 			mockCS := ocm.NewMockClusterServiceClientSpec(ctrl)
+			mockClientCache := cincinnati.NewMockClientCache(ctrl)
+			mockClientCache.EXPECT().GetOrCreateClient(gomock.Any()).Return(cincinnati.NewMockClient(ctrl)).AnyTimes()
 
 			tt.seedDB(t, ctx, mockDB)
 			tt.mockCS(t, mockCS)
@@ -443,7 +444,7 @@ func TestNodePoolVersionSyncer_SyncOnce(t *testing.T) {
 				clusterManagementClusterContentLister: contentLister,
 				cosmosClient:                          mockDB,
 				clusterServiceClient:                  mockCS,
-				clusterToCincinnatiClient:             lru.New(100),
+				cincinnatiClientCache:                 mockClientCache,
 			}
 
 			ctx = utils.ContextWithLogger(ctx, logr.Discard())
@@ -652,23 +653,19 @@ func TestNodePoolVersionSyncer_ValidateDesiredNodePoolVersion(t *testing.T) {
 			ctrl := gomock.NewController(t)
 
 			// Create a mock Cincinnati client that returns the desired version as available
-			mockCincinnatiClient := cincinatti.NewMockClient(ctrl)
+			mockCincinnatiClient := cincinnati.NewMockClient(ctrl)
 			mockCincinnatiClient.EXPECT().
 				GetUpdates(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 				Return(configv1.Release{}, []configv1.Release{{Version: tt.desiredVersion}}, nil, nil).
 				AnyTimes()
 
+			mockClientCache := cincinnati.NewMockClientCache(ctrl)
+			mockClientCache.EXPECT().GetOrCreateClient(gomock.Any()).Return(mockCincinnatiClient).AnyTimes()
+
 			syncer := &nodePoolVersionSyncer{
-				cooldownChecker:           &alwaysSyncCooldownChecker{},
-				clusterToCincinnatiClient: lru.New(100),
+				cooldownChecker:       &alwaysSyncCooldownChecker{},
+				cincinnatiClientCache: mockClientCache,
 			}
-			// Pre-populate the Cincinnati client cache
-			clusterKey := controllerutils.HCPClusterKey{
-				SubscriptionID:    testSubscriptionID,
-				ResourceGroupName: testResourceGroupName,
-				HCPClusterName:    testClusterName,
-			}
-			syncer.clusterToCincinnatiClient.Add(clusterKey, mockCincinnatiClient)
 
 			// Create subscription based on allowMajorUpgrades flag
 			subscription := &arm.Subscription{
@@ -689,7 +686,6 @@ func TestNodePoolVersionSyncer_ValidateDesiredNodePoolVersion(t *testing.T) {
 				spCluster,
 				subscription,
 				"stable",
-				clusterKey,
 				[16]byte{}, // dummy UUID
 			)
 
@@ -777,6 +773,8 @@ func TestNodePoolVersionSyncer_SyncOnce_SkipMinorVersionFails(t *testing.T) {
 
 	mockDB := databasetesting.NewMockDBClient()
 	mockCS := ocm.NewMockClusterServiceClientSpec(ctrl)
+	mockClientCache := cincinnati.NewMockClientCache(ctrl)
+	mockClientCache.EXPECT().GetOrCreateClient(gomock.Any()).Return(cincinnati.NewMockClient(ctrl)).AnyTimes()
 
 	// Create node pool with desired version 4.20.0 (skips from 4.18.x)
 	createTestNodePoolWithVersion(t, ctx, mockDB, "4.20.0")
@@ -799,7 +797,7 @@ func TestNodePoolVersionSyncer_SyncOnce_SkipMinorVersionFails(t *testing.T) {
 		clusterManagementClusterContentLister: newValidHostedClusterContentLister(t),
 		cosmosClient:                          mockDB,
 		clusterServiceClient:                  mockCS,
-		clusterToCincinnatiClient:             lru.New(100),
+		cincinnatiClientCache:                 mockClientCache,
 	}
 
 	testKey := controllerutils.HCPNodePoolKey{
@@ -822,6 +820,8 @@ func TestNodePoolVersionSyncer_SyncOnce_DesiredExceedsControlPlaneFails(t *testi
 
 	mockDB := databasetesting.NewMockDBClient()
 	mockCS := ocm.NewMockClusterServiceClientSpec(ctrl)
+	mockClientCache := cincinnati.NewMockClientCache(ctrl)
+	mockClientCache.EXPECT().GetOrCreateClient(gomock.Any()).Return(cincinnati.NewMockClient(ctrl)).AnyTimes()
 
 	// Create node pool with desired version 4.19.15 (exceeds control plane 4.19.10)
 	createTestNodePoolWithVersion(t, ctx, mockDB, "4.19.15")
@@ -844,7 +844,7 @@ func TestNodePoolVersionSyncer_SyncOnce_DesiredExceedsControlPlaneFails(t *testi
 		clusterManagementClusterContentLister: newValidHostedClusterContentLister(t),
 		cosmosClient:                          mockDB,
 		clusterServiceClient:                  mockCS,
-		clusterToCincinnatiClient:             lru.New(100),
+		cincinnatiClientCache:                 mockClientCache,
 	}
 
 	testKey := controllerutils.HCPNodePoolKey{
@@ -867,7 +867,7 @@ func TestNodePoolVersionSyncer_SyncOnce_NoUpgradePathInCincinnatiFails(t *testin
 
 	mockDB := databasetesting.NewMockDBClient()
 	mockCS := ocm.NewMockClusterServiceClientSpec(ctrl)
-	mockCincinnati := cincinatti.NewMockClient(ctrl)
+	mockCincinnati := cincinnati.NewMockClient(ctrl)
 
 	// Create node pool with desired version 4.19.10
 	createTestNodePoolWithVersion(t, ctx, mockDB, "4.19.10")
@@ -893,21 +893,16 @@ func TestNodePoolVersionSyncer_SyncOnce_NoUpgradePathInCincinnatiFails(t *testin
 		).
 		Times(1)
 
+	mockClientCache := cincinnati.NewMockClientCache(ctrl)
+	mockClientCache.EXPECT().GetOrCreateClient(gomock.Any()).Return(mockCincinnati).AnyTimes()
+
 	syncer := &nodePoolVersionSyncer{
 		cooldownChecker:                       &alwaysSyncCooldownChecker{},
 		clusterManagementClusterContentLister: newValidHostedClusterContentLister(t),
 		cosmosClient:                          mockDB,
 		clusterServiceClient:                  mockCS,
-		clusterToCincinnatiClient:             lru.New(100),
+		cincinnatiClientCache:                 mockClientCache,
 	}
-
-	// Pre-populate Cincinnati client cache
-	clusterKey := controllerutils.HCPClusterKey{
-		SubscriptionID:    testSubscriptionID,
-		ResourceGroupName: testResourceGroupName,
-		HCPClusterName:    testClusterName,
-	}
-	syncer.clusterToCincinnatiClient.Add(clusterKey, mockCincinnati)
 
 	testKey := controllerutils.HCPNodePoolKey{
 		SubscriptionID:    testSubscriptionID,
@@ -929,6 +924,8 @@ func TestNodePoolVersionSyncer_SyncOnce_DowngradeFails(t *testing.T) {
 
 	mockDB := databasetesting.NewMockDBClient()
 	mockCS := ocm.NewMockClusterServiceClientSpec(ctrl)
+	mockClientCache := cincinnati.NewMockClientCache(ctrl)
+	mockClientCache.EXPECT().GetOrCreateClient(gomock.Any()).Return(cincinnati.NewMockClient(ctrl)).AnyTimes()
 
 	// Create node pool with desired version 4.19.5 (downgrade from 4.19.10)
 	createTestNodePoolWithVersion(t, ctx, mockDB, "4.19.5")
@@ -951,7 +948,7 @@ func TestNodePoolVersionSyncer_SyncOnce_DowngradeFails(t *testing.T) {
 		clusterManagementClusterContentLister: newValidHostedClusterContentLister(t),
 		cosmosClient:                          mockDB,
 		clusterServiceClient:                  mockCS,
-		clusterToCincinnatiClient:             lru.New(100),
+		cincinnatiClientCache:                 mockClientCache,
 	}
 
 	testKey := controllerutils.HCPNodePoolKey{
@@ -974,7 +971,7 @@ func TestNodePoolVersionSyncer_SyncOnce_UpgradePathExistsSucceeds(t *testing.T) 
 
 	mockDB := databasetesting.NewMockDBClient()
 	mockCS := ocm.NewMockClusterServiceClientSpec(ctrl)
-	mockCincinnati := cincinatti.NewMockClient(ctrl)
+	mockCincinnati := cincinnati.NewMockClient(ctrl)
 
 	// Create node pool with desired version 4.19.15 (valid upgrade from 4.19.10)
 	createTestNodePoolWithVersion(t, ctx, mockDB, "4.19.15")
@@ -1004,21 +1001,16 @@ func TestNodePoolVersionSyncer_SyncOnce_UpgradePathExistsSucceeds(t *testing.T) 
 		).
 		Times(1)
 
+	mockClientCache := cincinnati.NewMockClientCache(ctrl)
+	mockClientCache.EXPECT().GetOrCreateClient(gomock.Any()).Return(mockCincinnati).AnyTimes()
+
 	syncer := &nodePoolVersionSyncer{
 		cooldownChecker:                       &alwaysSyncCooldownChecker{},
 		clusterManagementClusterContentLister: newValidHostedClusterContentLister(t),
 		cosmosClient:                          mockDB,
 		clusterServiceClient:                  mockCS,
-		clusterToCincinnatiClient:             lru.New(100),
+		cincinnatiClientCache:                 mockClientCache,
 	}
-
-	// Pre-populate Cincinnati client cache
-	clusterKey := controllerutils.HCPClusterKey{
-		SubscriptionID:    testSubscriptionID,
-		ResourceGroupName: testResourceGroupName,
-		HCPClusterName:    testClusterName,
-	}
-	syncer.clusterToCincinnatiClient.Add(clusterKey, mockCincinnati)
 
 	testKey := controllerutils.HCPNodePoolKey{
 		SubscriptionID:    testSubscriptionID,
@@ -1049,7 +1041,6 @@ func TestNodePoolVersionSyncer_SyncOnce_DesiredVersionUnchangedOnFailure_Changed
 
 	mockDB := databasetesting.NewMockDBClient()
 	mockCS := ocm.NewMockClusterServiceClientSpec(ctrl)
-	mockCincinnati := cincinatti.NewMockClient(ctrl)
 
 	// Seed the database with a node pool
 	createTestNodePoolWithVersion(t, ctx, mockDB, "4.19.15")
@@ -1061,7 +1052,8 @@ func TestNodePoolVersionSyncer_SyncOnce_DesiredVersionUnchangedOnFailure_Changed
 		Return(csNodePool, nil).
 		Times(1)
 
-	// Setup Cincinnati mock to return valid upgrade path
+	// Phase 1: Cincinnati mock returns valid upgrade path
+	mockCincinnati := cincinnati.NewMockClient(ctrl)
 	mockCincinnati.EXPECT().
 		GetUpdates(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(
@@ -1072,21 +1064,16 @@ func TestNodePoolVersionSyncer_SyncOnce_DesiredVersionUnchangedOnFailure_Changed
 		).
 		AnyTimes()
 
+	mockClientCache := cincinnati.NewMockClientCache(ctrl)
+	mockClientCache.EXPECT().GetOrCreateClient(gomock.Any()).Return(mockCincinnati).Times(1)
+
 	syncer := &nodePoolVersionSyncer{
 		cooldownChecker:                       &alwaysSyncCooldownChecker{},
 		clusterManagementClusterContentLister: newValidHostedClusterContentLister(t),
 		cosmosClient:                          mockDB,
 		clusterServiceClient:                  mockCS,
-		clusterToCincinnatiClient:             lru.New(100),
+		cincinnatiClientCache:                 mockClientCache,
 	}
-
-	// Pre-populate Cincinnati client cache
-	clusterKey := controllerutils.HCPClusterKey{
-		SubscriptionID:    testSubscriptionID,
-		ResourceGroupName: testResourceGroupName,
-		HCPClusterName:    testClusterName,
-	}
-	syncer.clusterToCincinnatiClient.Add(clusterKey, mockCincinnati)
 
 	testKey := controllerutils.HCPNodePoolKey{
 		SubscriptionID:    testSubscriptionID,
@@ -1137,8 +1124,7 @@ func TestNodePoolVersionSyncer_SyncOnce_DesiredVersionUnchangedOnFailure_Changed
 		Return(csNodePool, nil).
 		Times(1)
 
-	// Replace Cincinnati mock with one that fails (no upgrade path)
-	mockCincinnatiFailing := cincinatti.NewMockClient(ctrl)
+	mockCincinnatiFailing := cincinnati.NewMockClient(ctrl)
 	mockCincinnatiFailing.EXPECT().
 		GetUpdates(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(
@@ -1148,7 +1134,7 @@ func TestNodePoolVersionSyncer_SyncOnce_DesiredVersionUnchangedOnFailure_Changed
 			nil,
 		).
 		AnyTimes()
-	syncer.clusterToCincinnatiClient.Add(clusterKey, mockCincinnatiFailing)
+	mockClientCache.EXPECT().GetOrCreateClient(gomock.Any()).Return(mockCincinnatiFailing).Times(1)
 
 	// SyncOnce should fail because Cincinnati doesn't have upgrade path
 	err = syncer.SyncOnce(ctx, testKey)
@@ -1174,8 +1160,7 @@ func TestNodePoolVersionSyncer_SyncOnce_DesiredVersionUnchangedOnFailure_Changed
 		Return(csNodePool, nil).
 		Times(1)
 
-	// Replace Cincinnati mock with one that succeeds
-	mockCincinnatiSucceeding := cincinatti.NewMockClient(ctrl)
+	mockCincinnatiSucceeding := cincinnati.NewMockClient(ctrl)
 	mockCincinnatiSucceeding.EXPECT().
 		GetUpdates(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(
@@ -1185,7 +1170,7 @@ func TestNodePoolVersionSyncer_SyncOnce_DesiredVersionUnchangedOnFailure_Changed
 			nil,
 		).
 		AnyTimes()
-	syncer.clusterToCincinnatiClient.Add(clusterKey, mockCincinnatiSucceeding)
+	mockClientCache.EXPECT().GetOrCreateClient(gomock.Any()).Return(mockCincinnatiSucceeding).Times(1)
 
 	// SyncOnce should succeed now
 	err = syncer.SyncOnce(ctx, testKey)

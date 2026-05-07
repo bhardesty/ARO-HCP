@@ -17,18 +17,13 @@ package upgradecontrollers
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"slices"
-	"sync"
 	"time"
 
 	"github.com/blang/semver/v4"
-	"github.com/golang/groupcache/lru"
 	"github.com/google/uuid"
 
 	"k8s.io/apimachinery/pkg/api/operation"
-
-	"github.com/openshift/cluster-version-operator/pkg/cincinnati"
 
 	"github.com/Azure/ARO-HCP/backend/pkg/controllers/controllerutils"
 	"github.com/Azure/ARO-HCP/backend/pkg/informers"
@@ -36,7 +31,7 @@ import (
 	"github.com/Azure/ARO-HCP/backend/pkg/maestrohelpers"
 	"github.com/Azure/ARO-HCP/internal/api"
 	"github.com/Azure/ARO-HCP/internal/api/arm"
-	"github.com/Azure/ARO-HCP/internal/cincinatti"
+	"github.com/Azure/ARO-HCP/internal/cincinnati"
 	"github.com/Azure/ARO-HCP/internal/database"
 	"github.com/Azure/ARO-HCP/internal/ocm"
 	"github.com/Azure/ARO-HCP/internal/utils"
@@ -53,8 +48,7 @@ type nodePoolVersionSyncer struct {
 	cosmosClient                          database.DBClient
 	clusterServiceClient                  ocm.ClusterServiceClientSpec
 
-	cincinnatiClientLock      sync.RWMutex
-	clusterToCincinnatiClient *lru.Cache
+	cincinnatiClientCache cincinnati.ClientCache
 }
 
 var _ controllerutils.NodePoolSyncer = (*nodePoolVersionSyncer)(nil)
@@ -74,7 +68,7 @@ func NewNodePoolVersionController(
 		clusterManagementClusterContentLister: clusterManagementClusterContentLister,
 		cosmosClient:                          cosmosClient,
 		clusterServiceClient:                  clusterServiceClient,
-		clusterToCincinnatiClient:             lru.New(100000),
+		cincinnatiClientCache:                 cincinnati.NewClientCache(),
 	}
 
 	controller := controllerutils.NewNodePoolWatchingController(
@@ -160,12 +154,6 @@ func (c *nodePoolVersionSyncer) SyncOnce(ctx context.Context, key controllerutil
 		return nil
 	}
 
-	clusterKey := controllerutils.HCPClusterKey{
-		SubscriptionID:    key.SubscriptionID,
-		ResourceGroupName: key.ResourceGroupName,
-		HCPClusterName:    key.HCPClusterName,
-	}
-
 	// Read node pool from Cluster Service
 	csNodePool, err := c.clusterServiceClient.GetNodePool(ctx, nodePool.ServiceProviderProperties.ClusterServiceID)
 	if err != nil {
@@ -220,7 +208,7 @@ func (c *nodePoolVersionSyncer) SyncOnce(ctx context.Context, key controllerutil
 	}
 
 	// Validate the customer's desired version before setting it
-	if err := c.validateDesiredNodePoolVersion(ctx, &customerDesiredVersion, existingServiceProviderNodePool, existingServiceProviderCluster, subscription, nodePool.Properties.Version.ChannelGroup, clusterKey, clusterUUID); err != nil {
+	if err := c.validateDesiredNodePoolVersion(ctx, &customerDesiredVersion, existingServiceProviderNodePool, existingServiceProviderCluster, subscription, nodePool.Properties.Version.ChannelGroup, clusterUUID); err != nil {
 		return utils.TrackError(fmt.Errorf("invalid desired version: %w", err))
 	}
 
@@ -274,7 +262,6 @@ func (c *nodePoolVersionSyncer) validateDesiredNodePoolVersion(
 	spCluster *api.ServiceProviderCluster,
 	subscription *arm.Subscription,
 	channelGroup string,
-	clusterKey controllerutils.HCPClusterKey,
 	clusterUUID uuid.UUID,
 ) error {
 	if desiredVersion == nil {
@@ -301,7 +288,7 @@ func (c *nodePoolVersionSyncer) validateDesiredNodePoolVersion(
 	// Validate upgrade path exists in Cincinnati for ALL active node pool versions
 	for _, activeVersion := range nodePoolActiveVersions {
 		if activeVersion.Version != nil && !desiredVersion.EQ(*activeVersion.Version) {
-			if err := c.validateUpgradePathAvailable(ctx, activeVersion.Version, desiredVersion, channelGroup, clusterKey, clusterUUID); err != nil {
+			if err := c.validateUpgradePathAvailable(ctx, activeVersion.Version, desiredVersion, channelGroup, clusterUUID); err != nil {
 				return fmt.Errorf("no valid upgrade path from active version %s: %w", activeVersion.Version.String(), err)
 			}
 		}
@@ -315,10 +302,9 @@ func (c *nodePoolVersionSyncer) validateUpgradePathAvailable(
 	ctx context.Context,
 	currentVersion, desiredVersion *semver.Version,
 	channelGroup string,
-	clusterKey controllerutils.HCPClusterKey,
 	clusterUUID uuid.UUID,
 ) error {
-	cincinnatiURI, err := cincinatti.GetCincinnatiURI(channelGroup)
+	cincinnatiURI, err := cincinnati.GetCincinnatiURI(channelGroup)
 	if err != nil {
 		return fmt.Errorf("failed to get Cincinnati URI: %w", err)
 	}
@@ -326,7 +312,7 @@ func (c *nodePoolVersionSyncer) validateUpgradePathAvailable(
 	targetMinorString := fmt.Sprintf("%d.%d", desiredVersion.Major, desiredVersion.Minor)
 	cincinnatiChannel := fmt.Sprintf("%s-%s", channelGroup, targetMinorString)
 
-	cincinnatiClient := c.getCincinnatiClient(clusterKey, clusterUUID)
+	cincinnatiClient := c.cincinnatiClientCache.GetOrCreateClient(clusterUUID)
 	// Get updates for the current version
 	// TODO: for nodePools we should use the arch of that nodePool
 	_, candidates, _, err := cincinnatiClient.GetUpdates(ctx, cincinnatiURI, "multi", "multi", cincinnatiChannel, *currentVersion)
@@ -342,31 +328,4 @@ func (c *nodePoolVersionSyncer) validateUpgradePathAvailable(
 	}
 
 	return utils.TrackError(fmt.Errorf("no upgrade path available from %s to %s in channel %s", currentVersion, desiredVersion, cincinnatiChannel))
-}
-
-// getCincinnatiClient returns a Cincinnati client for the given cluster, using a cache.
-// The clusterUUID is the external ID of the parent cluster from Cluster Service.
-func (c *nodePoolVersionSyncer) getCincinnatiClient(key controllerutils.HCPClusterKey, clusterUUID uuid.UUID) cincinatti.Client {
-	// Fast path: check cache with read lock
-	c.cincinnatiClientLock.RLock()
-	client, ok := c.clusterToCincinnatiClient.Get(key)
-	c.cincinnatiClientLock.RUnlock()
-
-	if ok {
-		return client.(cincinatti.Client)
-	}
-
-	c.cincinnatiClientLock.Lock()
-	defer c.cincinnatiClientLock.Unlock()
-
-	// Double-check after acquiring write lock
-	client, ok = c.clusterToCincinnatiClient.Get(key)
-	if ok {
-		return client.(cincinatti.Client)
-	}
-
-	// Create client using the parent cluster's UUID
-	client = cincinnati.NewClient(clusterUUID, http.DefaultTransport.(*http.Transport), "ARO-HCP", cincinatti.NewAlwaysConditionRegistry())
-	c.clusterToCincinnatiClient.Add(key, client)
-	return client.(cincinatti.Client)
 }
