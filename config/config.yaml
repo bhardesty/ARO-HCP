@@ -1226,11 +1226,6 @@ clouds:
         # this is the integrated DEV environment
         defaults:
           regionRG: hcp-underlay-{{ .ctx.environment }}-{{ .ctx.region }}
-          svc:
-            # Temporary override during the asm-1-28 rollout; remove once versions is asm-1-28 only.
-            istio:
-              targetVersion: "asm-1-28"
-              versions: "asm-1-26,asm-1-28"
           mgmt:
             aks:
               systemAgentPool:
@@ -1277,10 +1272,6 @@ clouds:
             svcWorkspaceName: 'services-{{ .ctx.environment }}-{{ .ctx.regionShort }}'
             hcpWorkspaceName: 'hcps-{{ .ctx.environment }}-{{ .ctx.regionShort }}'
           svc:
-            # Temporary override during the asm-1-28 rollout; remove once versions is asm-1-28 only.
-            istio:
-              targetVersion: "asm-1-28"
-              versions: "asm-1-26,asm-1-28"
             aks:
               # MC AKS nodepools
               # big enough for multiple CS instances during PR checks
@@ -1455,10 +1446,6 @@ clouds:
           # SVC
           svc:
             rg: "hcp-underlay-{{ .ctx.environment }}-{{ .ctx.regionShort }}-svc"
-            # Temporary override during the asm-1-28 rollout; remove once versions is asm-1-28 only.
-            istio:
-              targetVersion: "asm-1-28"
-              versions: "asm-1-26,asm-1-28"
             aks:
               name: "{{ .ctx.environment }}-{{ .ctx.regionShort }}-svc"
           mgmt:
