@@ -90,7 +90,7 @@ func TestOperationClusterCreate_SynchronizeOperation(t *testing.T) {
 			cluster := fixture.newCluster(tt.createdAt)
 			operation := fixture.newOperation(database.OperationRequestCreate)
 
-			mockDB, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, []any{cluster, operation})
+			mockResourcesDBClient, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, []any{cluster, operation})
 			require.NoError(t, err)
 
 			mockCSClient := ocm.NewMockClusterServiceClientSpec(ctrl)
@@ -123,7 +123,7 @@ func TestOperationClusterCreate_SynchronizeOperation(t *testing.T) {
 			})
 
 			controller := &operationClusterCreate{
-				resourcesDBClient:    mockDB,
+				resourcesDBClient:    mockResourcesDBClient,
 				clusterServiceClient: mockCSClient,
 				notificationClient:   nil,
 				clusterLister: &listertesting.SliceClusterLister{
@@ -143,7 +143,7 @@ func TestOperationClusterCreate_SynchronizeOperation(t *testing.T) {
 			}
 
 			if tt.verify != nil {
-				tt.verify(t, ctx, mockDB, fixture)
+				tt.verify(t, ctx, mockResourcesDBClient, fixture)
 			}
 		})
 	}

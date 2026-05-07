@@ -125,7 +125,7 @@ func TestOperationNodePoolCreate_SynchronizeOperation(t *testing.T) {
 			nodePool := fixture.newNodePool()
 			operation := fixture.newOperation(database.OperationRequestCreate)
 
-			mockDB, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, []any{cluster, nodePool, operation})
+			mockResourcesDBClient, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, []any{cluster, nodePool, operation})
 			require.NoError(t, err)
 
 			mockCSClient := ocm.NewMockClusterServiceClientSpec(ctrl)
@@ -142,7 +142,7 @@ func TestOperationNodePoolCreate_SynchronizeOperation(t *testing.T) {
 				Return(nodePoolStatus, nil)
 
 			controller := &operationNodePoolCreate{
-				resourcesDBClient:    mockDB,
+				resourcesDBClient:    mockResourcesDBClient,
 				clusterServiceClient: mockCSClient,
 				notificationClient:   nil,
 			}
@@ -156,7 +156,7 @@ func TestOperationNodePoolCreate_SynchronizeOperation(t *testing.T) {
 			}
 
 			if tt.verify != nil {
-				tt.verify(t, ctx, mockDB, fixture)
+				tt.verify(t, ctx, mockResourcesDBClient, fixture)
 			}
 		})
 	}

@@ -143,7 +143,7 @@ func TestReadAndPersistNodePoolScopedMaestroReadonlyBundlesContentSyncer_SyncOnc
 func TestReadAndPersistNodePoolScopedMaestroReadonlyBundlesContentSyncer_SyncOnce_GetServiceProviderNodePoolError(t *testing.T) {
 	ctx := context.Background()
 
-	baseMockDB := databasetesting.NewMockResourcesDBClient()
+	baseMockResourcesDBClient := databasetesting.NewMockResourcesDBClient()
 
 	key := controllerutils.HCPNodePoolKey{
 		SubscriptionID:    "test-sub",
@@ -164,13 +164,13 @@ func TestReadAndPersistNodePoolScopedMaestroReadonlyBundlesContentSyncer_SyncOnc
 			ClusterServiceID: api.Must(api.NewInternalID("/api/aro_hcp/v1alpha1/clusters/11111111111111111111111111111111")),
 		},
 	}
-	nodepoolsCRUD := baseMockDB.HCPClusters(key.SubscriptionID, key.ResourceGroupName).NodePools(key.HCPClusterName)
+	nodepoolsCRUD := baseMockResourcesDBClient.HCPClusters(key.SubscriptionID, key.ResourceGroupName).NodePools(key.HCPClusterName)
 	_, err := nodepoolsCRUD.Create(ctx, nodepool, nil)
 	require.NoError(t, err)
 
 	expectedError := fmt.Errorf("database error")
 	mockResourcesDBClient := &errorInjectingResourcesDBClientForNodePoolReadPersist{
-		MockResourcesDBClient: baseMockDB,
+		MockResourcesDBClient: baseMockResourcesDBClient,
 		spnpCRUD: &errorInjectingSPNPCRUD{
 			getErr: expectedError,
 		},

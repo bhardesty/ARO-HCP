@@ -37,15 +37,15 @@ import (
 //
 // Returns an error if any resource cannot be created or if an unsupported type is encountered.
 func NewMockResourcesDBClientWithResources(ctx context.Context, resources []any) (*MockResourcesDBClient, error) {
-	mockDB := NewMockResourcesDBClient()
+	mockResourcesDBClient := NewMockResourcesDBClient()
 
 	for i, resource := range resources {
-		if err := mockDB.addResource(ctx, resource); err != nil {
+		if err := mockResourcesDBClient.addResource(ctx, resource); err != nil {
 			return nil, fmt.Errorf("failed to add resource at index %d: %w", i, err)
 		}
 	}
 
-	return mockDB, nil
+	return mockResourcesDBClient, nil
 }
 
 // addResource adds a single resource to the mockResourcesDBClient.

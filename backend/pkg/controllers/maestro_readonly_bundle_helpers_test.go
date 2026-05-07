@@ -456,8 +456,8 @@ func TestMaestroReadonlyBundleHelpers_readAndPersistMaestroReadonlyBundleContent
 		b := buildTestMaestroBundleWithStatusFeedback("bundle-name", "ns", validHCJSON)
 		mockMaestro.EXPECT().Get(gomock.Any(), "bundle-name", gomock.Any()).Return(b, nil)
 
-		mockDB := databasetesting.NewMockResourcesDBClient()
-		mccCRUD := mockDB.HCPClusters("sub", "rg").ManagementClusterContents("cluster")
+		mockResourcesDBClient := databasetesting.NewMockResourcesDBClient()
+		mccCRUD := mockResourcesDBClient.HCPClusters("sub", "rg").ManagementClusterContents("cluster")
 
 		err := readAndPersistMaestroReadonlyBundleContent(ctx, cluster.ID, ref, mockMaestro, mccCRUD)
 		require.NoError(t, err)
@@ -476,8 +476,8 @@ func TestMaestroReadonlyBundleHelpers_readAndPersistMaestroReadonlyBundleContent
 		b := buildTestMaestroBundleWithStatusFeedback("bundle-name", "ns", validHCJSON)
 		mockMaestro.EXPECT().Get(gomock.Any(), "bundle-name", gomock.Any()).Return(b, nil)
 
-		mockDB := databasetesting.NewMockResourcesDBClient()
-		mccCRUD := mockDB.HCPClusters("sub", "rg").ManagementClusterContents("cluster")
+		mockResourcesDBClient := databasetesting.NewMockResourcesDBClient()
+		mccCRUD := mockResourcesDBClient.HCPClusters("sub", "rg").ManagementClusterContents("cluster")
 		// Pre-create existing content with different payload
 		existingRID := api.Must(azcorearm.ParseResourceID("/subscriptions/sub/resourceGroups/rg/providers/Microsoft.RedHatOpenShift/hcpOpenShiftClusters/cluster/managementClusterContents/readonlyHypershiftHostedCluster"))
 		existing := &api.ManagementClusterContent{
@@ -512,8 +512,8 @@ func TestMaestroReadonlyBundleHelpers_readAndPersistMaestroReadonlyBundleContent
 		}
 		mockMaestro.EXPECT().Get(gomock.Any(), "bundle-name", gomock.Any()).Return(b, nil)
 
-		mockDB := databasetesting.NewMockResourcesDBClient()
-		mccCRUD := mockDB.HCPClusters("sub", "rg").ManagementClusterContents("cluster")
+		mockResourcesDBClient := databasetesting.NewMockResourcesDBClient()
+		mccCRUD := mockResourcesDBClient.HCPClusters("sub", "rg").ManagementClusterContents("cluster")
 		existingRID := api.Must(azcorearm.ParseResourceID("/subscriptions/sub/resourceGroups/rg/providers/Microsoft.RedHatOpenShift/hcpOpenShiftClusters/cluster/managementClusterContents/readonlyHypershiftHostedCluster"))
 		existingContent := &metav1.List{Items: []runtime.RawExtension{{Raw: []byte(`{}`)}}}
 		existing := &api.ManagementClusterContent{
@@ -541,8 +541,8 @@ func TestMaestroReadonlyBundleHelpers_readAndPersistMaestroReadonlyBundleContent
 		// Get is called once when building desired for pre-create, and once inside readAndPersistMaestroReadonlyBundleContent.
 		mockMaestro.EXPECT().Get(gomock.Any(), "bundle-name", gomock.Any()).Return(b, nil).Times(2)
 
-		mockDB := databasetesting.NewMockResourcesDBClient()
-		mccCRUD := mockDB.HCPClusters("sub", "rg").ManagementClusterContents("cluster")
+		mockResourcesDBClient := databasetesting.NewMockResourcesDBClient()
+		mccCRUD := mockResourcesDBClient.HCPClusters("sub", "rg").ManagementClusterContents("cluster")
 		existingRID := api.Must(azcorearm.ParseResourceID("/subscriptions/sub/resourceGroups/rg/providers/Microsoft.RedHatOpenShift/hcpOpenShiftClusters/cluster/managementClusterContents/readonlyHypershiftHostedCluster"))
 		// Pre-create content that matches exactly what the syncer would compute (same KubeContent and Degraded=False condition)
 		// so that DeepEqual(existing, desired) is true and Replace is not called.
@@ -581,8 +581,8 @@ func TestMaestroReadonlyBundleHelpers_readAndPersistMaestroReadonlyBundleContent
 		// Get is called once when building desired for pre-create, and once inside readAndPersistMaestroReadonlyBundleContent.
 		mockMaestro.EXPECT().Get(gomock.Any(), "bundle-name", gomock.Any()).Return(b, nil).Times(2)
 
-		mockDB := databasetesting.NewMockResourcesDBClient()
-		baseMCCCRUD := mockDB.HCPClusters("sub", "rg").ManagementClusterContents("cluster")
+		mockResourcesDBClient := databasetesting.NewMockResourcesDBClient()
+		baseMCCCRUD := mockResourcesDBClient.HCPClusters("sub", "rg").ManagementClusterContents("cluster")
 		desired, err := calculateManagementClusterContentFromMaestroBundle(ctx, cluster.ID, ref, mockMaestro)
 		require.NoError(t, err)
 		require.NotNil(t, desired)
@@ -613,7 +613,7 @@ func TestMaestroReadonlyBundleHelpers_readAndPersistMaestroReadonlyBundleContent
 		}
 
 		// Use error-injecting wrapper to simulate 412 Precondition Failed on Replace
-		mockDB := &errorInjectingResourcesDBClient{
+		mockResourcesDBClient := &errorInjectingResourcesDBClient{
 			MockResourcesDBClient: databasetesting.NewMockResourcesDBClient(),
 			mccCRUD: &errorInjectingMCCCRUD{
 				getResult:  existingDoc,
@@ -621,7 +621,7 @@ func TestMaestroReadonlyBundleHelpers_readAndPersistMaestroReadonlyBundleContent
 			},
 		}
 
-		err := readAndPersistMaestroReadonlyBundleContent(ctx, cluster.ID, ref, mockMaestro, mockDB.mccCRUD)
+		err := readAndPersistMaestroReadonlyBundleContent(ctx, cluster.ID, ref, mockMaestro, mockResourcesDBClient.mccCRUD)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to replace ManagementClusterContent")
 		assert.True(t, database.IsPreconditionFailedError(err), "expected 412 Precondition Failed")
@@ -635,14 +635,14 @@ func TestMaestroReadonlyBundleHelpers_readAndPersistMaestroReadonlyBundleContent
 
 		getErr := fmt.Errorf("cosmos connection error")
 		// Use error-injecting wrapper to simulate Get error
-		mockDB := &errorInjectingResourcesDBClient{
+		mockResourcesDBClient := &errorInjectingResourcesDBClient{
 			MockResourcesDBClient: databasetesting.NewMockResourcesDBClient(),
 			mccCRUD: &errorInjectingMCCCRUD{
 				getErr: getErr,
 			},
 		}
 
-		err := readAndPersistMaestroReadonlyBundleContent(ctx, cluster.ID, ref, mockMaestro, mockDB.mccCRUD)
+		err := readAndPersistMaestroReadonlyBundleContent(ctx, cluster.ID, ref, mockMaestro, mockResourcesDBClient.mccCRUD)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to get ManagementClusterContent")
 		assert.Contains(t, err.Error(), "cosmos connection error")
@@ -654,8 +654,8 @@ func TestMaestroReadonlyBundleHelpers_readAndPersistMaestroReadonlyBundleContent
 		b := buildTestMaestroBundleWithStatusFeedback("bundle-name", "ns", validHCJSON)
 		mockMaestro.EXPECT().Get(gomock.Any(), "bundle-name", gomock.Any()).Return(b, nil).Times(1)
 
-		mockDB := databasetesting.NewMockResourcesDBClient()
-		mccCRUD := mockDB.HCPClusters("sub", "rg").ManagementClusterContents("cluster")
+		mockResourcesDBClient := databasetesting.NewMockResourcesDBClient()
+		mccCRUD := mockResourcesDBClient.HCPClusters("sub", "rg").ManagementClusterContents("cluster")
 		existingRID := api.Must(azcorearm.ParseResourceID("/subscriptions/sub/resourceGroups/rg/providers/Microsoft.RedHatOpenShift/hcpOpenShiftClusters/cluster/managementClusterContents/readonlyHypershiftHostedCluster"))
 
 		u := &unstructured.Unstructured{}

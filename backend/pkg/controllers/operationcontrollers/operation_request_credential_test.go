@@ -83,7 +83,7 @@ func TestOperationRequestCredential_SyncrhonizeOperation(t *testing.T) {
 			cluster := fixture.newCluster(nil)
 			operation := fixture.newOperation(database.OperationRequestRequestCredential)
 
-			mockDB, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, []any{cluster, operation})
+			mockResourcesDBClient, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, []any{cluster, operation})
 			require.NoError(t, err)
 
 			mockCSClient := ocm.NewMockClusterServiceClientSpec(ctrl)
@@ -98,7 +98,7 @@ func TestOperationRequestCredential_SyncrhonizeOperation(t *testing.T) {
 				Return(breakGlassCredential, nil)
 
 			controller := &operationRequestCredential{
-				resourcesDBClient:     mockDB,
+				resourcesDBClient:     mockResourcesDBClient,
 				clustersServiceClient: mockCSClient,
 			}
 
@@ -111,7 +111,7 @@ func TestOperationRequestCredential_SyncrhonizeOperation(t *testing.T) {
 			}
 
 			if tt.verify != nil {
-				tt.verify(t, ctx, mockDB, fixture)
+				tt.verify(t, ctx, mockResourcesDBClient, fixture)
 			}
 		})
 	}

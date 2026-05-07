@@ -56,7 +56,7 @@ func TestReadAndPersistClusterScopedMaestroReadonlyBundlesContentSyncer_SyncOnce
 func TestReadAndPersistClusterScopedMaestroReadonlyBundlesContentSyncer_SyncOnce_GetServiceProviderClusterError(t *testing.T) {
 	ctx := context.Background()
 
-	baseMockDB := databasetesting.NewMockResourcesDBClient()
+	baseMockResourcesDBClient := databasetesting.NewMockResourcesDBClient()
 
 	key := controllerutils.HCPClusterKey{
 		SubscriptionID:    "test-sub",
@@ -73,14 +73,14 @@ func TestReadAndPersistClusterScopedMaestroReadonlyBundlesContentSyncer_SyncOnce
 	}
 
 	// Add the cluster to the database
-	clustersCRUD := baseMockDB.HCPClusters(key.SubscriptionID, key.ResourceGroupName)
+	clustersCRUD := baseMockResourcesDBClient.HCPClusters(key.SubscriptionID, key.ResourceGroupName)
 	_, err := clustersCRUD.Create(ctx, cluster, nil)
 	require.NoError(t, err)
 
 	// Use error-injecting wrapper to simulate SPC Get error
 	expectedError := fmt.Errorf("database error")
 	mockResourcesDBClient := &errorInjectingResourcesDBClient{
-		MockResourcesDBClient: baseMockDB,
+		MockResourcesDBClient: baseMockResourcesDBClient,
 		spcCRUD: &errorInjectingSPCCRUD{
 			getErr: expectedError,
 		},

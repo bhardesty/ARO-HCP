@@ -134,7 +134,7 @@ func TestOperationRevokeCredentials_SyncrhonizeOperation(t *testing.T) {
 			operation := fixture.newOperation(database.OperationRequestRevokeCredentials)
 			operation.Status = arm.ProvisioningStateDeleting
 
-			mockDB, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, []any{cluster, operation})
+			mockResourcesDBClient, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, []any{cluster, operation})
 			require.NoError(t, err)
 
 			mockCSClient := ocm.NewMockClusterServiceClientSpec(ctrl)
@@ -154,7 +154,7 @@ func TestOperationRevokeCredentials_SyncrhonizeOperation(t *testing.T) {
 				})
 
 			controller := &operationRevokeCredentials{
-				resourcesDBClient:     mockDB,
+				resourcesDBClient:     mockResourcesDBClient,
 				clustersServiceClient: mockCSClient,
 			}
 
@@ -167,7 +167,7 @@ func TestOperationRevokeCredentials_SyncrhonizeOperation(t *testing.T) {
 			}
 
 			if tt.verify != nil {
-				tt.verify(t, ctx, mockDB, fixture)
+				tt.verify(t, ctx, mockResourcesDBClient, fixture)
 			}
 		})
 	}

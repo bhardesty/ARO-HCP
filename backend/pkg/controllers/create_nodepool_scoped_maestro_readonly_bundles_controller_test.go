@@ -437,8 +437,8 @@ func TestCreateNodePoolScopedMaestroReadonlyBundlesSyncer_syncMaestroBundle(t *t
 				},
 			}
 
-			mockDB := databasetesting.NewMockResourcesDBClient()
-			spnpCRUD := mockDB.ServiceProviderNodePools("test-sub", "test-rg", "test-cluster", "test-nodepool")
+			mockResourcesDBClient := databasetesting.NewMockResourcesDBClient()
+			spnpCRUD := mockResourcesDBClient.ServiceProviderNodePools("test-sub", "test-rg", "test-cluster", "test-nodepool")
 			createdSPNP, err := spnpCRUD.Create(ctx, tt.initialSPNP, nil)
 			require.NoError(t, err)
 			provisionShard := buildTestProvisionShard("test-consumer")
@@ -562,7 +562,7 @@ func TestCreateNodePoolScopedMaestroReadonlyBundlesSyncer_SyncOnce_EmptyClusterS
 func TestCreateNodePoolScopedMaestroReadonlyBundlesSyncer_SyncOnce_GetServiceProviderNodePoolError(t *testing.T) {
 	ctx := context.Background()
 
-	baseMockDB := databasetesting.NewMockResourcesDBClient()
+	baseMockResourcesDBClient := databasetesting.NewMockResourcesDBClient()
 
 	key := controllerutils.HCPNodePoolKey{
 		SubscriptionID:    "test-sub",
@@ -584,13 +584,13 @@ func TestCreateNodePoolScopedMaestroReadonlyBundlesSyncer_SyncOnce_GetServicePro
 		},
 	}
 
-	nodepoolsCRUD := baseMockDB.HCPClusters(key.SubscriptionID, key.ResourceGroupName).NodePools(key.HCPClusterName)
+	nodepoolsCRUD := baseMockResourcesDBClient.HCPClusters(key.SubscriptionID, key.ResourceGroupName).NodePools(key.HCPClusterName)
 	_, err := nodepoolsCRUD.Create(ctx, nodepool, nil)
 	require.NoError(t, err)
 
 	expectedError := fmt.Errorf("database error")
 	mockResourcesDBClient := &errorInjectingResourcesDBClientForNodePoolCreate{
-		MockResourcesDBClient: baseMockDB,
+		MockResourcesDBClient: baseMockResourcesDBClient,
 		spnpCRUD: &errorInjectingSPNPCRUDForCreate{
 			getErr: expectedError,
 		},

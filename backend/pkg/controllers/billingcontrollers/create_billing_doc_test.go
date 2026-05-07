@@ -189,14 +189,14 @@ func TestCreateBillingDoc_SyncOnce(t *testing.T) {
 			subscription := newTestSubscription()
 			resources := []any{tt.cluster, subscription}
 
-			mockDB, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, resources)
+			mockResourcesDBClient, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, resources)
 			require.NoError(t, err)
 			mockBillingDBClient := databasetesting.NewMockBillingDBClient()
 
 			controller := &createBillingDoc{
 				clock:             clocktesting.NewFakePassiveClock(fixedTime),
 				azureLocation:     testAzureLocation,
-				resourcesDBClient: mockDB,
+				resourcesDBClient: mockResourcesDBClient,
 				billingDBClient:   mockBillingDBClient,
 				clusterLister: &listertesting.SliceClusterLister{
 					Clusters: []*api.HCPOpenShiftCluster{tt.cluster},
@@ -307,7 +307,7 @@ func TestCreateBillingDoc_ExistingBillingDocButMissingClusterRef(t *testing.T) {
 
 			subscription := newTestSubscription()
 
-			mockDB, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, []any{cluster, subscription})
+			mockResourcesDBClient, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, []any{cluster, subscription})
 			require.NoError(t, err)
 			mockBillingDBClient := databasetesting.NewMockBillingDBClient()
 
@@ -319,7 +319,7 @@ func TestCreateBillingDoc_ExistingBillingDocButMissingClusterRef(t *testing.T) {
 			controller := &createBillingDoc{
 				clock:             clocktesting.NewFakePassiveClock(fixedTime),
 				azureLocation:     testAzureLocation,
-				resourcesDBClient: mockDB,
+				resourcesDBClient: mockResourcesDBClient,
 				billingDBClient:   mockBillingDBClient,
 				clusterLister: &listertesting.SliceClusterLister{
 					Clusters: []*api.HCPOpenShiftCluster{cluster},
@@ -339,7 +339,7 @@ func TestCreateBillingDoc_ExistingBillingDocButMissingClusterRef(t *testing.T) {
 			}
 
 			// Verify the cluster's BillingDocumentCosmosID was updated.
-			clusterCRUD := mockDB.HCPClusters(testSubscriptionID, testResourceGroupName)
+			clusterCRUD := mockResourcesDBClient.HCPClusters(testSubscriptionID, testResourceGroupName)
 			updatedCluster, err := clusterCRUD.Get(ctx, testClusterName)
 			require.NoError(t, err)
 			assert.Equal(t, testClusterUID, updatedCluster.ServiceProviderProperties.BillingDocumentCosmosID,

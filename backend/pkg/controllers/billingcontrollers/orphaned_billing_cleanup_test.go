@@ -172,7 +172,7 @@ func TestOrphanedBillingCleanup_SyncOnce(t *testing.T) {
 			ctx = utils.ContextWithLogger(ctx, testr.New(t))
 
 			// Create mock DB and add billing documents
-			mockDB := databasetesting.NewMockResourcesDBClient()
+			mockResourcesDBClient := databasetesting.NewMockResourcesDBClient()
 
 			// Add billing documents directly
 			mockBillingDBClient := databasetesting.NewMockBillingDBClient()
@@ -185,7 +185,7 @@ func TestOrphanedBillingCleanup_SyncOnce(t *testing.T) {
 			// Add clusters
 			for _, cluster := range tt.clusters {
 				if cluster.ID != nil {
-					clusterCRUD := mockDB.HCPClusters(cluster.ID.SubscriptionID, cluster.ID.ResourceGroupName)
+					clusterCRUD := mockResourcesDBClient.HCPClusters(cluster.ID.SubscriptionID, cluster.ID.ResourceGroupName)
 					_, err := clusterCRUD.Create(ctx, cluster, nil)
 					require.NoError(t, err)
 				}

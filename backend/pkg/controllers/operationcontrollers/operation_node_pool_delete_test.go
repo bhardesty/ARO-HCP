@@ -151,13 +151,13 @@ func TestOperationNodePoolDelete_SynchronizeOperation(t *testing.T) {
 			nodePool := fixture.newNodePool()
 			operation := fixture.newOperation(database.OperationRequestDelete)
 
-			mockDB, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, []any{cluster, nodePool, operation})
+			mockResourcesDBClient, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, []any{cluster, nodePool, operation})
 			require.NoError(t, err)
 
 			mockCSClient := tt.setupMock(ctrl, fixture)
 
 			controller := &operationNodePoolDelete{
-				resourcesDBClient:    mockDB,
+				resourcesDBClient:    mockResourcesDBClient,
 				clusterServiceClient: mockCSClient,
 				notificationClient:   nil,
 			}
@@ -171,7 +171,7 @@ func TestOperationNodePoolDelete_SynchronizeOperation(t *testing.T) {
 			}
 
 			if tt.verify != nil {
-				tt.verify(t, ctx, mockDB, fixture)
+				tt.verify(t, ctx, mockResourcesDBClient, fixture)
 			}
 		})
 	}

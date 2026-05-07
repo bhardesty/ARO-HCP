@@ -76,7 +76,7 @@ func TestDispatchRequestCredential_SyncrhonizeOperation(t *testing.T) {
 			operation := fixture.newOperation(database.OperationRequestRequestCredential)
 			operation.InternalID = api.InternalID{}
 
-			mockDB, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, []any{cluster, operation})
+			mockResourcesDBClient, err := databasetesting.NewMockResourcesDBClientWithResources(ctx, []any{cluster, operation})
 			require.NoError(t, err)
 
 			mockCSClient := ocm.NewMockClusterServiceClientSpec(ctrl)
@@ -94,7 +94,7 @@ func TestDispatchRequestCredential_SyncrhonizeOperation(t *testing.T) {
 
 			controller := &dispatchRequestCredential{
 				clock:                 utilsclock.RealClock{},
-				resourcesDBClient:     mockDB,
+				resourcesDBClient:     mockResourcesDBClient,
 				clustersServiceClient: mockCSClient,
 			}
 
@@ -107,7 +107,7 @@ func TestDispatchRequestCredential_SyncrhonizeOperation(t *testing.T) {
 			}
 
 			if tt.verify != nil {
-				tt.verify(t, ctx, mockDB, fixture)
+				tt.verify(t, ctx, mockResourcesDBClient, fixture)
 			}
 		})
 	}

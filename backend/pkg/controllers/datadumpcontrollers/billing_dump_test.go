@@ -33,13 +33,13 @@ func TestBillingDumpController_SyncOnce(t *testing.T) {
 	clusterResourceID, err := azcorearm.ParseResourceID("/subscriptions/sub-1/resourceGroups/rg-1/providers/Microsoft.RedHatOpenShift/hcpOpenShiftClusters/cluster-1")
 	require.NoError(t, err)
 
-	mockDB := databasetesting.NewMockResourcesDBClient()
+	mockResourcesDBClient := databasetesting.NewMockResourcesDBClient()
 
-	mockBilling := databasetesting.NewMockBillingDBClient()
+	mockBillingDBClient := databasetesting.NewMockBillingDBClient()
 	syncer := &billingDump{
 		cooldownChecker:   &alwaysSyncCooldownChecker{},
-		resourcesDBClient: mockDB,
-		billingDBClient:   mockBilling,
+		resourcesDBClient: mockResourcesDBClient,
+		billingDBClient:   mockBillingDBClient,
 		nextDumpChecker:   &alwaysSyncCooldownChecker{},
 	}
 
@@ -55,13 +55,13 @@ func TestBillingDumpController_SyncOnce(t *testing.T) {
 }
 
 func TestBillingDumpController_CooldownChecker(t *testing.T) {
-	mockDB := databasetesting.NewMockResourcesDBClient()
+	mockResourcesDBClient := databasetesting.NewMockResourcesDBClient()
 
-	mockBilling := databasetesting.NewMockBillingDBClient()
+	mockBillingDBClient := databasetesting.NewMockBillingDBClient()
 	syncer := &billingDump{
 		cooldownChecker:   &alwaysSyncCooldownChecker{},
-		resourcesDBClient: mockDB,
-		billingDBClient:   mockBilling,
+		resourcesDBClient: mockResourcesDBClient,
+		billingDBClient:   mockBillingDBClient,
 		nextDumpChecker:   &alwaysSyncCooldownChecker{},
 	}
 
@@ -86,18 +86,18 @@ func TestBillingDumpController_SyncOnce_WithBillingDoc(t *testing.T) {
 	clusterResourceID, err := azcorearm.ParseResourceID("/subscriptions/sub-1/resourceGroups/rg-1/providers/Microsoft.RedHatOpenShift/hcpOpenShiftClusters/cluster-1")
 	require.NoError(t, err)
 
-	mockDB := databasetesting.NewMockResourcesDBClient()
-	mockBilling := databasetesting.NewMockBillingDBClient()
+	mockResourcesDBClient := databasetesting.NewMockResourcesDBClient()
+	mockBillingDBClient := databasetesting.NewMockBillingDBClient()
 
 	// Create billing document
 	billingDoc := database.NewBillingDocument("billing-doc-1", clusterResourceID)
-	err = mockBilling.BillingDocs(clusterResourceID.SubscriptionID).Create(ctx, billingDoc)
+	err = mockBillingDBClient.BillingDocs(clusterResourceID.SubscriptionID).Create(ctx, billingDoc)
 	require.NoError(t, err)
 
 	syncer := &billingDump{
 		cooldownChecker:   &alwaysSyncCooldownChecker{},
-		resourcesDBClient: mockDB,
-		billingDBClient:   mockBilling,
+		resourcesDBClient: mockResourcesDBClient,
+		billingDBClient:   mockBillingDBClient,
 		nextDumpChecker:   &alwaysSyncCooldownChecker{},
 	}
 
@@ -118,7 +118,7 @@ func TestBillingDumpController_CooldownRespected(t *testing.T) {
 	clusterResourceID, err := azcorearm.ParseResourceID("/subscriptions/sub-1/resourceGroups/rg-1/providers/Microsoft.RedHatOpenShift/hcpOpenShiftClusters/cluster-1")
 	require.NoError(t, err)
 
-	mockDB := databasetesting.NewMockResourcesDBClient()
+	mockResourcesDBClient := databasetesting.NewMockResourcesDBClient()
 
 	// neverSyncChecker prevents sync
 	neverSyncChecker := cooldownCheckerFunc(func(ctx context.Context, key any) bool {
@@ -126,11 +126,11 @@ func TestBillingDumpController_CooldownRespected(t *testing.T) {
 	})
 
 	// Test that cooldown prevents sync
-	mockBilling := databasetesting.NewMockBillingDBClient()
+	mockBillingDBClient := databasetesting.NewMockBillingDBClient()
 	syncer := &billingDump{
 		cooldownChecker:   &alwaysSyncCooldownChecker{},
-		resourcesDBClient: mockDB,
-		billingDBClient:   mockBilling,
+		resourcesDBClient: mockResourcesDBClient,
+		billingDBClient:   mockBillingDBClient,
 		nextDumpChecker:   neverSyncChecker,
 	}
 
