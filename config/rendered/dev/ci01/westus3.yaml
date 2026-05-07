@@ -33,7 +33,7 @@ adminApi:
     connectSocket: false
   cert:
     issuer: Self
-    name: admin-api-cert-dev-usw3
+    name: admin-api-cert-ci01-j7654321
   image:
     digest: sha256:34dae332d86c0592838963950e68ca1282dd54f4eefdf675dbed5c78009eb458
     registry: arohcpsvcdev.azurecr.io
@@ -88,9 +88,9 @@ auditLogsEventHub:
   authRuleName: SendRule
   enabled: false
   kustoConsumerGroupName: AuditLogsToKusto
-  kustoDataConnectionName: dev-westus3-auditlogs
+  kustoDataConnectionName: ci01-westus3-auditlogs
   name: aks-auditlogs
-  namespace: hcp-dev-westus3-auditlogs-eh
+  namespace: hcp-ci01-westus3-auditlogs-eh
   rg: westus3-shared-resources
 automationDryRun: false
 azureGeoShortId: us
@@ -116,11 +116,11 @@ backend:
         memory: 500Mi
     serviceAccountName: backend
   maestro:
-    sourceEnvironmentIdentifier: arohcpdev
+    sourceEnvironmentIdentifier: arohcpci01
   managedIdentityName: backend
   tracing:
-    address: ""
-    exporter: ""
+    address: http://ingest.observability:4318
+    exporter: otlp
 billing:
   aub:
     accountName: ""
@@ -160,7 +160,7 @@ clustersService:
   batchProcessesDryRun: true
   denyAssignments: disabled
   deployDebugJobs: false
-  environment: arohcpdev
+  environment: arohcpci01
   image:
     digest: sha256:8ab0246038cbe1dfdca7bdf82f1ff27795402268caad9cdc6e040ab46a8e06e7
     registry: quay.io
@@ -183,15 +183,15 @@ clustersService:
   postgres:
     backupRetentionDays: 7
     containerizedDb:
-      image: ""
-      pvcCapacity: ""
+      image: docker.io/library/postgres:14.2
+      pvcCapacity: 512Mi
     databaseName: clusters-service
-    deploy: true
+    deploy: false
     enhancedMetricsEnabled: true
     geoRedundantBackup: false
     minTLSVersion: TLSV1.2
-    name: arohcp-dev-dbcs-usw3
-    password: ""
+    name: arohcp-ci01-dbcs-j7654321
+    password: TheBlurstOfTimes
     private: false
     serverSku: Standard_D8s_v3
     serverStorageSizeGB: 128
@@ -200,8 +200,8 @@ clustersService:
   provisionShardClusterLimit: 100
   provisionShardStatus: active
   tracing:
-    address: ""
-    exporter: ""
+    address: http://ingest.observability:4318
+    exporter: otlp
 customExporter:
   enabledCollectors: service-tag-usage,kusto-logs-current
   image:
@@ -219,7 +219,7 @@ customExporter:
     serviceAccountName: aro-hcp-exporter
   managedIdentityName: aro-hcp-exporter
 cxKeyVault:
-  name: ah-dev-cx-usw3-1
+  name: ah-ci01-cx-j7654321-1
   private: false
   softDelete: false
   tagKey: aroHCPPurpose
@@ -229,7 +229,7 @@ dns:
   cxParentZoneName: hcp.osadev.cloud
   globalCertificatesDomain: hcp-global.osadev.cloud
   parentZoneName: osadev.cloud
-  regionalSubdomain: westus3
+  regionalSubdomain: j7654321
   svcParentZoneName: hcpsvc.osadev.cloud
 e2e:
   prow:
@@ -238,7 +238,7 @@ e2e:
     gatePromotion: true
     prowJobName: ""
 entraAppOwnerIds: d8837611-f550-4f0a-af48-575a7178adfb,16ea1e12-7ef3-4613-bea4-3d4a20cbc38c,770ce6b0-5afe-472d-ac0d-1fae72acc4e4
-environmentName: dev
+environmentName: ci01
 ev2:
   assistedId:
     applicationId: ""
@@ -256,13 +256,13 @@ frontend:
     connectSocket: false
   cert:
     issuer: Self
-    name: frontend-cert-dev-usw3
+    name: frontend-cert-ci01-j7654321
   cosmosDB:
     billingContainerMaxScale: 4000
     deploy: true
     disableLocalAuth: true
     locksContainerMaxScale: 4000
-    name: arohcpdev-rp-usw3
+    name: arohcpci01-rp-j7654321
     private: false
     resourceContainerMaxScale: 4000
     zoneRedundantMode: Disabled
@@ -283,8 +283,8 @@ frontend:
     serviceAccountName: frontend
   managedIdentityName: frontend
   tracing:
-    address: ""
-    exporter: ""
+    address: http://ingest.observability:4318
+    exporter: otlp
 geneva:
   actions:
     allowedAcisExtensions: AzureRedHatHypershiftExtension,Azure Red Hat Hypershift
@@ -330,7 +330,7 @@ geneva:
       san: ""
       secretName: clusterlogs
     environment: Test
-    manageCertificates: true
+    manageCertificates: false
     rp:
       accountName: placeholder
       configVersion: "1"
@@ -364,7 +364,7 @@ global:
   rg: global
   safeDnsIntAppObjectId: ""
   subscription:
-    displayName: Azure Red Hat OpenShift HCP - dev - Global
+    displayName: Azure Red Hat OpenShift HCP - ci01 - Global
     key: ARO Hosted Control Planes (EA Subscription 1)
     providers:
       Microsoft.Compute:
@@ -469,7 +469,7 @@ logs:
     subscriptions: []
 maestro:
   agent:
-    consumerName: hcp-underlay-usw3-mgmt-1
+    consumerName: hcp-underlay-j7654321-mgmt-1
     k8s:
       namespace: maestro
       replicas: 1
@@ -485,7 +485,7 @@ maestro:
   certIssuer: Self
   eventGrid:
     maxClientSessionsPerAuthName: 6
-    name: arohcp-dev-maestro-usw3
+    name: arohcp-ci01-maestro-j7654321
     private: false
   image:
     digest: sha256:d140d4cda106081c5f2b97a127cb0a785f9b7d7df3f9a58628edbf9d175dd906
@@ -494,15 +494,15 @@ maestro:
   postgres:
     backupRetentionDays: 7
     containerizedDb:
-      image: ""
-      pvcCapacity: ""
+      image: docker.io/library/postgres:14.2
+      pvcCapacity: 512Mi
     databaseName: maestro
-    deploy: true
+    deploy: false
     enhancedMetricsEnabled: true
     geoRedundantBackup: false
     minTLSVersion: TLSV1.2
-    name: arohcp-dev-dbmaestro-usw3
-    password: ""
+    name: arohcp-ci01-dbmaestro-j7654321
+    password: TheBlurstOfTimes
     private: false
     serverSku: Standard_D2s_v3
     serverStorageSizeGB: 32
@@ -522,17 +522,17 @@ maestro:
       serviceAccountName: maestro
     loglevel: 2
     managedIdentityName: maestro-server
-    mqttClientName: maestro-server-usw3-dev
+    mqttClientName: maestro-server-j7654321
     tracing:
       address: http://ingest.observability:4318
       exporter: otlp
 mgmt:
   aks:
     clusterOutboundIPAddressIPTags: ""
-    enableSwiftV2Nodepools: false
-    enableSwiftV2Vnet: false
+    enableSwiftV2Nodepools: true
+    enableSwiftV2Vnet: true
     etcd:
-      name: ah-dev-me-usw3-1
+      name: ah-ci01-me-j7654321-1
       private: true
       softDelete: false
       tagKey: aroHCPPurpose
@@ -541,13 +541,13 @@ mgmt:
       maxCount: 3
       minCount: 1
       name: infra
-      osDiskSizeGB: 32
+      osDiskSizeGB: 64
       poolCount: 2
-      vmSize: Standard_D2s_v3
+      vmSize: Standard_D4ds_v6
       zoneRedundantMode: Auto
       zones: ""
     kubernetesVersion: 1.35.1
-    name: dev-westus3-mgmt-1
+    name: ci01-j7654321-mgmt-1
     networkDataplane: azure
     networkPolicy: azure
     podSubnetPrefix: 10.128.64.0/18
@@ -556,33 +556,35 @@ mgmt:
       maxCount: 4
       minCount: 1
       name: system
-      osDiskSizeGB: 128
+      osDiskSizeGB: 32
       poolCount: 1
-      vmSize: Standard_E8s_v3
+      vmSize: Standard_D4ds_v6
       zoneRedundantMode: Auto
       zones: ""
     userAgentPool:
-      maxCount: 3
-      minCount: 1
+      maxCount: 14
+      minCount: 3
       name: userswft
-      osDiskSizeGB: 128
+      osDiskSizeGB: 100
       poolCount: 3
       secondaryNicCount: 7
-      vmSize: Standard_D16s_v3
+      vmSize: Standard_D16ds_v6
       zoneRedundantMode: Auto
       zones: ""
     vnetAddressPrefix: 10.128.0.0/14
-  applyKubeletFixes: true
+  applyKubeletFixes: false
   defaultStorageClassSkuName: PremiumV2_LRS
   hcpBackups:
     storageAccount:
-      name: oadpdevusw31
+      name: oadpci01j76543211
       public: false
       zoneRedundantMode: Auto
     storageAccountContainerName: backups
+  jaeger:
+    deploy: false
   nsp:
     accessMode: Learning
-    name: nsp-usw3-mgmt-1
+    name: nsp-j7654321-mgmt-1
   prometheus:
     admissionWebhook:
       patch:
@@ -628,13 +630,13 @@ mgmt:
         repository: thanos/thanos
         sha: cf3e9b292e4302ad4a4955b56379703aea39516607d382a57604a3d003c35d10
         tag: v0.41.0
-  rg: hcp-underlay-dev-westus3-mgmt-1
+  rg: hcp-underlay-ci01-j7654321-mgmt-1
   subscription:
     certificateDomains:
     - '*.hcp.osadev.cloud'
     - '*.hcpsvc.osadev.cloud'
     displayName: Azure Red Hat OpenShift HCP - West US 3 - MGMT - 1
-    key: ARO Hosted Control Planes (EA Subscription 1)
+    key: ARO HCP E2E Infrastructure (EA Subscription)
     providers:
       Microsoft.Compute:
         features:
@@ -659,7 +661,7 @@ mgmt:
         poll: true
     usePlannedQuota: true
 mgmtKeyVault:
-  name: ah-dev-mg-usw3-1
+  name: ah-ci01-mg-j7654321-1
   private: false
   softDelete: false
   tagKey: aroHCPPurpose
@@ -669,7 +671,7 @@ miMockClientId: e8723db7-9b9e-46a4-9f7d-64d75c3534f0
 miMockPrincipalId: d6b62dfa-87f5-49b3-bbcb-4a687c4faa96
 miMockTenantId: 64dc69e4-d083-49fc-9569-ebece1dd1408
 mise:
-  applicationName: arohcp-mise-dev
+  applicationName: arohcp-mise-ci01
   arm:
     applicationId: e2c2ff5c-e5b4-4e79-8c3e-1da8c48461e7
     audienceFQDN: management.azure.com
@@ -696,13 +698,13 @@ mise:
     exporter: ""
 monitoring:
   alertRuleOwningTeamTag: ""
-  alertsEnabled: true
+  alertsEnabled: false
   crossTenantSecurityGroup: ""
   grafanaMajorVersion: "11"
   grafanaName: arohcp-dev
   grafanaRoles: 6b6d3adf-8476-4727-9812-20ffdef2b85c/Group/Admin
   grafanaZoneRedundantMode: Disabled
-  hcpWorkspaceName: hcps-usw3
+  hcpWorkspaceName: hcps-j7654321
   icm:
     connectionId: ""
     connectionName: ""
@@ -730,7 +732,7 @@ monitoring:
       routingId: ""
   maxActiveTimeSeries: 2000000
   maxEventsPerMinute: 2000000
-  svcWorkspaceName: services-usw3
+  svcWorkspaceName: services-j7654321
 msiCredentialsRefresher:
   certificate:
     commonName: ""
@@ -753,7 +755,7 @@ msiCredentialsRefresher:
     serviceAccountName: msi-credential-refresher
   managedIdentityName: msi-credential-refresher
 msiKeyVault:
-  name: ah-dev-mi-usw3-1
+  name: ah-ci01-mi-j7654321-1
   private: false
   softDelete: false
   tagKey: aroHCPPurpose
@@ -763,7 +765,7 @@ msiRp:
 oidc:
   frontdoor:
     keyVault:
-      name: ah-dev-afd
+      name: ah-ci01-afd
       private: false
       softDelete: true
       tagKey: aroHCPPurpose
@@ -775,12 +777,12 @@ oidc:
     subdomain: oic
     useManagedCertificates: true
   storageAccount:
-    name: arohcpdevoidcusw3
+    name: arohcpci01oidcj7654321
     privateLinkLocation: westus3
     public: true
     zoneRedundantMode: Auto
 region: westus3
-regionRG: hcp-underlay-dev-westus3
+regionRG: hcp-underlay-ci01-j7654321
 routeMonitorOperator:
   blackboxExporterImage:
     digest: sha256:b04a9fef4fa086a02fc7fcd8dcdbc4b7b35cc30cdee860fdc6a19dd8b208d63e
@@ -809,7 +811,7 @@ secretSyncController:
     registry: mcr.microsoft.com
     repository: oss/v2/azure/secrets-store/provider-azure
 serviceKeyVault:
-  assignNSP: true
+  assignNSP: false
   name: aro-hcp-dev-svc-kv
   private: false
   region: westus3
@@ -823,7 +825,7 @@ serviceKeyVault:
 sessiongate:
   cert:
     issuer: Self
-    name: sessiongate-cert-dev-usw3
+    name: sessiongate-cert-ci01-j7654321
   image:
     digest: sha256:6afdcf3c1c83c041870df639dc0e6163776ef9ff6b34536dba73b47984d2c67c
     registry: arohcpsvcdev.azurecr.io
@@ -837,7 +839,7 @@ svc:
   aks:
     clusterOutboundIPAddressIPTags: ""
     etcd:
-      name: ah-dev-se-usw3-1
+      name: ah-ci01-se-j7654321-1
       private: true
       softDelete: false
       tagKey: aroHCPPurpose
@@ -848,11 +850,11 @@ svc:
       name: infra
       osDiskSizeGB: 32
       poolCount: 1
-      vmSize: Standard_D2s_v3
+      vmSize: Standard_D4ds_v6
       zoneRedundantMode: Auto
       zones: ""
     kubernetesVersion: 1.35.1
-    name: dev-westus3-svc-1
+    name: ci01-j7654321-svc
     networkDataplane: cilium
     networkPolicy: cilium
     podSubnetPrefix: 10.128.64.0/18
@@ -863,13 +865,13 @@ svc:
       name: system
       osDiskSizeGB: 32
       poolCount: 1
-      vmSize: Standard_D2s_v3
+      vmSize: Standard_D4ds_v6
       zoneRedundantMode: Auto
       zones: ""
     userAgentPool:
       maxCount: 3
       minCount: 1
-      name: u64d8ds6
+      name: u64d8dsv6
       osDiskSizeGB: 64
       poolCount: 3
       vmSize: Standard_D8ds_v6
@@ -882,10 +884,12 @@ svc:
     istioctlVersion: 1.29.2
     tag: prod-stable
     targetVersion: asm-1-28
-    versions: asm-1-26,asm-1-28
+    versions: asm-1-28
+  jaeger:
+    deploy: true
   nsp:
     accessMode: Learning
-    name: nsp-usw3-svc
+    name: nsp-j7654321-svc
   opsIngress:
     gateway:
       ipAddressName: aro-hcp-ops-ingress
@@ -936,12 +940,12 @@ svc:
         repository: thanos/thanos
         sha: cf3e9b292e4302ad4a4955b56379703aea39516607d382a57604a3d003c35d10
         tag: v0.41.0
-  rg: hcp-underlay-dev-westus3-svc
+  rg: hcp-underlay-ci01-j7654321-svc
   subscription:
     certificateDomains:
     - '*.hcpsvc.osadev.cloud'
     displayName: Azure Red Hat OpenShift HCP - West US 3 - SVC
-    key: ARO Hosted Control Planes (EA Subscription 1)
+    key: ARO HCP E2E Infrastructure (EA Subscription)
     providers:
       Microsoft.Compute:
         features:
