@@ -80,7 +80,7 @@ module ocpPublicCaching '../modules/acr/public-cache.bicep' = {
       {
         ruleName: 'redhat-user-workloads-crt-redhat-acm-tenant'
         sourceRepo: 'quay.io/redhat-user-workloads/crt-redhat-acm-tenant/*'
-        targetRepo: 'redhat-user-workloads/crt-redhat-acm-tenant/*'
+        targetRepo: 'quay-cache/redhat-user-workloads/crt-redhat-acm-tenant/*'
       }
     ]
   }
