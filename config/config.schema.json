@@ -2185,6 +2185,34 @@
         },
         "keyVault": {
           "$ref": "#/definitions/keyVault"
+        },
+        "managementGroup": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        },
+        "groupQuota": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "displayName": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "displayName"
+          ]
         }
       },
       "required": [
@@ -2192,7 +2220,9 @@
         "billing",
         "subscription",
         "region",
-        "keyVault"
+        "keyVault",
+        "managementGroup",
+        "groupQuota"
       ]
     },
     "hypershift": {

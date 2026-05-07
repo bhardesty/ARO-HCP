@@ -350,6 +350,9 @@ global:
     digest: placeholder
     rg: placeholder
   globalMSIName: global-rollout-identity
+  groupQuota:
+    displayName: empty-sentinel
+    id: empty-sentinel
   keyVault:
     encryptionKeyName: secretSyncKey
     name: arohcpdev-global
@@ -357,6 +360,8 @@ global:
     softDelete: true
     tagKey: aroHCPPurpose
     tagValue: global
+  managementGroup:
+    id: empty-sentinel
   nsp:
     accessMode: Learning
     name: nsp-global
