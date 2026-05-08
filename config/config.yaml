@@ -76,6 +76,11 @@ defaults:
       tagKey: aroHCPPurpose
       tagValue: global
       encryptionKeyName: secretSyncKey
+    managementGroup:
+      id: "empty-sentinel"
+    groupQuota:
+      id: "empty-sentinel"
+      displayName: "empty-sentinel"
   # ACR
   acr:
     svc:
