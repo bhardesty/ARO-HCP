@@ -274,7 +274,7 @@ func readAndPersistMaestroReadonlyBundleContent(
 		return utils.TrackError(fmt.Errorf("failed to calculate ManagementClusterContent from Maestro Bundle: %w", err))
 	}
 
-	existing, err := managementClusterContentsDBClient.Get(ctx, desired.CosmosMetadata.ResourceID.Name)
+	existing, err := managementClusterContentsDBClient.Get(ctx, desired.ResourceID.Name)
 	if err != nil && !database.IsNotFoundError(err) {
 		return utils.TrackError(fmt.Errorf("failed to get ManagementClusterContent: %w", err))
 	}

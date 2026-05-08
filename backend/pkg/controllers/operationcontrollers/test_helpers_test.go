@@ -105,7 +105,6 @@ func (f *clusterTestFixture) newOperation(request database.OperationRequest) *ap
 		CosmosMetadata: api.CosmosMetadata{
 			ResourceID: f.cosmosOperationResourceID,
 		},
-		ResourceID:  f.cosmosOperationResourceID,
 		TenantID:    testTenantID,
 		Status:      arm.ProvisioningStateAccepted,
 		Request:     request,

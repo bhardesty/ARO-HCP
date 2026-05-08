@@ -583,7 +583,6 @@ func activeOperationInformerTestCase() informerTestCase {
 			CosmosMetadata: api.CosmosMetadata{
 				ResourceID: resourceID,
 			},
-			ResourceID:         resourceID,
 			OperationID:        operationID,
 			ExternalID:         externalID,
 			Request:            api.OperationRequestCreate,
@@ -666,7 +665,6 @@ func controllerInformerTestCase() informerTestCase {
 			CosmosMetadata: api.CosmosMetadata{
 				ResourceID: controllerResourceID,
 			},
-			ResourceID: controllerResourceID,
 		}
 	}
 
@@ -682,7 +680,6 @@ func controllerInformerTestCase() informerTestCase {
 			CosmosMetadata: api.CosmosMetadata{
 				ResourceID: controllerResourceID,
 			},
-			ResourceID: controllerResourceID,
 		}
 	}
 
@@ -698,7 +695,6 @@ func controllerInformerTestCase() informerTestCase {
 			CosmosMetadata: api.CosmosMetadata{
 				ResourceID: controllerResourceID,
 			},
-			ResourceID: controllerResourceID,
 		}
 	}
 
