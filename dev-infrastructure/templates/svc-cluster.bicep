@@ -587,9 +587,7 @@ resource svcClusterNSG 'Microsoft.Network/networkSecurityGroups@2023-11-01' = {
         name: 'admin-in-geneva'
         properties: {
           access: 'Allow'
-          destinationAddressPrefix: istioIngressGatewayIPAddress.outputs.ipAddress
-          // TODO: ops-ingress phase 3: switch to ops IP
-          // destinationAddressPrefix: opsIngressGatewayIPAddress.outputs.ipAddress
+          destinationAddressPrefix: opsIngressGatewayIPAddress.outputs.ipAddress
           destinationPortRange: '443'
           direction: 'Inbound'
           priority: 130
@@ -607,7 +605,7 @@ resource svcClusterNSG 'Microsoft.Network/networkSecurityGroups@2023-11-01' = {
           direction: 'Inbound'
           priority: 140
           protocol: 'Tcp'
-          sourceAddressPrefix: sreServiceTag != '' ? sreServiceTag : '*'
+          sourceAddressPrefix: sreServiceTag
           sourcePortRange: '*'
         }
       }
@@ -1059,14 +1057,13 @@ module adminApiIngressCertCSIAccess '../modules/keyvault/keyvault-secret-access.
   }
 }
 
-// TODO: ops-ingress phase 3: move DNS to ops ingress when k8s gateway is deployed to prod
 module adminApiDNS '../modules/dns/a-record.bicep' = {
   name: 'admin-api-dns'
   scope: resourceGroup(regionalResourceGroup)
   params: {
     zoneName: regionalSvcDNSZoneName
     recordName: adminApiDnsName
-    ipAddress: istioIngressGatewayIPAddress.outputs.ipAddress
+    ipAddress: opsIngressGatewayIPAddress.outputs.ipAddress
     ttl: 300
   }
 }
