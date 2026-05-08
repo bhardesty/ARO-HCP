@@ -94,27 +94,20 @@ var _ = Describe("Customer", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("ensuring the API TLS certificate is signed by a trusted Azure CA")
-			Eventually(func() error {
-				clusterResp, err := tc.Get20240610ClientFactoryOrDie(ctx).NewHcpOpenShiftClustersClient().Get(ctx, *resourceGroup.Name, customerClusterName, nil)
-				if err != nil {
-					return fmt.Errorf("failed to get cluster: %w", err)
-				}
+			clusterResp, err := tc.Get20240610ClientFactoryOrDie(ctx).NewHcpOpenShiftClustersClient().Get(ctx, *resourceGroup.Name, customerClusterName, nil)
+			Expect(err).NotTo(HaveOccurred())
 
-				if clusterResp.Properties == nil || clusterResp.Properties.API == nil || clusterResp.Properties.API.URL == nil {
-					return fmt.Errorf("cluster API URL not yet available")
-				}
+			Expect(clusterResp.Properties).NotTo(BeNil(), "cluster response Properties was nil")
+			Expect(clusterResp.Properties.API).NotTo(BeNil(), "cluster Properties.API was nil")
+			Expect(clusterResp.Properties.API.URL).NotTo(BeNil(), "cluster Properties.API.URL was nil")
 
-				apiServerURL := clusterResp.Properties.API.URL
-				actualAPICerts, err := tlsCertsFromURL(ctx, *apiServerURL)
-				if err != nil {
-					fmt.Fprintf(GinkgoWriter, "error fetching API cert: %v\n", err)
-					return err
-				}
+			apiServerURL := clusterResp.Properties.API.URL
+			actualAPICerts, err := tlsCertsFromURL(ctx, *apiServerURL)
+			Expect(err).NotTo(HaveOccurred())
 
-				fmt.Fprintf(GinkgoWriter, "Issuer: %v\n", actualAPICerts[0].Issuer)
-				return verifyCertChain(actualAPICerts, trustedCAs)
-			}).WithTimeout(5*time.Minute).WithPolling(10*time.Second).Should(Succeed(),
-				"expect API certificate to be signed by a trusted Azure CA")
+			fmt.Fprintf(GinkgoWriter, "Issuer: %v\n", actualAPICerts[0].Issuer)
+			err = verifyCertChain(actualAPICerts, trustedCAs)
+			Expect(err).NotTo(HaveOccurred(), "expect API certificate to be signed by a trusted Azure CA")
 
 			By("creating the node pool")
 			nodePoolParams := framework.NewDefaultNodePoolParams()
