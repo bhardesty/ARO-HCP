@@ -66,6 +66,12 @@ func (c *cosmosExternalAuthMatching) getAllCosmosObjs(ctx context.Context, keyOb
 	}
 
 	for _, externalAuth := range allExternalAuths.Items(ctx) {
+		// we skip cosmos externalauths that don't have a clusterServiceID because if we don't have it there's nothing we
+		// can delete. It means that the externalauth hasn't been created in cluster service yet or we haven't persisted
+		// the clusterServiceID in cosmos yet.
+		if externalAuth.ServiceProviderProperties.ClusterServiceID == nil || len(externalAuth.ServiceProviderProperties.ClusterServiceID.String()) == 0 {
+			continue
+		}
 		ret = append(ret, externalAuth)
 		existingCluster, exists := clusterServiceIDToExternalAuth[externalAuth.ServiceProviderProperties.ClusterServiceID.String()]
 		if exists {
