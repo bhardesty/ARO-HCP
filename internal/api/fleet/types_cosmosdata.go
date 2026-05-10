@@ -21,22 +21,22 @@ import (
 	azcorearm "github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 )
 
-// ToFleetResourceID constructs the parent scope resource ID for a fleet
-// partition: /providers/Microsoft.RedHatOpenShift/fleet/{stampIdentifier}
-func ToFleetResourceID(stampIdentifier string) (*azcorearm.ResourceID, error) {
-	return azcorearm.ParseResourceID(ToFleetResourceIDString(stampIdentifier))
+// ToStampResourceID constructs the resource ID for a stamp:
+// /providers/Microsoft.RedHatOpenShift/stamps/{stampIdentifier}
+func ToStampResourceID(stampIdentifier string) (*azcorearm.ResourceID, error) {
+	return azcorearm.ParseResourceID(ToStampResourceIDString(stampIdentifier))
 }
 
-// ToFleetResourceIDString returns the lowercased fleet parent scope resource ID.
-func ToFleetResourceIDString(stampIdentifier string) string {
+// ToStampResourceIDString returns the lowercased stamp resource ID string.
+func ToStampResourceIDString(stampIdentifier string) string {
 	return strings.ToLower(path.Join(
-		"/providers", FleetResourceType.String(), stampIdentifier,
+		"/providers", StampResourceType.String(), stampIdentifier,
 	))
 }
 
 // ToManagementClusterResourceID constructs the full resource ID for a
-// management cluster singleton within a fleet partition:
-// /providers/Microsoft.RedHatOpenShift/fleet/{stampIdentifier}/managementCluster/default
+// management cluster singleton within a stamp:
+// /providers/Microsoft.RedHatOpenShift/stamps/{stampIdentifier}/managementClusters/default
 func ToManagementClusterResourceID(stampIdentifier string) (*azcorearm.ResourceID, error) {
 	return azcorearm.ParseResourceID(ToManagementClusterResourceIDString(stampIdentifier))
 }
@@ -45,7 +45,7 @@ func ToManagementClusterResourceID(stampIdentifier string) (*azcorearm.ResourceI
 // for a management cluster singleton.
 func ToManagementClusterResourceIDString(stampIdentifier string) string {
 	return strings.ToLower(path.Join(
-		"/providers", FleetResourceType.String(), stampIdentifier,
+		"/providers", StampResourceType.String(), stampIdentifier,
 		ManagementClusterResourceTypeName, ManagementClusterResourceName,
 	))
 }

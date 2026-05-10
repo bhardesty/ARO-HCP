@@ -23,9 +23,37 @@ import (
 )
 
 var (
+	_ runtime.Object            = &Stamp{}
+	_ metav1.ObjectMetaAccessor = &Stamp{}
 	_ runtime.Object            = &ManagementCluster{}
 	_ metav1.ObjectMetaAccessor = &ManagementCluster{}
 )
+
+func (o *Stamp) GetObjectKind() schema.ObjectKind {
+	return schema.EmptyObjectKind
+}
+
+func (o *Stamp) GetObjectMeta() metav1.Object {
+	om := &metav1.ObjectMeta{}
+	if o.GetResourceID() != nil {
+		om.Name = strings.ToLower(o.GetResourceID().String())
+	}
+	return om
+}
+
+// StampList is a list of Stamp resources.
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+type StampList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []Stamp `json:"items"`
+}
+
+var _ runtime.Object = &StampList{}
+
+func (l *StampList) GetObjectKind() schema.ObjectKind {
+	return &l.TypeMeta
+}
 
 func (o *ManagementCluster) GetObjectKind() schema.ObjectKind {
 	return schema.EmptyObjectKind

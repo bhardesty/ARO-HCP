@@ -92,7 +92,6 @@ func newTestSPC(opts ...func(*api.ServiceProviderCluster)) *api.ServiceProviderC
 		CosmosMetadata: api.CosmosMetadata{
 			ResourceID: spcResourceID,
 		},
-		ResourceID: *spcResourceID,
 	}
 	for _, opt := range opts {
 		opt(spc)

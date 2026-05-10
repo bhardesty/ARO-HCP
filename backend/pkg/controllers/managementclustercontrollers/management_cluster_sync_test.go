@@ -115,7 +115,7 @@ func buildExpectedManagementCluster(t *testing.T, shardID, consumerName, aksName
 
 func getManagementCluster(t *testing.T, ctx context.Context, client database.FleetDBClient, stampIdentifier string) *fleet.ManagementCluster {
 	t.Helper()
-	mc, err := client.Fleet(stampIdentifier).ManagementClusters().Get(ctx, fleet.ManagementClusterResourceName)
+	mc, err := client.Stamps().ManagementClusters(stampIdentifier).Get(ctx, fleet.ManagementClusterResourceName)
 	require.NoError(t, err)
 	return mc
 }
@@ -159,39 +159,39 @@ func (e *errorManagementClusterLister) Get(_ context.Context, _ string) (*fleet.
 func TestSyncOnce(t *testing.T) {
 	tests := []struct {
 		name                string
-		setup               func(t *testing.T, ctrl *gomock.Controller) (ocm.ClusterServiceClientSpec, *databasetesting.MockFleetDBClient, dblisters.ManagementClusterLister)
+		setup               func(t *testing.T, ctrl *gomock.Controller) (ocm.ClusterServiceClientSpec, *databasetesting.MockFleetDBClient, dblisters.StampLister, dblisters.ManagementClusterLister)
 		expectedErrorSubstr string
 		validate            func(t *testing.T, ctx context.Context, client *databasetesting.MockFleetDBClient)
 	}{
 		{
 			name: "no shards syncs successfully",
-			setup: func(t *testing.T, ctrl *gomock.Controller) (ocm.ClusterServiceClientSpec, *databasetesting.MockFleetDBClient, dblisters.ManagementClusterLister) {
+			setup: func(t *testing.T, ctrl *gomock.Controller) (ocm.ClusterServiceClientSpec, *databasetesting.MockFleetDBClient, dblisters.StampLister, dblisters.ManagementClusterLister) {
 				t.Helper()
 				mockCS := ocm.NewMockClusterServiceClientSpec(ctrl)
 				mockCS.EXPECT().ListProvisionShards().Return(ocm.NewSimpleProvisionShardListIterator(nil, nil))
-				return mockCS, databasetesting.NewMockFleetDBClient(), &listertesting.SliceManagementClusterLister{}
+				return mockCS, databasetesting.NewMockFleetDBClient(), &listertesting.SliceStampLister{}, &listertesting.SliceManagementClusterLister{}
 			},
 		},
 		{
 			name: "CS list error is propagated",
-			setup: func(t *testing.T, ctrl *gomock.Controller) (ocm.ClusterServiceClientSpec, *databasetesting.MockFleetDBClient, dblisters.ManagementClusterLister) {
+			setup: func(t *testing.T, ctrl *gomock.Controller) (ocm.ClusterServiceClientSpec, *databasetesting.MockFleetDBClient, dblisters.StampLister, dblisters.ManagementClusterLister) {
 				t.Helper()
 				mockCS := ocm.NewMockClusterServiceClientSpec(ctrl)
 				mockCS.EXPECT().ListProvisionShards().Return(ocm.NewSimpleProvisionShardListIterator(nil, fmt.Errorf("list failed")))
-				return mockCS, databasetesting.NewMockFleetDBClient(), &listertesting.SliceManagementClusterLister{}
+				return mockCS, databasetesting.NewMockFleetDBClient(), &listertesting.SliceStampLister{}, &listertesting.SliceManagementClusterLister{}
 			},
 			expectedErrorSubstr: "list failed",
 		},
 		{
 			name: "new management cluster is created",
-			setup: func(t *testing.T, ctrl *gomock.Controller) (ocm.ClusterServiceClientSpec, *databasetesting.MockFleetDBClient, dblisters.ManagementClusterLister) {
+			setup: func(t *testing.T, ctrl *gomock.Controller) (ocm.ClusterServiceClientSpec, *databasetesting.MockFleetDBClient, dblisters.StampLister, dblisters.ManagementClusterLister) {
 				t.Helper()
 				mockCS := ocm.NewMockClusterServiceClientSpec(ctrl)
 				shard := buildTestProvisionShard(t, testShardID, "test-consumer", "test-westus3-mgmt-1", "active")
 				mockCS.EXPECT().ListProvisionShards().Return(
 					ocm.NewSimpleProvisionShardListIterator([]*arohcpv1alpha1.ProvisionShard{shard}, nil),
 				)
-				return mockCS, databasetesting.NewMockFleetDBClient(), &listertesting.SliceManagementClusterLister{}
+				return mockCS, databasetesting.NewMockFleetDBClient(), &listertesting.SliceStampLister{}, &listertesting.SliceManagementClusterLister{}
 			},
 			validate: func(t *testing.T, ctx context.Context, client *databasetesting.MockFleetDBClient) {
 				t.Helper()
@@ -204,7 +204,7 @@ func TestSyncOnce(t *testing.T) {
 		},
 		{
 			name: "existing management cluster is updated when SchedulingPolicy changed",
-			setup: func(t *testing.T, ctrl *gomock.Controller) (ocm.ClusterServiceClientSpec, *databasetesting.MockFleetDBClient, dblisters.ManagementClusterLister) {
+			setup: func(t *testing.T, ctrl *gomock.Controller) (ocm.ClusterServiceClientSpec, *databasetesting.MockFleetDBClient, dblisters.StampLister, dblisters.ManagementClusterLister) {
 				t.Helper()
 				mockCS := ocm.NewMockClusterServiceClientSpec(ctrl)
 				fleetClient := databasetesting.NewMockFleetDBClient()
@@ -213,13 +213,13 @@ func TestSyncOnce(t *testing.T) {
 				existing, err := ocm.ConvertCSManagementClusterToInternal(shard)
 				require.NoError(t, err)
 				existing.Spec.SchedulingPolicy = fleet.ManagementClusterSchedulingPolicyUnschedulable
-				_, err = fleetClient.Fleet("1").ManagementClusters().Create(t.Context(), existing, nil)
+				_, err = fleetClient.Stamps().ManagementClusters("1").Create(t.Context(), existing, nil)
 				require.NoError(t, err)
 
 				mockCS.EXPECT().ListProvisionShards().Return(
 					ocm.NewSimpleProvisionShardListIterator([]*arohcpv1alpha1.ProvisionShard{shard}, nil),
 				)
-				return mockCS, fleetClient, &listertesting.SliceManagementClusterLister{ManagementClusters: []*fleet.ManagementCluster{existing}}
+				return mockCS, fleetClient, &listertesting.SliceStampLister{}, &listertesting.SliceManagementClusterLister{ManagementClusters: []*fleet.ManagementCluster{existing}}
 			},
 			validate: func(t *testing.T, ctx context.Context, client *databasetesting.MockFleetDBClient) {
 				t.Helper()
@@ -230,7 +230,7 @@ func TestSyncOnce(t *testing.T) {
 		},
 		{
 			name: "unchanged management cluster is not replaced",
-			setup: func(t *testing.T, ctrl *gomock.Controller) (ocm.ClusterServiceClientSpec, *databasetesting.MockFleetDBClient, dblisters.ManagementClusterLister) {
+			setup: func(t *testing.T, ctrl *gomock.Controller) (ocm.ClusterServiceClientSpec, *databasetesting.MockFleetDBClient, dblisters.StampLister, dblisters.ManagementClusterLister) {
 				t.Helper()
 				mockCS := ocm.NewMockClusterServiceClientSpec(ctrl)
 				fleetClient := databasetesting.NewMockFleetDBClient()
@@ -242,12 +242,12 @@ func TestSyncOnce(t *testing.T) {
 				mockCS.EXPECT().ListProvisionShards().Return(
 					ocm.NewSimpleProvisionShardListIterator([]*arohcpv1alpha1.ProvisionShard{shard}, nil),
 				)
-				return mockCS, fleetClient, &listertesting.SliceManagementClusterLister{ManagementClusters: []*fleet.ManagementCluster{existing}}
+				return mockCS, fleetClient, &listertesting.SliceStampLister{}, &listertesting.SliceManagementClusterLister{ManagementClusters: []*fleet.ManagementCluster{existing}}
 			},
 		},
 		{
 			name: "conversion error is collected and reported",
-			setup: func(t *testing.T, ctrl *gomock.Controller) (ocm.ClusterServiceClientSpec, *databasetesting.MockFleetDBClient, dblisters.ManagementClusterLister) {
+			setup: func(t *testing.T, ctrl *gomock.Controller) (ocm.ClusterServiceClientSpec, *databasetesting.MockFleetDBClient, dblisters.StampLister, dblisters.ManagementClusterLister) {
 				t.Helper()
 				mockCS := ocm.NewMockClusterServiceClientSpec(ctrl)
 				badShard, err := arohcpv1alpha1.NewProvisionShard().
@@ -264,13 +264,13 @@ func TestSyncOnce(t *testing.T) {
 				mockCS.EXPECT().ListProvisionShards().Return(
 					ocm.NewSimpleProvisionShardListIterator([]*arohcpv1alpha1.ProvisionShard{badShard}, nil),
 				)
-				return mockCS, databasetesting.NewMockFleetDBClient(), &listertesting.SliceManagementClusterLister{}
+				return mockCS, databasetesting.NewMockFleetDBClient(), &listertesting.SliceStampLister{}, &listertesting.SliceManagementClusterLister{}
 			},
 			expectedErrorSubstr: "provision shard has empty HREF",
 		},
 		{
 			name: "multiple shards are all created",
-			setup: func(t *testing.T, ctrl *gomock.Controller) (ocm.ClusterServiceClientSpec, *databasetesting.MockFleetDBClient, dblisters.ManagementClusterLister) {
+			setup: func(t *testing.T, ctrl *gomock.Controller) (ocm.ClusterServiceClientSpec, *databasetesting.MockFleetDBClient, dblisters.StampLister, dblisters.ManagementClusterLister) {
 				t.Helper()
 				mockCS := ocm.NewMockClusterServiceClientSpec(ctrl)
 
@@ -280,7 +280,7 @@ func TestSyncOnce(t *testing.T) {
 				mockCS.EXPECT().ListProvisionShards().Return(
 					ocm.NewSimpleProvisionShardListIterator([]*arohcpv1alpha1.ProvisionShard{shard1, shard2}, nil),
 				)
-				return mockCS, databasetesting.NewMockFleetDBClient(), &listertesting.SliceManagementClusterLister{}
+				return mockCS, databasetesting.NewMockFleetDBClient(), &listertesting.SliceStampLister{}, &listertesting.SliceManagementClusterLister{}
 			},
 			validate: func(t *testing.T, ctx context.Context, client *databasetesting.MockFleetDBClient) {
 				t.Helper()
@@ -295,7 +295,7 @@ func TestSyncOnce(t *testing.T) {
 		},
 		{
 			name: "existing cluster condition transitions from Ready=False to Ready=True",
-			setup: func(t *testing.T, ctrl *gomock.Controller) (ocm.ClusterServiceClientSpec, *databasetesting.MockFleetDBClient, dblisters.ManagementClusterLister) {
+			setup: func(t *testing.T, ctrl *gomock.Controller) (ocm.ClusterServiceClientSpec, *databasetesting.MockFleetDBClient, dblisters.StampLister, dblisters.ManagementClusterLister) {
 				t.Helper()
 				mockCS := ocm.NewMockClusterServiceClientSpec(ctrl)
 				fleetClient := databasetesting.NewMockFleetDBClient()
@@ -303,14 +303,14 @@ func TestSyncOnce(t *testing.T) {
 				maintenanceShard := buildTestProvisionShard(t, testShardID, "test-consumer", "test-westus3-mgmt-1", "maintenance")
 				existing, err := ocm.ConvertCSManagementClusterToInternal(maintenanceShard)
 				require.NoError(t, err)
-				_, err = fleetClient.Fleet("1").ManagementClusters().Create(t.Context(), existing, nil)
+				_, err = fleetClient.Stamps().ManagementClusters("1").Create(t.Context(), existing, nil)
 				require.NoError(t, err)
 
 				activeShard := buildTestProvisionShard(t, testShardID, "test-consumer", "test-westus3-mgmt-1", "active")
 				mockCS.EXPECT().ListProvisionShards().Return(
 					ocm.NewSimpleProvisionShardListIterator([]*arohcpv1alpha1.ProvisionShard{activeShard}, nil),
 				)
-				return mockCS, fleetClient, &listertesting.SliceManagementClusterLister{ManagementClusters: []*fleet.ManagementCluster{existing}}
+				return mockCS, fleetClient, &listertesting.SliceStampLister{}, &listertesting.SliceManagementClusterLister{ManagementClusters: []*fleet.ManagementCluster{existing}}
 			},
 			validate: func(t *testing.T, ctx context.Context, client *databasetesting.MockFleetDBClient) {
 				t.Helper()
@@ -330,14 +330,14 @@ func TestSyncOnce(t *testing.T) {
 		},
 		{
 			name: "lister Get non-404 error is collected and reported",
-			setup: func(t *testing.T, ctrl *gomock.Controller) (ocm.ClusterServiceClientSpec, *databasetesting.MockFleetDBClient, dblisters.ManagementClusterLister) {
+			setup: func(t *testing.T, ctrl *gomock.Controller) (ocm.ClusterServiceClientSpec, *databasetesting.MockFleetDBClient, dblisters.StampLister, dblisters.ManagementClusterLister) {
 				t.Helper()
 				mockCS := ocm.NewMockClusterServiceClientSpec(ctrl)
 				shard := buildTestProvisionShard(t, testShardID, "test-consumer", "test-westus3-mgmt-1", "active")
 				mockCS.EXPECT().ListProvisionShards().Return(
 					ocm.NewSimpleProvisionShardListIterator([]*arohcpv1alpha1.ProvisionShard{shard}, nil),
 				)
-				return mockCS, databasetesting.NewMockFleetDBClient(), &errorManagementClusterLister{err: fmt.Errorf("lister internal error")}
+				return mockCS, databasetesting.NewMockFleetDBClient(), &listertesting.SliceStampLister{}, &errorManagementClusterLister{err: fmt.Errorf("lister internal error")}
 			},
 			expectedErrorSubstr: "lister internal error",
 		},
@@ -348,13 +348,14 @@ func TestSyncOnce(t *testing.T) {
 			t.Parallel()
 			ctx := utils.ContextWithLogger(t.Context(), testr.New(t))
 			ctrl := gomock.NewController(t)
-			cs, fleetClient, lister := tt.setup(t, ctrl)
+			cs, fleetClient, sLister, mcLister := tt.setup(t, ctrl)
 
 			c := &managementClusterSyncController{
 				name:                    "test",
 				clusterServiceClient:    cs,
 				fleetDBClient:           fleetClient,
-				managementClusterLister: lister,
+				stampLister:             sLister,
+				managementClusterLister: mcLister,
 			}
 
 			err := c.SyncOnce(ctx, nil)

@@ -94,8 +94,11 @@ func InternalToCosmos[InternalAPIType, CosmosAPIType any](obj *InternalAPIType) 
 	case *api.HCPOpenShiftClusterNodePool:
 		cosmosObj, err = InternalToCosmosNodePool(internalObj)
 
+	case *fleet.Stamp:
+		cosmosObj, err = InternalToCosmosFleet(internalObj)
+
 	case *fleet.ManagementCluster:
-		cosmosObj, err = InternalToCosmosFleet[fleet.ManagementCluster](internalObj)
+		cosmosObj, err = InternalToCosmosFleet(internalObj)
 
 	case *TypedDocument:
 		var expectedObj CosmosAPIType

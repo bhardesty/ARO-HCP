@@ -44,32 +44,32 @@ func NewValidatingCRUD[InternalAPIType any](
 	}
 }
 
-func (v *validatingCRUD[T]) GetByID(ctx context.Context, cosmosID string) (*T, error) {
+func (v *validatingCRUD[InternalAPIType]) GetByID(ctx context.Context, cosmosID string) (*InternalAPIType, error) {
 	return v.inner.GetByID(ctx, cosmosID)
 }
 
-func (v *validatingCRUD[T]) Get(ctx context.Context, resourceID string) (*T, error) {
+func (v *validatingCRUD[InternalAPIType]) Get(ctx context.Context, resourceID string) (*InternalAPIType, error) {
 	return v.inner.Get(ctx, resourceID)
 }
 
-func (v *validatingCRUD[T]) List(ctx context.Context, opts *DBClientListResourceDocsOptions) (DBClientIterator[T], error) {
+func (v *validatingCRUD[InternalAPIType]) List(ctx context.Context, opts *DBClientListResourceDocsOptions) (DBClientIterator[InternalAPIType], error) {
 	return v.inner.List(ctx, opts)
 }
 
-func (v *validatingCRUD[T]) Create(ctx context.Context, newObj *T, options *azcosmos.ItemOptions) (*T, error) {
+func (v *validatingCRUD[InternalAPIType]) Create(ctx context.Context, newObj *InternalAPIType, options *azcosmos.ItemOptions) (*InternalAPIType, error) {
 	if errs := v.validateCreate(ctx, newObj); errs.ToAggregate() != nil {
 		return nil, fmt.Errorf("create validation failed: %w", errs.ToAggregate())
 	}
 	return v.inner.Create(ctx, newObj, options)
 }
 
-func (v *validatingCRUD[T]) Replace(ctx context.Context, newObj, oldObj *T, options *azcosmos.ItemOptions) (*T, error) {
+func (v *validatingCRUD[InternalAPIType]) Replace(ctx context.Context, newObj, oldObj *InternalAPIType, options *azcosmos.ItemOptions) (*InternalAPIType, error) {
 	if errs := v.validateReplace(ctx, newObj, oldObj); errs.ToAggregate() != nil {
 		return nil, fmt.Errorf("replace validation failed: %w", errs.ToAggregate())
 	}
 	return v.inner.Replace(ctx, newObj, options)
 }
 
-func (v *validatingCRUD[T]) Delete(ctx context.Context, resourceID string) error {
+func (v *validatingCRUD[InternalAPIType]) Delete(ctx context.Context, resourceID string) error {
 	return v.inner.Delete(ctx, resourceID)
 }

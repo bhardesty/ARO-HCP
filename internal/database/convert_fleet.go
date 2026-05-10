@@ -19,13 +19,10 @@ import (
 	"strings"
 
 	"github.com/Azure/ARO-HCP/internal/api/arm"
-	"github.com/Azure/ARO-HCP/internal/api/fleet"
 )
 
 // InternalToCosmosFleet wraps a fleet resource in a GenericDocument envelope whose
-// partitionKey is the stamp identifier rather than the subscription ID.
-// The fleet container is partitioned this way so that fleet management
-// operations are scoped to a single management cluster stamp.
+// partitionKey is the top-level ancestor resource name rather than the subscription ID.
 func InternalToCosmosFleet[InternalAPIType any](
 	internalObj *InternalAPIType,
 ) (*GenericDocument[InternalAPIType], error) {
@@ -37,13 +34,10 @@ func InternalToCosmosFleet[InternalAPIType any](
 	if !ok {
 		return nil, fmt.Errorf("internalObj must be an arm.CosmosMetadataAccessor: %T", internalObj)
 	}
-	stampAccessor, ok := any(internalObj).(fleet.FleetPartitionKeyAccessor)
-	if !ok {
-		return nil, fmt.Errorf("internalObj must be a fleet.FleetPartitionKeyAccessor: %T", internalObj)
-	}
-	stampIdentifier := stampAccessor.GetStampIdentifier()
-	if len(stampIdentifier) == 0 {
-		return nil, fmt.Errorf("fleet object %T has empty stamp identifier (ResourceID.Name)", internalObj)
+
+	partitionKey := topLevelResourceName(metadata.GetResourceID())
+	if len(partitionKey) == 0 {
+		return nil, fmt.Errorf("fleet object %T has no top-level resource name in its resource ID", internalObj)
 	}
 
 	return &GenericDocument[InternalAPIType]{
@@ -51,7 +45,7 @@ func InternalToCosmosFleet[InternalAPIType any](
 			BaseDocument: BaseDocument{
 				ID: metadata.GetCosmosUID(),
 			},
-			PartitionKey: strings.ToLower(stampIdentifier),
+			PartitionKey: strings.ToLower(partitionKey),
 			ResourceID:   metadata.GetResourceID(),
 			ResourceType: metadata.GetResourceID().ResourceType.String(),
 		},

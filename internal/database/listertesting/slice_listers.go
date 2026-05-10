@@ -24,6 +24,27 @@ import (
 	dblisters "github.com/Azure/ARO-HCP/internal/database/listers"
 )
 
+// SliceStampLister implements dblisters.StampLister backed by a slice.
+type SliceStampLister struct {
+	Stamps []*fleet.Stamp
+}
+
+var _ dblisters.StampLister = &SliceStampLister{}
+
+func (l *SliceStampLister) List(ctx context.Context) ([]*fleet.Stamp, error) {
+	return l.Stamps, nil
+}
+
+func (l *SliceStampLister) Get(ctx context.Context, stampIdentifier string) (*fleet.Stamp, error) {
+	key := fleet.ToStampResourceIDString(stampIdentifier)
+	for _, s := range l.Stamps {
+		if s.CosmosMetadata.ResourceID != nil && strings.EqualFold(s.CosmosMetadata.ResourceID.String(), key) {
+			return s, nil
+		}
+	}
+	return nil, database.NewNotFoundError()
+}
+
 // SliceManagementClusterLister implements dblisters.ManagementClusterLister backed by a slice.
 type SliceManagementClusterLister struct {
 	ManagementClusters []*fleet.ManagementCluster

@@ -15,7 +15,6 @@ require (
 	github.com/Azure/msi-dataplane v0.4.3
 	github.com/blang/semver/v4 v4.0.0
 	github.com/go-logr/logr v1.4.3
-	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
 	github.com/openshift-online/maestro v0.0.0-20260213014104-081c1f6df17b

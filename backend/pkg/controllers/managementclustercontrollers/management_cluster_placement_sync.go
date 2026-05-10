@@ -134,7 +134,7 @@ func (c *managementClusterPlacementSyncer) SyncOnce(ctx context.Context, key con
 	if err != nil {
 		return utils.TrackError(fmt.Errorf("failed to get cluster from cache: %w", err))
 	}
-	if len(cachedCluster.ServiceProviderProperties.ClusterServiceID.String()) == 0 {
+	if cachedCluster.ServiceProviderProperties.ClusterServiceID == nil || len(cachedCluster.ServiceProviderProperties.ClusterServiceID.String()) == 0 {
 		logger.V(1).Info("Cluster has no ClusterServiceID, skipping")
 		return nil
 	}

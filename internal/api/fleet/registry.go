@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	FleetResourceTypeName = "fleet"
+	StampResourceTypeName = "stamps"
 
 	ManagementClusterResourceTypeName = "managementClusters"
 	ManagementClusterResourceName     = "default"
@@ -29,7 +29,7 @@ const (
 )
 
 var (
-	FleetResourceType                       = azcorearm.NewResourceType(api.ProviderNamespace, FleetResourceTypeName)
-	ManagementClusterResourceType           = azcorearm.NewResourceType(api.ProviderNamespace, FleetResourceTypeName+"/"+ManagementClusterResourceTypeName)
-	ManagementClusterControllerResourceType = azcorearm.NewResourceType(api.ProviderNamespace, FleetResourceTypeName+"/"+ManagementClusterResourceTypeName+"/"+ControllerResourceTypeName)
+	StampResourceType                       = azcorearm.NewResourceType(api.ProviderNamespace, StampResourceTypeName)
+	ManagementClusterResourceType           = azcorearm.NewResourceType(api.ProviderNamespace, StampResourceTypeName+"/"+ManagementClusterResourceTypeName)
+	ManagementClusterControllerResourceType = azcorearm.NewResourceType(api.ProviderNamespace, StampResourceTypeName+"/"+ManagementClusterResourceTypeName+"/"+ControllerResourceTypeName)
 )

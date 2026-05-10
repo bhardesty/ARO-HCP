@@ -16,6 +16,7 @@ package validation
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"k8s.io/utils/ptr"
@@ -55,6 +56,11 @@ func validManagementCluster(t *testing.T) *fleet.ManagementCluster {
 func TestValidateManagementClusterCreate(t *testing.T) {
 	t.Parallel()
 
+	type expectedError struct {
+		message   string
+		fieldPath string
+	}
+
 	tests := []struct {
 		name         string
 		modify       func(t *testing.T, mc *fleet.ManagementCluster)
@@ -79,7 +85,7 @@ func TestValidateManagementClusterCreate(t *testing.T) {
 		{
 			name: "stamp identifier with uppercase rejected",
 			modify: func(t *testing.T, mc *fleet.ManagementCluster) {
-				mc.ResourceID = api.Must(azcorearm.ParseResourceID("/providers/Microsoft.RedHatOpenShift/fleet/ABC/managementCluster/default"))
+				mc.ResourceID = api.Must(azcorearm.ParseResourceID("/providers/Microsoft.RedHatOpenShift/stamps/ABC/managementClusters/default"))
 				mc.CosmosMetadata.ResourceID = mc.ResourceID
 			},
 			expectErrors: []expectedError{
@@ -89,7 +95,7 @@ func TestValidateManagementClusterCreate(t *testing.T) {
 		{
 			name: "stamp identifier too long rejected",
 			modify: func(t *testing.T, mc *fleet.ManagementCluster) {
-				mc.ResourceID = api.Must(azcorearm.ParseResourceID("/providers/Microsoft.RedHatOpenShift/fleet/abcd/managementCluster/default"))
+				mc.ResourceID = api.Must(azcorearm.ParseResourceID("/providers/Microsoft.RedHatOpenShift/stamps/abcd/managementClusters/default"))
 				mc.CosmosMetadata.ResourceID = mc.ResourceID
 			},
 			expectErrors: []expectedError{
@@ -99,7 +105,7 @@ func TestValidateManagementClusterCreate(t *testing.T) {
 		{
 			name: "stamp identifier with special chars rejected",
 			modify: func(t *testing.T, mc *fleet.ManagementCluster) {
-				mc.ResourceID = api.Must(azcorearm.ParseResourceID("/providers/Microsoft.RedHatOpenShift/fleet/a-b/managementCluster/default"))
+				mc.ResourceID = api.Must(azcorearm.ParseResourceID("/providers/Microsoft.RedHatOpenShift/stamps/a-b/managementClusters/default"))
 				mc.CosmosMetadata.ResourceID = mc.ResourceID
 			},
 			expectErrors: []expectedError{
@@ -202,13 +208,36 @@ func TestValidateManagementClusterCreate(t *testing.T) {
 			mc := validManagementCluster(t)
 			tt.modify(t, mc)
 			errs := ValidateManagementClusterCreate(context.Background(), mc)
-			verifyErrorsMatch(t, tt.expectErrors, errs)
+
+			if len(tt.expectErrors) == 0 {
+				if len(errs) != 0 {
+					t.Errorf("expected no errors, got %d: %v", len(errs), errs)
+				}
+				return
+			}
+			for _, expectedErr := range tt.expectErrors {
+				found := false
+				for _, err := range errs {
+					if strings.Contains(err.Error(), expectedErr.message) && strings.Contains(err.Field, expectedErr.fieldPath) {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Errorf("expected error containing message %q at field %q but not found in: %v", expectedErr.message, expectedErr.fieldPath, errs)
+				}
+			}
 		})
 	}
 }
 
 func TestValidateManagementClusterUpdate(t *testing.T) {
 	t.Parallel()
+
+	type expectedError struct {
+		message   string
+		fieldPath string
+	}
 
 	tests := []struct {
 		name         string
@@ -327,7 +356,25 @@ func TestValidateManagementClusterUpdate(t *testing.T) {
 			newObj := validManagementCluster(t)
 			tt.modify(t, newObj)
 			errs := ValidateManagementClusterUpdate(context.Background(), newObj, oldObj)
-			verifyErrorsMatch(t, tt.expectErrors, errs)
+
+			if len(tt.expectErrors) == 0 {
+				if len(errs) != 0 {
+					t.Errorf("expected no errors, got %d: %v", len(errs), errs)
+				}
+				return
+			}
+			for _, expectedErr := range tt.expectErrors {
+				found := false
+				for _, err := range errs {
+					if strings.Contains(err.Error(), expectedErr.message) && strings.Contains(err.Field, expectedErr.fieldPath) {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Errorf("expected error containing message %q at field %q but not found in: %v", expectedErr.message, expectedErr.fieldPath, errs)
+				}
+			}
 		})
 	}
 }

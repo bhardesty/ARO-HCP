@@ -115,8 +115,8 @@ type ManagementCluster struct {
 	api.CosmosMetadata `json:"cosmosMetadata"`
 
 	// ResourceID exists to match cosmosMetadata.resourceID until we're able to transition all types to use cosmosMetadata,
-	// at which point we will stop using properties.resourceId in our queries. That will be about a month from now.
-	// Example: "/subscriptions/00000000-0000-0000-0000-000000000000/resourcegroups/rg/providers/microsoft.redhatopenshiftmanagement/hcpmanagementclusters/pers-westus3-mgmt-1"
+	// at which point we will stop using properties.resourceId in our queries.
+	// Example: "/providers/microsoft.redhatopenshift/stamps/1/managementclusters/default"
 	//
 	// +required, immutable once set.
 	ResourceID *azcorearm.ResourceID `json:"resourceId,omitempty"`
@@ -164,65 +164,56 @@ type ManagementClusterStatus struct {
 	// AKSResourceID is the Azure resource ID of the AKS management cluster.
 	// Example: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg/providers/Microsoft.ContainerService/managedClusters/clustername"
 	//
-	// +optional, validated as a well-formed ARM resource ID, immutable once set.
-	// Required when Ready condition is True.
+	// +required, validated as a well-formed ARM resource ID, immutable once set.
 	AKSResourceID *azcorearm.ResourceID `json:"aksResourceID,omitempty"`
 
 	// PublicDNSZoneResourceID is the Azure resource ID of the public DNS zone for the management cluster.
 	// Example: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/dns-rg/providers/Microsoft.Network/dnszones/example.com"
 	//
-	// +optional, validated as a well-formed ARM resource ID, immutable once set.
-	// Required when Ready condition is True.
+	// +required, validated as a well-formed ARM resource ID, immutable once set.
 	PublicDNSZoneResourceID *azcorearm.ResourceID `json:"publicDNSZoneResourceID,omitempty"`
 
 	// HostedClustersSecretsKeyVaultURL is the URL of the key vault containing secrets for hosted clusters on this management cluster.
 	// Example: "https://kv-hc-secrets.vault.azure.net"
 	//
-	// +optional, validated as a well-formed URL, immutable once set.
-	// Required when Ready condition is True.
+	// +required, validated as a well-formed URL, immutable once set.
 	HostedClustersSecretsKeyVaultURL string `json:"hostedClustersSecretsKeyVaultURL,omitempty"`
 
 	// HostedClustersManagedIdentitiesKeyVaultURL is the URL of the key vault containing managed identity backing certificates for hosted clusters.
 	// Example: "https://kv-hc-mi.vault.azure.net"
 	//
-	// +optional, validated as a well-formed URL, immutable once set.
-	// Required when Ready condition is True.
+	// +required, validated as a well-formed URL, immutable once set.
 	HostedClustersManagedIdentitiesKeyVaultURL string `json:"hostedClustersManagedIdentitiesKeyVaultURL,omitempty"`
 
 	// HostedClustersSecretsKeyVaultManagedIdentityClientID is the client ID of the managed identity
 	// used to access the hosted clusters secrets key vault.
 	// Example: "12345678-1234-1234-1234-123456789012"
 	//
-	// +optional, validated as a UUID, immutable once set.
-	// Required when Ready condition is True.
+	// +required, validated as a UUID, immutable once set.
 	HostedClustersSecretsKeyVaultManagedIdentityClientID string `json:"hostedClustersSecretsKeyVaultManagedIdentityClientID,omitempty"`
 
 	// MaestroConsumerName is the consumer name of the management cluster in Maestro.
 	// Typically derived from the management cluster stamp identifier.
 	// Example: "hcp-underlay-westus3-mgmt-1"
 	//
-	// +optional, immutable once set.
-	// Required when Ready condition is True.
+	// +required, immutable once set.
 	MaestroConsumerName string `json:"maestroConsumerName,omitempty"`
 
 	// MaestroRESTAPIURL is the URL of the Maestro REST API.
 	// Example: "http://maestro.maestro.svc.cluster.local:8000"
 	//
-	// +optional, validated as a well-formed URL, immutable once set.
-	// Required when Ready condition is True.
+	// +required, validated as a well-formed URL, immutable once set.
 	MaestroRESTAPIURL string `json:"maestroRESTAPIURL,omitempty"`
 
 	// MaestroGRPCTarget is the gRPC dial target (host:port) of the Maestro GRPC API.
 	// Example: "maestro-grpc.maestro.svc.cluster.local:8090"
 	//
-	// +optional, immutable once set.
-	// Required when Ready condition is True.
+	// +required, immutable once set.
 	MaestroGRPCTarget string `json:"maestroGRPCTarget,omitempty"`
 
 	// ClusterServiceProvisionShardID is the Cluster Service provision shard HREF for this management cluster.
 	// Example: "/api/aro_hcp/v1alpha1/provision_shards/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 	//
-	// +optional, immutable once set.
-	// Required when Ready condition is True.
+	// +required, immutable once set.
 	ClusterServiceProvisionShardID *api.InternalID `json:"clusterServiceProvisionShardID,omitempty"`
 }

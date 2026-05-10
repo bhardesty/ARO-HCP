@@ -366,6 +366,7 @@ func (b *Backend) runBackendControllersUnderLeaderElection(ctx context.Context, 
 		"OperationPhaseMetrics", backendInformers.AllOperations(), operationPhaseHandler)
 
 	fleetInformers := dbinformers.NewFleetInformers(ctx, b.options.FleetDBClient.GlobalListers())
+	_, stampLister := fleetInformers.Stamps()
 	_, managementClusterLister := fleetInformers.ManagementClusters()
 
 	clusterInformer, clusterLister := backendInformers.Clusters()
@@ -580,6 +581,7 @@ func (b *Backend) runBackendControllersUnderLeaderElection(ctx context.Context, 
 	managementClusterSyncController := managementclustercontrollers.NewManagementClusterSyncController(
 		b.options.ClustersServiceClient,
 		b.options.FleetDBClient,
+		stampLister,
 		managementClusterLister,
 	)
 	placementSyncController := managementclustercontrollers.NewManagementClusterPlacementSyncController(

@@ -53,7 +53,6 @@ func (k ManagementClusterKey) InitialController(controllerName string) *api.Cont
 		CosmosMetadata: api.CosmosMetadata{
 			ResourceID: resourceID,
 		},
-		ResourceID: resourceID,
 		ExternalID: k.GetResourceID(),
 		Status: api.ControllerStatus{
 			Conditions: []metav1.Condition{},
@@ -100,7 +99,7 @@ func NewManagementClusterWatchingController(
 }
 
 func (c *managementClusterWatchingController) SyncOnce(ctx context.Context, key ManagementClusterKey) error {
-	controllerCRUD := c.fleetDBClient.Fleet(key.StampIdentifier).ManagementClusters().Controllers()
+	controllerCRUD := c.fleetDBClient.Stamps().ManagementClusters(key.StampIdentifier).Controllers()
 
 	defer utilruntime.HandleCrash(DegradedControllerPanicHandler(
 		ctx,

@@ -31,13 +31,20 @@ import (
 // backend (cross-partition) construct one of these with the appropriate
 // database.FleetGlobalListers — the factory does not care which.
 type FleetInformers interface {
+	Stamps() (cache.SharedIndexInformer, listers.StampLister)
 	ManagementClusters() (cache.SharedIndexInformer, listers.ManagementClusterLister)
 	RunWithContext(ctx context.Context)
 }
 
 type fleetInformers struct {
+	stampInformer             cache.SharedIndexInformer
+	stampLister               listers.StampLister
 	managementClusterInformer cache.SharedIndexInformer
 	managementClusterLister   listers.ManagementClusterLister
+}
+
+func (f *fleetInformers) Stamps() (cache.SharedIndexInformer, listers.StampLister) {
+	return f.stampInformer, f.stampLister
 }
 
 func (f *fleetInformers) ManagementClusters() (cache.SharedIndexInformer, listers.ManagementClusterLister) {
@@ -51,12 +58,16 @@ func NewFleetInformers(ctx context.Context, gl database.FleetGlobalListers) Flee
 
 // NewFleetInformersWithRelistDuration creates FleetInformers with a configurable relist duration.
 func NewFleetInformersWithRelistDuration(ctx context.Context, gl database.FleetGlobalListers, relistDuration *time.Duration) FleetInformers {
+	stampRelistDuration := StampRelistDuration
 	managementClusterRelistDuration := ManagementClusterRelistDuration
 	if relistDuration != nil {
+		stampRelistDuration = *relistDuration
 		managementClusterRelistDuration = *relistDuration
 	}
 
 	ret := &fleetInformers{}
+	ret.stampInformer = NewStampInformerWithRelistDuration(gl.Stamps(), stampRelistDuration)
+	ret.stampLister = listers.NewStampLister(ret.stampInformer.GetIndexer())
 	ret.managementClusterInformer = NewManagementClusterInformerWithRelistDuration(gl.ManagementClusters(), managementClusterRelistDuration)
 	ret.managementClusterLister = listers.NewManagementClusterLister(ret.managementClusterInformer.GetIndexer())
 
@@ -69,6 +80,12 @@ func (f *fleetInformers) RunWithContext(ctx context.Context) {
 	defer logger.Info("stopped fleet informers")
 
 	wg := sync.WaitGroup{}
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		f.stampInformer.RunWithContext(ctx)
+	}()
 
 	wg.Add(1)
 	go func() {

@@ -14,11 +14,11 @@
 
 package fleet
 
-// FleetPartitionKeyAccessor is implemented by every fleet resource so that the
-// database layer can read the partition-key value (the stamp identifier)
-// without importing this package's concrete types.
-type FleetPartitionKeyAccessor interface {
-	GetStampIdentifier() string
+func (s *Stamp) GetStampIdentifier() string {
+	if s.CosmosMetadata.ResourceID == nil {
+		return ""
+	}
+	return s.CosmosMetadata.ResourceID.Name
 }
 
 func (mc *ManagementCluster) GetStampIdentifier() string {

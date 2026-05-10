@@ -30,8 +30,54 @@ import (
 )
 
 const (
+	StampRelistDuration             = 2 * time.Minute
 	ManagementClusterRelistDuration = 2 * time.Minute
 )
+
+// NewStampInformer creates an unstarted SharedIndexInformer for stamps
+// with the default relist duration.
+func NewStampInformer(lister database.GlobalLister[fleet.Stamp]) cache.SharedIndexInformer {
+	return NewStampInformerWithRelistDuration(lister, StampRelistDuration)
+}
+
+// NewStampInformerWithRelistDuration creates an unstarted SharedIndexInformer for stamps
+// with a configurable relist duration.
+func NewStampInformerWithRelistDuration(lister database.GlobalLister[fleet.Stamp], relistDuration time.Duration) cache.SharedIndexInformer {
+	lw := &cache.ListWatch{
+		ListWithContextFunc: func(ctx context.Context, options metav1.ListOptions) (runtime.Object, error) {
+			logger := utils.LoggerFromContext(ctx)
+			logger.Info("listing stamps")
+			defer logger.Info("finished listing stamps")
+
+			iter, err := lister.List(ctx, nil)
+			if err != nil {
+				return nil, err
+			}
+
+			list := &fleet.StampList{}
+			list.ResourceVersion = "0"
+			for _, s := range iter.Items(ctx) {
+				list.Items = append(list.Items, *s)
+			}
+			if err := iter.GetError(); err != nil {
+				return nil, err
+			}
+
+			return list, nil
+		},
+		WatchFuncWithContext: func(ctx context.Context, options metav1.ListOptions) (watch.Interface, error) {
+			return newExpiringWatcher(ctx, relistDuration), nil
+		},
+	}
+
+	return cache.NewSharedIndexInformerWithOptions(
+		&listWatchWithoutWatchListSemantics{lw},
+		&fleet.Stamp{},
+		cache.SharedIndexInformerOptions{
+			ResyncPeriod: 1 * time.Hour,
+		},
+	)
+}
 
 // NewManagementClusterInformer creates an unstarted SharedIndexInformer for management clusters
 // with the default relist duration.

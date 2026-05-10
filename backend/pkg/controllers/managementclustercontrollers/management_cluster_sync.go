@@ -22,6 +22,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/equality"
 	apimeta "k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/workqueue"
@@ -29,6 +30,8 @@ import (
 	arohcpv1alpha1 "github.com/openshift-online/ocm-sdk-go/arohcp/v1alpha1"
 
 	"github.com/Azure/ARO-HCP/backend/pkg/controllers/controllerutils"
+	"github.com/Azure/ARO-HCP/internal/api"
+	"github.com/Azure/ARO-HCP/internal/api/fleet"
 	"github.com/Azure/ARO-HCP/internal/database"
 	dblisters "github.com/Azure/ARO-HCP/internal/database/listers"
 	"github.com/Azure/ARO-HCP/internal/ocm"
@@ -44,6 +47,7 @@ type managementClusterSyncController struct {
 
 	clusterServiceClient    ocm.ClusterServiceClientSpec
 	fleetDBClient           database.FleetDBClient
+	stampLister             dblisters.StampLister
 	managementClusterLister dblisters.ManagementClusterLister
 
 	resyncDuration time.Duration
@@ -55,12 +59,14 @@ type managementClusterSyncController struct {
 func NewManagementClusterSyncController(
 	clusterServiceClient ocm.ClusterServiceClientSpec,
 	fleetDBClient database.FleetDBClient,
+	stampLister dblisters.StampLister,
 	managementClusterLister dblisters.ManagementClusterLister,
 ) controllerutils.Controller {
 	return &managementClusterSyncController{
 		name:                    controllerName,
 		clusterServiceClient:    clusterServiceClient,
 		fleetDBClient:           fleetDBClient,
+		stampLister:             stampLister,
 		managementClusterLister: managementClusterLister,
 		resyncDuration:          30 * time.Minute,
 		queue: workqueue.NewTypedRateLimitingQueueWithConfig(
@@ -115,7 +121,12 @@ func (c *managementClusterSyncController) syncProvisionShard(ctx context.Context
 	}
 
 	stampIdentifier := convertedManagementCluster.GetStampIdentifier()
-	managementClusterCRUD := c.fleetDBClient.Fleet(stampIdentifier).ManagementClusters()
+
+	if err := c.ensureStamp(ctx, stampIdentifier); err != nil {
+		return fmt.Errorf("stamp %s: %w", stampIdentifier, err)
+	}
+
+	managementClusterCRUD := c.fleetDBClient.Stamps().ManagementClusters(stampIdentifier)
 
 	existing, err := c.managementClusterLister.Get(ctx, stampIdentifier)
 	if err != nil && !database.IsNotFoundError(err) {
@@ -150,6 +161,61 @@ func (c *managementClusterSyncController) syncProvisionShard(ctx context.Context
 		return fmt.Errorf("management cluster %s: %w", existing.ResourceID, err)
 	}
 	logger.Info("updated management cluster")
+	return nil
+}
+
+// ensureStamp upserts the Stamp record. Stamps synced from Cluster Service
+// are auto-approved since the provision shard already exists.
+func (c *managementClusterSyncController) ensureStamp(ctx context.Context, stampIdentifier string) error {
+	logger := utils.LoggerFromContext(ctx)
+
+	existing, err := c.stampLister.Get(ctx, stampIdentifier)
+	if err != nil && !database.IsNotFoundError(err) {
+		return fmt.Errorf("stamp %s: %w", stampIdentifier, err)
+	}
+
+	approvedCondition := metav1.Condition{
+		Type:               string(fleet.StampConditionApproved),
+		Status:             metav1.ConditionTrue,
+		LastTransitionTime: metav1.Now(),
+		Reason:             string(fleet.StampConditionReasonAutoApproved),
+		Message:            "Synced from Cluster Service provision shard",
+	}
+
+	stampsCRUD := c.fleetDBClient.Stamps()
+
+	if database.IsNotFoundError(err) {
+		stampResourceID, err := fleet.ToStampResourceID(stampIdentifier)
+		if err != nil {
+			return fmt.Errorf("invalid stamp identifier %q: %w", stampIdentifier, err)
+		}
+		stamp := &fleet.Stamp{
+			CosmosMetadata: api.CosmosMetadata{
+				ResourceID: stampResourceID,
+			},
+			ResourceID: stampResourceID,
+		}
+		apimeta.SetStatusCondition(&stamp.Status.Conditions, approvedCondition)
+
+		created, err := stampsCRUD.Create(ctx, stamp, nil)
+		if err != nil {
+			return fmt.Errorf("stamp %s: %w", stampIdentifier, err)
+		}
+		logger.Info("created stamp", "stamp_identifier", stampIdentifier, "resource_id", created.CosmosMetadata.ResourceID)
+		return nil
+	}
+
+	stampToWrite := existing.DeepCopy()
+	apimeta.SetStatusCondition(&stampToWrite.Status.Conditions, approvedCondition)
+	if equality.Semantic.DeepEqual(existing, stampToWrite) {
+		logger.V(1).Info("stamp unchanged, skipping update")
+		return nil
+	}
+
+	if _, err := stampsCRUD.Replace(ctx, stampToWrite, existing, nil); err != nil {
+		return fmt.Errorf("stamp %s: %w", stampIdentifier, err)
+	}
+	logger.Info("updated stamp", "stamp_identifier", stampIdentifier)
 	return nil
 }
 

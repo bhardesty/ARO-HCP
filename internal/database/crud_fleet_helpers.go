@@ -25,6 +25,16 @@ import (
 	"github.com/Azure/ARO-HCP/internal/api/arm"
 )
 
+// partitionKeySetter is a temporary interface used to override the partition key
+// on serialized Cosmos documents for the Fleet container. The conversion layer
+// (InternalToCosmos) defaults partition keys to subscription ID, which is wrong
+// for fleet types where the partition key is the stamp identifier.
+//
+// This interface and TypedDocument.SetPartitionKey will be removed once
+// https://github.com/Azure/ARO-HCP/pull/5094 lands, which adds partition key
+// as a first-class field on CosmosMetadata with Get/SetPartitionKey. At that
+// point the CRUD layer sets the partition key on CosmosMetadata directly before
+// serialization, and the override is no longer needed.
 type partitionKeySetter interface {
 	SetPartitionKey(pk string)
 }
@@ -135,76 +145,4 @@ func replaceFleetItem[InternalAPIType, CosmosAPIType any](
 	}
 
 	return responseItemToInternalObj[InternalAPIType, CosmosAPIType](ctx, cosmosMetadata.GetCosmosUID(), responseItem)
-}
-
-func addFleetCreateToTransaction[InternalAPIType, CosmosAPIType any](
-	ctx context.Context,
-	transaction DBTransaction,
-	newObj *InternalAPIType,
-	opts *azcosmos.TransactionalBatchItemOptions,
-) (string, error) {
-	partitionKeyString := transaction.GetPartitionKey()
-	if strings.ToLower(partitionKeyString) != partitionKeyString {
-		return "", fmt.Errorf("partitionKeyString must be lowercase, not: %q", partitionKeyString)
-	}
-	cosmosMetadata, data, err := serializeFleetItem[InternalAPIType, CosmosAPIType](partitionKeyString, newObj)
-	if err != nil {
-		return "", err
-	}
-	transactionDetails := CosmosDBTransactionStepDetails{
-		ActionType: "Create",
-		GoType:     fmt.Sprintf("%T", newObj),
-		CosmosID:   cosmosMetadata.GetCosmosUID(),
-		ResourceID: cosmosMetadata.ResourceID.String(),
-	}
-
-	transaction.AddStep(
-		transactionDetails,
-		func(b *azcosmos.TransactionalBatch) (string, error) {
-			b.CreateItem(data, opts)
-			return cosmosMetadata.GetCosmosUID(), nil
-		},
-	)
-
-	return cosmosMetadata.GetCosmosUID(), nil
-}
-
-func addFleetReplaceToTransaction[InternalAPIType, CosmosAPIType any](
-	ctx context.Context,
-	transaction DBTransaction,
-	newObj *InternalAPIType,
-	opts *azcosmos.TransactionalBatchItemOptions,
-) (string, error) {
-	partitionKeyString := transaction.GetPartitionKey()
-	if strings.ToLower(partitionKeyString) != partitionKeyString {
-		return "", fmt.Errorf("partitionKeyString must be lowercase, not: %q", partitionKeyString)
-	}
-	cosmosMetadata, data, err := serializeFleetItem[InternalAPIType, CosmosAPIType](partitionKeyString, newObj)
-	if err != nil {
-		return "", err
-	}
-	transactionDetails := CosmosDBTransactionStepDetails{
-		ActionType: "Replace",
-		GoType:     fmt.Sprintf("%T", newObj),
-		CosmosID:   cosmosMetadata.GetCosmosUID(),
-		ResourceID: cosmosMetadata.ResourceID.String(),
-		Etag:       cosmosMetadata.CosmosETag,
-	}
-
-	if opts == nil {
-		opts = &azcosmos.TransactionalBatchItemOptions{}
-	}
-	if len(cosmosMetadata.CosmosETag) > 0 {
-		opts.IfMatchETag = &cosmosMetadata.CosmosETag
-	}
-
-	transaction.AddStep(
-		transactionDetails,
-		func(b *azcosmos.TransactionalBatch) (string, error) {
-			b.ReplaceItem(cosmosMetadata.GetCosmosUID(), data, opts)
-			return cosmosMetadata.GetCosmosUID(), nil
-		},
-	)
-
-	return cosmosMetadata.GetCosmosUID(), nil
 }
