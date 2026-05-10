@@ -25,9 +25,11 @@ const (
 
 	ManagementClusterResourceTypeName = "managementClusters"
 	ManagementClusterResourceName     = "default"
+	ControllerResourceTypeName        = "controllers"
 )
 
 var (
-	FleetResourceType             = azcorearm.NewResourceType(api.ProviderNamespace, FleetResourceTypeName)
-	ManagementClusterResourceType = azcorearm.NewResourceType(api.ProviderNamespace, FleetResourceTypeName+"/"+ManagementClusterResourceTypeName)
+	FleetResourceType                       = azcorearm.NewResourceType(api.ProviderNamespace, FleetResourceTypeName)
+	ManagementClusterResourceType           = azcorearm.NewResourceType(api.ProviderNamespace, FleetResourceTypeName+"/"+ManagementClusterResourceTypeName)
+	ManagementClusterControllerResourceType = azcorearm.NewResourceType(api.ProviderNamespace, FleetResourceTypeName+"/"+ManagementClusterResourceTypeName+"/"+ControllerResourceTypeName)
 )

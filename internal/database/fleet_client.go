@@ -15,8 +15,12 @@
 package database
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos"
 
+	"github.com/Azure/ARO-HCP/internal/api"
 	"github.com/Azure/ARO-HCP/internal/api/fleet"
 	"github.com/Azure/ARO-HCP/internal/utils"
 	"github.com/Azure/ARO-HCP/internal/validation"
@@ -36,7 +40,14 @@ type FleetDBClient interface {
 // FleetCRUD scopes ResourceCRUD accessors to a single fleet partition (stamp).
 // Constructed from FleetDBClient.Fleet(stampIdentifier).
 type FleetCRUD interface {
-	ManagementClusters() ValidatingResourceCRUD[fleet.ManagementCluster]
+	ManagementClusters() ManagementClustersCRUD
+}
+
+// ManagementClustersCRUD provides CRUD operations for management clusters
+// and access to their nested controller status documents.
+type ManagementClustersCRUD interface {
+	ValidatingResourceCRUD[fleet.ManagementCluster]
+	Controllers() ResourceCRUD[api.Controller]
 }
 
 // FleetGlobalListers provides cross-partition listers for fleet resource types.
@@ -83,14 +94,37 @@ type cosmosFleetCRUD struct {
 
 var _ FleetCRUD = &cosmosFleetCRUD{}
 
-func (k *cosmosFleetCRUD) ManagementClusters() ValidatingResourceCRUD[fleet.ManagementCluster] {
+func (k *cosmosFleetCRUD) ManagementClusters() ManagementClustersCRUD {
 	inner := newFleetResourceCRUD[fleet.ManagementCluster, GenericDocument[fleet.ManagementCluster]](
 		k.containerClient, k.stampIdentifier, fleet.ManagementClusterResourceType,
 	)
-	return NewValidatingCRUD(inner,
-		validation.ValidateManagementClusterCreate,
-		validation.ValidateManagementClusterUpdate,
-	)
+	return &cosmosManagementClustersCRUD{
+		ValidatingResourceCRUD: NewValidatingCRUD(inner,
+			validation.ValidateManagementClusterCreate,
+			validation.ValidateManagementClusterUpdate,
+		),
+		containerClient: k.containerClient,
+		stampIdentifier: k.stampIdentifier,
+	}
+}
+
+type cosmosManagementClustersCRUD struct {
+	ValidatingResourceCRUD[fleet.ManagementCluster]
+	containerClient *azcosmos.ContainerClient
+	stampIdentifier string
+}
+
+func (m *cosmosManagementClustersCRUD) Controllers() ResourceCRUD[api.Controller] {
+	mcResourceID, err := fleet.ToManagementClusterResourceID(m.stampIdentifier)
+	if err != nil {
+		panic(fmt.Sprintf("invalid stamp identifier %q: %v", m.stampIdentifier, err))
+	}
+	return &fleetResourceCRUD[api.Controller, GenericDocument[api.Controller]]{
+		containerClient:  m.containerClient,
+		parentResourceID: mcResourceID,
+		resourceType:     fleet.ManagementClusterControllerResourceType,
+		partitionKey:     strings.ToLower(m.stampIdentifier),
+	}
 }
 
 type cosmosFleetGlobalListers struct {

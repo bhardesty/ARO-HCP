@@ -23,6 +23,7 @@ import (
 
 	azcorearm "github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 
+	"github.com/Azure/ARO-HCP/internal/api"
 	"github.com/Azure/ARO-HCP/internal/api/fleet"
 	"github.com/Azure/ARO-HCP/internal/database"
 	"github.com/Azure/ARO-HCP/internal/validation"
@@ -153,7 +154,7 @@ type mockFleetCRUD struct {
 
 var _ database.FleetCRUD = &mockFleetCRUD{}
 
-func (k *mockFleetCRUD) ManagementClusters() database.ValidatingResourceCRUD[fleet.ManagementCluster] {
+func (k *mockFleetCRUD) ManagementClusters() database.ManagementClustersCRUD {
 	parentResourceID, err := fleet.ToFleetResourceID(k.stampIdentifier)
 	if err != nil {
 		panic(fmt.Sprintf("invalid stamp identifier %q: %v", k.stampIdentifier, err))
@@ -161,9 +162,29 @@ func (k *mockFleetCRUD) ManagementClusters() database.ValidatingResourceCRUD[fle
 	inner := newMockResourceCRUD[fleet.ManagementCluster, database.GenericDocument[fleet.ManagementCluster]](
 		k.store, parentResourceID, fleet.ManagementClusterResourceType,
 	)
-	return database.NewValidatingCRUD(inner,
-		validation.ValidateManagementClusterCreate,
-		validation.ValidateManagementClusterUpdate,
+	return &mockManagementClustersCRUD{
+		ValidatingResourceCRUD: database.NewValidatingCRUD(inner,
+			validation.ValidateManagementClusterCreate,
+			validation.ValidateManagementClusterUpdate,
+		),
+		store:           k.store,
+		stampIdentifier: k.stampIdentifier,
+	}
+}
+
+type mockManagementClustersCRUD struct {
+	database.ValidatingResourceCRUD[fleet.ManagementCluster]
+	store           *MockFleetDBClient
+	stampIdentifier string
+}
+
+func (m *mockManagementClustersCRUD) Controllers() database.ResourceCRUD[api.Controller] {
+	mcResourceID, err := fleet.ToManagementClusterResourceID(m.stampIdentifier)
+	if err != nil {
+		panic(fmt.Sprintf("invalid stamp identifier %q: %v", m.stampIdentifier, err))
+	}
+	return newMockResourceCRUD[api.Controller, database.GenericDocument[api.Controller]](
+		m.store, mcResourceID, fleet.ManagementClusterControllerResourceType,
 	)
 }
 

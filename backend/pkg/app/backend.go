@@ -391,6 +391,7 @@ func (b *Backend) runBackendControllersUnderLeaderElection(ctx context.Context, 
 	clusterRecursiveDataDumpController := datadumpcontrollers.NewClusterRecursiveDataDumpController(b.options.ResourcesDBClient, activeOperationLister, backendInformers)
 	csStateDumpController := datadumpcontrollers.NewCSStateDumpController(b.options.ResourcesDBClient, activeOperationLister, backendInformers, b.options.ClustersServiceClient)
 	billingDumpController := datadumpcontrollers.NewBillingDumpController(b.options.ResourcesDBClient, b.options.BillingDBClient, activeOperationLister, backendInformers)
+	managementClusterDumpController := datadumpcontrollers.NewManagementClusterDataDumpController(b.options.FleetDBClient, managementClusterLister, fleetInformers)
 	doNothingController := controllers.NewDoNothingExampleController(b.options.ResourcesDBClient, subscriptionLister)
 	dispatchRequestCredentialController := operationcontrollers.NewDispatchRequestCredentialController(
 		utilsclock.RealClock{},
@@ -618,6 +619,7 @@ func (b *Backend) runBackendControllersUnderLeaderElection(ctx context.Context, 
 				go clusterRecursiveDataDumpController.Run(ctx, 20)
 				go csStateDumpController.Run(ctx, 20)
 				go billingDumpController.Run(ctx, 20)
+				go managementClusterDumpController.Run(ctx, 20)
 				go doNothingController.Run(ctx, 20)
 				go dispatchRequestCredentialController.Run(ctx, 20)
 				go dispatchRevokeCredentialsController.Run(ctx, 20)

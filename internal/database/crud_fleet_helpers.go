@@ -23,22 +23,27 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos"
 
 	"github.com/Azure/ARO-HCP/internal/api/arm"
-	"github.com/Azure/ARO-HCP/internal/api/fleet"
 )
 
-// serializeFleetItem mirrors serializeItem but validates the partition key
-// against the fleet resource's stamp identifier instead of the resourceID's
-// subscriptionID.
+type partitionKeySetter interface {
+	SetPartitionKey(pk string)
+}
+
+func (td *TypedDocument) SetPartitionKey(pk string) {
+	td.PartitionKey = pk
+}
+
+// serializeFleetItem serializes an object for the Fleet Cosmos container.
+// The partition key is provided by the CRUD layer rather than extracted from
+// the object, so any type that implements CosmosPersistable can be stored in
+// the Fleet container regardless of whether it carries fleet-specific accessors.
 func serializeFleetItem[InternalAPIType, CosmosAPIType any](
+	partitionKeyString string,
 	newObj *InternalAPIType,
 ) (*arm.CosmosMetadata, []byte, error) {
 	cosmosPersistable, ok := any(newObj).(arm.CosmosPersistable)
 	if !ok {
 		return nil, nil, fmt.Errorf("type %T does not implement CosmosPersistable interface", newObj)
-	}
-	stampAccessor, ok := any(newObj).(fleet.FleetPartitionKeyAccessor)
-	if !ok {
-		return nil, nil, fmt.Errorf("type %T does not implement FleetPartitionKeyAccessor", newObj)
 	}
 	cosmosData := cosmosPersistable.GetCosmosData()
 	cosmosUID := cosmosData.GetCosmosUID()
@@ -48,33 +53,27 @@ func serializeFleetItem[InternalAPIType, CosmosAPIType any](
 	if !strings.EqualFold(cosmosUID, strings.ToLower(cosmosUID)) {
 		return nil, nil, fmt.Errorf("invalid cosmos id found in object")
 	}
-	if len(stampAccessor.GetStampIdentifier()) == 0 {
-		return nil, nil, fmt.Errorf("fleet object %T has empty stamp identifier (ResourceID.Name)", newObj)
-	}
 
 	cosmosObj, err := InternalToCosmos[InternalAPIType, CosmosAPIType](newObj)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to convert internal object to Cosmos object: %w", err)
 	}
+
+	// The conversion layer may have set the wrong partition key (e.g.
+	// subscription ID for generic types). Override with the CRUD's
+	// partition key which is always the stamp identifier for Fleet.
+	// replace this with the functionality that will be introduced
+	// by https://github.com/Azure/ARO-HCP/pull/5094
+	if doc, ok := any(cosmosObj).(partitionKeySetter); ok {
+		doc.SetPartitionKey(partitionKeyString)
+	}
+
 	data, err := json.Marshal(cosmosObj)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to marshal Cosmos DB item for '%s': %w", cosmosData.ResourceID, err)
 	}
 
 	return cosmosData, data, nil
-}
-
-// fleetPartitionKey returns the lowercased stamp identifier from a fleet resource.
-func fleetPartitionKey[InternalAPIType any](newObj *InternalAPIType) (string, error) {
-	stampAccessor, ok := any(newObj).(fleet.FleetPartitionKeyAccessor)
-	if !ok {
-		return "", fmt.Errorf("type %T does not implement FleetPartitionKeyAccessor", newObj)
-	}
-	pk := strings.ToLower(stampAccessor.GetStampIdentifier())
-	if len(pk) == 0 {
-		return "", fmt.Errorf("fleet object %T has empty stamp identifier (ResourceID.Name)", newObj)
-	}
-	return pk, nil
 }
 
 func createFleetItem[InternalAPIType, CosmosAPIType any](
@@ -87,19 +86,9 @@ func createFleetItem[InternalAPIType, CosmosAPIType any](
 	if strings.ToLower(partitionKeyString) != partitionKeyString {
 		return nil, fmt.Errorf("partitionKeyString must be lowercase, not: %q", partitionKeyString)
 	}
-	cosmosMetadata, data, err := serializeFleetItem[InternalAPIType, CosmosAPIType](newObj)
+	cosmosMetadata, data, err := serializeFleetItem[InternalAPIType, CosmosAPIType](partitionKeyString, newObj)
 	if err != nil {
 		return nil, err
-	}
-	objPK, err := fleetPartitionKey(newObj)
-	if err != nil {
-		return nil, err
-	}
-	if partitionKeyString != objPK {
-		return nil, fmt.Errorf(
-			"item stamp identifier does not match partition key: %q vs %q",
-			objPK, partitionKeyString,
-		)
 	}
 
 	if opts == nil {
@@ -125,19 +114,9 @@ func replaceFleetItem[InternalAPIType, CosmosAPIType any](
 	if strings.ToLower(partitionKeyString) != partitionKeyString {
 		return nil, fmt.Errorf("partitionKeyString must be lowercase, not: %q", partitionKeyString)
 	}
-	cosmosMetadata, data, err := serializeFleetItem[InternalAPIType, CosmosAPIType](newObj)
+	cosmosMetadata, data, err := serializeFleetItem[InternalAPIType, CosmosAPIType](partitionKeyString, newObj)
 	if err != nil {
 		return nil, err
-	}
-	objPK, err := fleetPartitionKey(newObj)
-	if err != nil {
-		return nil, err
-	}
-	if partitionKeyString != objPK {
-		return nil, fmt.Errorf(
-			"item stamp identifier does not match partition key: %q vs %q",
-			objPK, partitionKeyString,
-		)
 	}
 
 	if opts == nil {
@@ -168,19 +147,9 @@ func addFleetCreateToTransaction[InternalAPIType, CosmosAPIType any](
 	if strings.ToLower(partitionKeyString) != partitionKeyString {
 		return "", fmt.Errorf("partitionKeyString must be lowercase, not: %q", partitionKeyString)
 	}
-	cosmosMetadata, data, err := serializeFleetItem[InternalAPIType, CosmosAPIType](newObj)
+	cosmosMetadata, data, err := serializeFleetItem[InternalAPIType, CosmosAPIType](partitionKeyString, newObj)
 	if err != nil {
 		return "", err
-	}
-	objPK, err := fleetPartitionKey(newObj)
-	if err != nil {
-		return "", err
-	}
-	if partitionKeyString != objPK {
-		return "", fmt.Errorf(
-			"item stamp identifier does not match partition key: %q vs %q",
-			objPK, partitionKeyString,
-		)
 	}
 	transactionDetails := CosmosDBTransactionStepDetails{
 		ActionType: "Create",
@@ -210,19 +179,9 @@ func addFleetReplaceToTransaction[InternalAPIType, CosmosAPIType any](
 	if strings.ToLower(partitionKeyString) != partitionKeyString {
 		return "", fmt.Errorf("partitionKeyString must be lowercase, not: %q", partitionKeyString)
 	}
-	cosmosMetadata, data, err := serializeFleetItem[InternalAPIType, CosmosAPIType](newObj)
+	cosmosMetadata, data, err := serializeFleetItem[InternalAPIType, CosmosAPIType](partitionKeyString, newObj)
 	if err != nil {
 		return "", err
-	}
-	objPK, err := fleetPartitionKey(newObj)
-	if err != nil {
-		return "", err
-	}
-	if partitionKeyString != objPK {
-		return "", fmt.Errorf(
-			"item stamp identifier does not match partition key: %q vs %q",
-			objPK, partitionKeyString,
-		)
 	}
 	transactionDetails := CosmosDBTransactionStepDetails{
 		ActionType: "Replace",
