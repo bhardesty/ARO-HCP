@@ -24,10 +24,6 @@ const (
 	// True means the controller failed in a way unrelated to the kube-apiserver
 	// rejecting our request.
 	ConditionTypeDegraded = "Degraded"
-
-	// ConditionTypeWatchStarted reports that the per-instance ReadDesire informer
-	// has been launched. Only meaningful on ReadDesire.
-	ConditionTypeWatchStarted = "WatchStarted"
 )
 
 // Condition reasons.
@@ -43,10 +39,6 @@ const (
 	// exists in the cluster, either because finalizers are running or the delete
 	// call has just been issued.
 	ConditionReasonWaitingForDeletion = "WaitingForDeletion"
-
-	// ConditionReasonLaunched is set on ConditionTypeWatchStarted when the per-instance
-	// ReadDesire informer is started.
-	ConditionReasonLaunched = "Launched"
 
 	// ConditionReasonNoErrors is the success reason matching the existing controller
 	// convention (see backend's controllerutils.ReportSyncError).

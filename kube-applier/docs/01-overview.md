@@ -71,14 +71,12 @@ Existing patterns in this repo use the same `meta.SetStatusCondition` helper
 (see `controllerutils/util.go:201-220` for the `Degraded` condition pattern).
 We reuse that idiom on each `*Desire.Status.Conditions`.
 
-The two well-known condition types per the readme:
+The well-known condition types per the readme:
 
 - `Successful` &mdash; was the desired effect achieved (with reasons
   `KubeAPIError` or `PreCheckFailed` when not).
 - `Degraded` &mdash; controller-level health (replaces the existing
   `Controller` resource's `Degraded`).
-- `WatchStarted` &mdash; only on `ReadDesire`, set when the per-instance
-  controller is launched.
 
 ### `kube-applier` is a controller binary, not a webhook or sidecar
 

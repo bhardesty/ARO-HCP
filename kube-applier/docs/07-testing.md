@@ -59,10 +59,10 @@ dyn, _ := dynamic.NewForConfig(cfg)
 
 | Case | Expected behaviour |
 | --- | --- |
-| ReadDesire created | one running child controller; `WatchStarted=True` |
-| ReadDesire.spec.targetItem changed | old child stopped (verify cancel called), new child started, `WatchStarted` LastTransitionTime bumped |
+| ReadDesire created | one running child controller; no per-launch status condition |
+| ReadDesire.spec.targetItem changed | old child stopped (verify cancel called), new child started |
 | ReadDesire deleted | child stopped, removed from manager map |
-| invalid GVR in targetItem | no child started; `WatchStarted=False`, reason `PreCheckFailed` |
+| invalid GVR in targetItem | no child started; `Successful=False`, reason `PreCheckFailed` |
 
 ### ReadDesireKubernetesController
 

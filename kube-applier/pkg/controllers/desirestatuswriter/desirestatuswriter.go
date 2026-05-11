@@ -99,9 +99,9 @@ type writer[T any, K comparable, PT DeepCopyable[T]] struct {
 //     existing desire — this is the steady state for healthy reconciles.
 //   - Surface every error to the caller, including PreconditionFailed (412),
 //     so the controller's workqueue retries with backoff. The kube-applier
-//     has multiple controllers writing to the same desire (manager's
-//     WatchStarted vs. per-instance Successful/KubeContent); on conflict the
-//     loser must retry.
+//     can have multiple controllers writing to the same desire (the manager's
+//     construction-failure path vs. the per-instance controller's
+//     Successful/KubeContent writes); on conflict the loser must retry.
 //
 // We DeepCopy the fetched desire before applying mutate. A naive
 // `desired := *existing` would share the conditions-slice backing array with

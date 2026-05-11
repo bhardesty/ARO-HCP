@@ -102,39 +102,6 @@ func TestSetSuccessfulWaitingForDeletion(t *testing.T) {
 	}
 }
 
-func TestSetWatchStarted_AlwaysBumpsLastTransition(t *testing.T) {
-	var conds []metav1.Condition
-	SetWatchStarted(&conds, "first launch")
-	first := findCondition(conds, kubeapplier.ConditionTypeWatchStarted)
-	if first == nil {
-		t.Fatal("WatchStarted not set")
-	}
-	firstTime := first.LastTransitionTime
-	// Wait a tick so the second timestamp must differ.
-	time.Sleep(2 * time.Millisecond)
-	SetWatchStarted(&conds, "second launch")
-	second := findCondition(conds, kubeapplier.ConditionTypeWatchStarted)
-	if second == nil {
-		t.Fatal("WatchStarted gone after second call")
-	}
-	if !second.LastTransitionTime.After(firstTime.Time) {
-		t.Errorf("LastTransitionTime did not advance: %v vs %v", firstTime, second.LastTransitionTime)
-	}
-	if second.Message != "second launch" {
-		t.Errorf("Message = %q, want %q", second.Message, "second launch")
-	}
-	// And there's still only one entry.
-	count := 0
-	for _, c := range conds {
-		if c.Type == kubeapplier.ConditionTypeWatchStarted {
-			count++
-		}
-	}
-	if count != 1 {
-		t.Errorf("expected exactly 1 WatchStarted entry, got %d", count)
-	}
-}
-
 func TestSetDegraded(t *testing.T) {
 	var conds []metav1.Condition
 	SetDegraded(&conds, errors.New("control loop wedged"))

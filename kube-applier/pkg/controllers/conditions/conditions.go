@@ -13,12 +13,11 @@
 // limitations under the License.
 
 // Package conditions provides typed setters for the well-known
-// kube-applier *Desire conditions (Successful, Degraded, WatchStarted).
+// kube-applier *Desire conditions (Successful, Degraded).
 //
-// All setters except SetWatchStarted go through meta.SetStatusCondition,
-// which preserves LastTransitionTime when the condition's Status, Reason,
-// and Message are unchanged. SetWatchStarted unconditionally bumps
-// LastTransitionTime per the kube-applier readme.
+// All setters go through meta.SetStatusCondition, which preserves
+// LastTransitionTime when the condition's Status, Reason, and Message are
+// unchanged.
 package conditions
 
 import (
@@ -106,31 +105,4 @@ func SetDegraded(conds *[]metav1.Condition, err error) {
 		Reason:  kubeapplier.ConditionReasonFailed,
 		Message: fmt.Sprintf("Had an error while syncing: %s", err.Error()),
 	})
-}
-
-// SetWatchStarted records that the per-instance ReadDesire informer has just
-// been launched. Per the readme, LastTransitionTime is unconditionally bumped
-// to "now" on every call so consumers can tell when the watch was last
-// restarted, not just when its status flipped.
-func SetWatchStarted(conds *[]metav1.Condition, message string) {
-	// UTC because conditions cross machine and timezone boundaries; an
-	// operator comparing this stamp against logs or another component's
-	// timestamp should not have to also reason about the producer's TZ.
-	now := metav1.NewTime(time.Now().UTC())
-	new := metav1.Condition{
-		Type:               kubeapplier.ConditionTypeWatchStarted,
-		Status:             metav1.ConditionTrue,
-		Reason:             kubeapplier.ConditionReasonLaunched,
-		Message:            message,
-		LastTransitionTime: now,
-	}
-	// Replace any existing entry directly so we don't preserve a prior
-	// LastTransitionTime when the values are otherwise unchanged.
-	for i, c := range *conds {
-		if c.Type == kubeapplier.ConditionTypeWatchStarted {
-			(*conds)[i] = new
-			return
-		}
-	}
-	*conds = append(*conds, new)
 }

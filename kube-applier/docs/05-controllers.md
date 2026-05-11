@@ -42,7 +42,6 @@ Add a small helper, `kube-applier/pkg/controllers/conditions/conditions.go`:
 func SetSuccessful(conds *[]metav1.Condition, err error)
 func SetSuccessfulWaitingForDeletion(conds *[]metav1.Condition, deletionTime metav1.Time, uid types.UID)
 func SetDegraded(conds *[]metav1.Condition, err error)
-func SetWatchStarted(conds *[]metav1.Condition, message string)
 ```
 
 Each helper:
@@ -54,9 +53,6 @@ Each helper:
     `Message: <kube error>`.
   - call could not be issued &rarr; `Reason: PreCheckFailed`,
     `Message: <reason>`.
-- For `WatchStarted` only, the helper *unconditionally* updates
-  `LastTransitionTime` (per readme). This is the only place we bypass
-  `meta.SetStatusCondition`.
 
 ### Status writeback
 
@@ -187,8 +183,10 @@ Sync logic for a `ReadDesire` key:
    - same         -> nothing to do.
    - different    -> stop existing controller; create + Run new one.
    - missing      -> create + Run new one.
-3. After (re)launch, write WatchStarted condition with LastTransitionTime
-   = now (unconditional bump, per readme).
+3. Construction-failure path only (factory.Build returned PreCheckError or
+   similar): write Successful=False with reason PreCheckFailed. No
+   per-launch condition is written on the success path — steady-state
+   Successful comes from the per-instance controller.
 ```
 
 The "stop and discard" path **must** wait for the goroutine to actually

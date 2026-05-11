@@ -52,11 +52,10 @@ type ReadDesireSpec struct {
 
 type ReadDesireStatus struct {
 	// Conditions reports per-desire reconciliation status. Well-known types:
-	//   - "Successful":   the informer has synced and KubeContent reflects
-	//                     the last observation.
-	//   - "Degraded":     the controller is not making progress for an
-	//                     out-of-band reason.
-	//   - "WatchStarted": the per-instance informer has been launched.
+	//   - "Successful": the informer has synced and KubeContent reflects
+	//                   the last observation.
+	//   - "Degraded":   the controller is not making progress for an
+	//                   out-of-band reason.
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
 	// KubeContent holds the most recently observed state of TargetItem. It

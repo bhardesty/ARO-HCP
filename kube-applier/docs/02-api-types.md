@@ -102,16 +102,14 @@ Add a small `conditions.go` next to the types:
 
 ```go
 const (
-    ConditionSuccessful   = "Successful"
-    ConditionDegraded     = "Degraded"
-    ConditionWatchStarted = "WatchStarted"
+    ConditionSuccessful = "Successful"
+    ConditionDegraded   = "Degraded"
 )
 
 const (
     ReasonKubeAPIError   = "KubeAPIError"
     ReasonPreCheckFailed = "PreCheckFailed"
     ReasonWaitingForDel  = "WaitingForDeletion"
-    ReasonWatchLaunched  = "Launched"
     ReasonNoErrors       = "NoErrors"
     ReasonFailed         = "Failed"
 )

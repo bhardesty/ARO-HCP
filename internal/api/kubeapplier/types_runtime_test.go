@@ -96,7 +96,6 @@ func fixtureReadDesire(t *testing.T) *ReadDesire {
 		Status: ReadDesireStatus{
 			Conditions: []metav1.Condition{
 				{Type: ConditionTypeSuccessful, Status: metav1.ConditionTrue, Reason: ConditionReasonNoErrors},
-				{Type: ConditionTypeWatchStarted, Status: metav1.ConditionTrue, Reason: ConditionReasonLaunched, Message: "watcher up"},
 			},
 			KubeContent: runtime.RawExtension{Raw: []byte(`{"apiVersion":"v1","kind":"ConfigMap"}`)},
 		},

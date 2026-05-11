@@ -130,9 +130,11 @@ type runningInstance struct {
 // supplied dynamic client for every per-instance controller it spawns.
 //
 // crudByParent provides a parent-scoped ResourceCRUD per ReadDesire so status
-// replaces — both the manager's own WatchStarted updates and those of every
-// per-instance controller it spawns — can be issued under each desire's own
-// cluster/nodepool resource ID rather than a sentinel parent.
+// replaces from each spawned per-instance controller can be issued under
+// each desire's own cluster/nodepool resource ID rather than a sentinel
+// parent. The manager itself only writes status on construction failure
+// (Successful=False with reason PreCheckFailed); steady-state status
+// — including KubeContent — comes from the per-instance controllers.
 //
 // cfg's zero values get the Default* constants. Production callers may pass
 // Config{} directly; tests substitute shorter durations and a fake clock.
@@ -342,19 +344,14 @@ func (c *ReadDesireInformerManagingController) SyncOnce(ctx context.Context, key
 		per.Run(childCtx)
 	}()
 
-	// WatchStarted is published only when (re)launching, not on every
-	// reconcile, because SetWatchStarted unconditionally bumps
-	// LastTransitionTime and a steady stream of writes would make the
-	// timestamp meaningless. If this UpdateStatus errors and the workqueue
-	// retries SyncOnce, the retry's "running[key].target == target"
-	// short-circuit will return nil without rewriting WatchStarted. That is
-	// an accepted gap: WatchStarted will be republished on the next genuine
-	// (re)launch — a target change, a manager restart, or the per-instance
-	// controller exiting and being respawned. In the steady state the per-
-	// instance controller is what surfaces ongoing health via Successful.
-	return c.writer.UpdateStatus(ctx, key, func(d *kubeapplier.ReadDesire) {
-		conditions.SetWatchStarted(&d.Status.Conditions, "watch (re)launched")
-	})
+	// No status write here. The manager used to publish a WatchStarted
+	// condition on every (re)launch, but that timestamp turned out to be
+	// uninterpretable to consumers — they cannot distinguish "the watcher
+	// just (re)launched because the desire changed" from "the kube-applier
+	// process restarted." Steady-state ReadDesire status comes from the
+	// per-instance controller's Successful/KubeContent writes; on
+	// construction failure the early return above records Successful=False.
+	return nil
 }
 
 func (c *ReadDesireInformerManagingController) stopByKey(key keys.ReadDesireKey) {
@@ -411,10 +408,11 @@ func (f *readDesireFetcher) Fetch(ctx context.Context, key keys.ReadDesireKey) (
 }
 
 // readDesireReplacer implements desirestatuswriter.Replacer over a
-// KubeApplierReadDesireCRUD. The manager has its own writer for the
-// WatchStarted condition; the spawned per-instance controllers have
-// their own writer for KubeContent. Both writers go through a Replacer
-// like this one.
+// KubeApplierReadDesireCRUD. The manager uses its writer only on the
+// construction-failure path (Successful=False with reason
+// PreCheckFailed). Spawned per-instance controllers have their own
+// writer for KubeContent and steady-state Successful. Both writers go
+// through a Replacer like this one.
 type readDesireReplacer struct {
 	crudByParent database.KubeApplierReadDesireCRUD
 }

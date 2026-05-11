@@ -104,11 +104,13 @@ Each time a particular `ReadDesire.spec.targetItem` changes — that is, the
 GVR, namespace, or name identifying the kube object to watch (not changes to
 the watched object's own content) — the old `ReadDesireKubernetesController`
 instance will be stopped, discarded, and a new one will be created.
-When the `ReadDesireKubernetesController` is started, we will set
-1. `ReadDesire.status.conditions["WatchStarted"].status` is true
-2. `ReadDesire.status.conditions["WatchStarted"].reason` is "Launched"
-3. `ReadDesire.status.conditions["WatchStarted"].message` indicates we launched
-4. `ReadDesire.status.conditions["WatchStarted"].lastTransitionTime` is unconditionally set to the current time.
+
+The manager does not publish a per-launch status condition. The
+`ReadDesireKubernetesController` itself owns `Successful` and the
+`.status.kubeContent` field, which together carry whether the watch is
+working. A separate "watch was last (re)launched at" timestamp turned out
+to be uninterpretable — consumers cannot distinguish a target-driven
+relaunch from a process restart — so it is not surfaced.
 
 When a `ReadDesire` is deleted, the `ReadDesireKubernetesController` instance will be stopped and discarded.
 
