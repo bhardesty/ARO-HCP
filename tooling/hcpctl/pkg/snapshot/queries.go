@@ -291,10 +291,10 @@ var allQueries = []querySpec{
 		database:     "service",
 		category:     categoryResourceDiscovery,
 		ready: func(d queryData) bool {
-			return d.ResourceGroup != "" && d.ResourceName != "" && strings.EqualFold(d.ResourceType, "microsoft.redhatopenshift/hcpopenshiftclusters")
+			return d.ResourceGroup != "" && d.ClusterResourceName != ""
 		},
-		prerequisites: "ResourceGroup, ResourceName, ResourceType is cluster",
-		requiredWhen:  isClusterType,
+		prerequisites: "ResourceGroup, ClusterResourceName",
+		requiredWhen:  func(d queryData) bool { return d.ClusterResourceName != "" },
 		storeResult: func(d *queryData, rows []resultRow) {
 			d.HostedClusterNamespace = rows[0].values[0]
 			d.HostedControlPlaneNamespace = rows[0].values[0] + "-" + rows[0].values[1]
