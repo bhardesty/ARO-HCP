@@ -350,7 +350,7 @@ func TestSyncOnce(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			cs, fleetClient, sLister, mcLister := tt.setup(t, ctrl)
 
-			c := &managementClusterSyncController{
+			c := &managementClusterMigrationController{
 				name:                    "test",
 				clusterServiceClient:    cs,
 				fleetDBClient:           fleetClient,

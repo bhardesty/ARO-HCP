@@ -578,7 +578,7 @@ func (b *Backend) runBackendControllersUnderLeaderElection(ctx context.Context, 
 		activeOperationLister,
 		backendInformers,
 	)
-	managementClusterSyncController := managementclustercontrollers.NewManagementClusterSyncController(
+	managementClusterMigrationController := managementclustercontrollers.NewManagementClusterMigrationController(
 		b.options.ClustersServiceClient,
 		b.options.FleetDBClient,
 		stampLister,
@@ -666,7 +666,7 @@ func (b *Backend) runBackendControllersUnderLeaderElection(ctx context.Context, 
 				go clusterMetricsController.Run(ctx, 1)
 				go nodePoolMetricsController.Run(ctx, 1)
 				go externalAuthMetricsController.Run(ctx, 1)
-				go managementClusterSyncController.Run(ctx, 1)
+				go managementClusterMigrationController.Run(ctx, 1)
 				go placementSyncController.Run(ctx, 20)
 			},
 			OnStoppedLeading: func() {

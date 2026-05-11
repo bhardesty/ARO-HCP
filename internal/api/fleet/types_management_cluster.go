@@ -142,7 +142,7 @@ type ManagementClusterSpec struct {
 	// Must be set explicitly. Empty string is not allowed.
 	//
 	// Ownership: currently synced from Cluster Service provision shard status
-	// by ManagementClusterSyncController (temporary, during CS-to-Cosmos migration).
+	// by ManagementClusterMigrationController (temporary, during CS-to-Cosmos migration).
 	// Will transition to being owned by the admin API via a Geneva Action for
 	// SRE-initiated cordon/uncordon operations.
 	SchedulingPolicy ManagementClusterSchedulingPolicy `json:"schedulingPolicy"`

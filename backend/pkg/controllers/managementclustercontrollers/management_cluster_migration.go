@@ -38,11 +38,11 @@ import (
 	"github.com/Azure/ARO-HCP/internal/utils"
 )
 
-const controllerName = "ManagementClusterSync"
+const controllerName = "ManagementClusterMigration"
 
-var _ controllerutils.Controller = &managementClusterSyncController{}
+var _ controllerutils.Controller = &managementClusterMigrationController{}
 
-type managementClusterSyncController struct {
+type managementClusterMigrationController struct {
 	name string
 
 	clusterServiceClient    ocm.ClusterServiceClientSpec
@@ -54,15 +54,15 @@ type managementClusterSyncController struct {
 	queue          workqueue.TypedRateLimitingInterface[string]
 }
 
-// NewManagementClusterSyncController creates a controller that periodically lists
+// NewManagementClusterMigrationController creates a controller that periodically lists
 // all management clusters from Cluster Service and upserts them into CosmosDB.
-func NewManagementClusterSyncController(
+func NewManagementClusterMigrationController(
 	clusterServiceClient ocm.ClusterServiceClientSpec,
 	fleetDBClient database.FleetDBClient,
 	stampLister dblisters.StampLister,
 	managementClusterLister dblisters.ManagementClusterLister,
 ) controllerutils.Controller {
-	return &managementClusterSyncController{
+	return &managementClusterMigrationController{
 		name:                    controllerName,
 		clusterServiceClient:    clusterServiceClient,
 		fleetDBClient:           fleetDBClient,
@@ -78,7 +78,7 @@ func NewManagementClusterSyncController(
 	}
 }
 
-func (c *managementClusterSyncController) SyncOnce(ctx context.Context, _ any) error {
+func (c *managementClusterMigrationController) SyncOnce(ctx context.Context, _ any) error {
 	logger := utils.LoggerFromContext(ctx)
 	logger.Info("Syncing management clusters from Cluster Service")
 
@@ -91,7 +91,7 @@ func (c *managementClusterSyncController) SyncOnce(ctx context.Context, _ any) e
 // Cosmos is becoming the source of truth, and the admin API registration path
 // will eventually replace this sync controller. Decommissioning a management
 // cluster will be handled explicitly when the time comes.
-func (c *managementClusterSyncController) syncAllManagementClusters(ctx context.Context) error {
+func (c *managementClusterMigrationController) syncAllManagementClusters(ctx context.Context) error {
 	logger := utils.LoggerFromContext(ctx)
 
 	iter := c.clusterServiceClient.ListProvisionShards()
@@ -112,7 +112,7 @@ func (c *managementClusterSyncController) syncAllManagementClusters(ctx context.
 }
 
 // syncProvisionShard converts a single CS provision shard and upserts it into Cosmos.
-func (c *managementClusterSyncController) syncProvisionShard(ctx context.Context, csShard *arohcpv1alpha1.ProvisionShard) error {
+func (c *managementClusterMigrationController) syncProvisionShard(ctx context.Context, csShard *arohcpv1alpha1.ProvisionShard) error {
 	logger := utils.LoggerFromContext(ctx).WithValues("cs_shard_href", csShard.HREF(), "aks_resource_id", csShard.AzureShard().AksManagementClusterResourceId())
 
 	convertedManagementCluster, err := ocm.ConvertCSManagementClusterToInternal(csShard)
@@ -166,7 +166,7 @@ func (c *managementClusterSyncController) syncProvisionShard(ctx context.Context
 
 // ensureStamp upserts the Stamp record. Stamps synced from Cluster Service
 // are auto-approved since the provision shard already exists.
-func (c *managementClusterSyncController) ensureStamp(ctx context.Context, stampIdentifier string) error {
+func (c *managementClusterMigrationController) ensureStamp(ctx context.Context, stampIdentifier string) error {
 	logger := utils.LoggerFromContext(ctx)
 
 	existing, err := c.stampLister.Get(ctx, stampIdentifier)
@@ -219,7 +219,7 @@ func (c *managementClusterSyncController) ensureStamp(ctx context.Context, stamp
 	return nil
 }
 
-func (c *managementClusterSyncController) Run(ctx context.Context, threadiness int) {
+func (c *managementClusterMigrationController) Run(ctx context.Context, threadiness int) {
 	defer utilruntime.HandleCrash()
 	defer c.queue.ShutDown()
 
@@ -242,12 +242,12 @@ func (c *managementClusterSyncController) Run(ctx context.Context, threadiness i
 	logger.Info("Shutting down")
 }
 
-func (c *managementClusterSyncController) runWorker(ctx context.Context) {
+func (c *managementClusterMigrationController) runWorker(ctx context.Context) {
 	for c.processNextWorkItem(ctx) {
 	}
 }
 
-func (c *managementClusterSyncController) processNextWorkItem(ctx context.Context) bool {
+func (c *managementClusterMigrationController) processNextWorkItem(ctx context.Context) bool {
 	ref, shutdown := c.queue.Get()
 	if shutdown {
 		return false

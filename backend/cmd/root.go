@@ -379,8 +379,7 @@ func (f *BackendRootCmdFlags) ToBackendOptions(ctx context.Context, cmd *cobra.C
 
 	azCoreClientOptions := *azureConfig.CloudEnvironment.AZCoreClientOptions()
 
-	resourcesCosmosDBClient, billingDBClient, err := app.NewCosmosDBClients(
-		ctx,
+	cosmosDatabaseClient, err := app.NewCosmosDatabaseClient(
 		f.AzureCosmosDBURL,
 		f.AzureCosmosDBName,
 		azCoreClientOptions,
@@ -389,10 +388,12 @@ func (f *BackendRootCmdFlags) ToBackendOptions(ctx context.Context, cmd *cobra.C
 		return nil, utils.TrackError(err)
 	}
 
-	fleetDBClient, err := app.NewFleetDBClient(
-		f.AzureCosmosDBURL, f.AzureCosmosDBName,
-		azCoreClientOptions,
-	)
+	resourcesCosmosDBClient, billingDBClient, err := app.NewCosmosDBClients(cosmosDatabaseClient)
+	if err != nil {
+		return nil, utils.TrackError(err)
+	}
+
+	fleetDBClient, err := app.NewFleetDBClient(cosmosDatabaseClient)
 	if err != nil {
 		return nil, utils.TrackError(fmt.Errorf("failed to create fleet db client: %w", err))
 	}

@@ -109,6 +109,20 @@ func (c *managementClusterPlacementSyncer) SyncOnce(ctx context.Context, key con
 		return nil
 	}
 
+	// Get the cluster from cache to check if it has a CS ID to query
+	cachedCluster, err := c.clusterLister.Get(ctx, key.SubscriptionID, key.ResourceGroupName, key.HCPClusterName)
+	if database.IsNotFoundError(err) {
+		logger.V(1).Info("Cluster not found in cache, skipping")
+		return nil
+	}
+	if err != nil {
+		return utils.TrackError(fmt.Errorf("failed to get cluster from cache: %w", err))
+	}
+	if cachedCluster.ServiceProviderProperties.ClusterServiceID == nil || len(cachedCluster.ServiceProviderProperties.ClusterServiceID.String()) == 0 {
+		logger.V(1).Info("Cluster has no ClusterServiceID, skipping")
+		return nil
+	}
+
 	// Get the ServiceProviderCluster from Cosmos (live read)
 	spcCRUD := c.cosmosClient.ServiceProviderClusters(key.SubscriptionID, key.ResourceGroupName, key.HCPClusterName)
 	existingSPC, err := spcCRUD.Get(ctx, api.ServiceProviderClusterResourceName)
@@ -122,20 +136,6 @@ func (c *managementClusterPlacementSyncer) SyncOnce(ctx context.Context, key con
 	// check if we need to do work again. Sometimes the live data is more fresh than the cache
 	if !c.needsWork(existingSPC) {
 		logger.V(1).Info("ServiceProviderCluster already has ManagementClusterResourceID (live read), skipping")
-		return nil
-	}
-
-	// Get the cluster from cache to check if it has a CS ID to query
-	cachedCluster, err := c.clusterLister.Get(ctx, key.SubscriptionID, key.ResourceGroupName, key.HCPClusterName)
-	if database.IsNotFoundError(err) {
-		logger.V(1).Info("Cluster not found in cache, skipping")
-		return nil
-	}
-	if err != nil {
-		return utils.TrackError(fmt.Errorf("failed to get cluster from cache: %w", err))
-	}
-	if cachedCluster.ServiceProviderProperties.ClusterServiceID == nil || len(cachedCluster.ServiceProviderProperties.ClusterServiceID.String()) == 0 {
-		logger.V(1).Info("Cluster has no ClusterServiceID, skipping")
 		return nil
 	}
 
