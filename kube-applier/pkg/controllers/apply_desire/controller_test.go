@@ -107,7 +107,7 @@ func mustKey(t *testing.T, d *kubeapplier.ApplyDesire) keys.ApplyDesireKey {
 // PreCheck. Pass a partial target to exercise the targetItem-validation PreChecks.
 func newApplyDesire(t *testing.T, name string, target kubeapplier.ResourceReference, kubeContent []byte) *kubeapplier.ApplyDesire {
 	t.Helper()
-	return &kubeapplier.ApplyDesire{
+	d := &kubeapplier.ApplyDesire{
 		CosmosMetadata: api.CosmosMetadata{
 			ResourceID: mustParseID(t, kubeapplier.ToClusterScopedApplyDesireResourceIDString(
 				"00000000-0000-0000-0000-000000000001", "rg", "cluster", name,
@@ -116,9 +116,12 @@ func newApplyDesire(t *testing.T, name string, target kubeapplier.ResourceRefere
 		Spec: kubeapplier.ApplyDesireSpec{
 			ManagementCluster: "mgmt-1",
 			TargetItem:        target,
-			KubeContent:       runtime.RawExtension{Raw: kubeContent},
 		},
 	}
+	if kubeContent != nil {
+		d.Spec.KubeContent = &runtime.RawExtension{Raw: kubeContent}
+	}
+	return d
 }
 
 // withEtag is a tiny helper for cadence tests that need to construct

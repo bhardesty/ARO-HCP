@@ -176,7 +176,7 @@ func TestSyncOnce_TargetExists_PopulatesKubeContent(t *testing.T) {
 		t.Fatal("no status update recorded")
 	}
 	last := w.updates[len(w.updates)-1]
-	if last.Status.KubeContent.Raw == nil {
+	if last.Status.KubeContent == nil || len(last.Status.KubeContent.Raw) == 0 {
 		t.Fatal("KubeContent is empty after sync")
 	}
 	var got map[string]any
@@ -208,8 +208,8 @@ func TestSyncOnce_TargetAbsent_ReportsSuccessful(t *testing.T) {
 		t.Fatal("no status update recorded")
 	}
 	last := w.updates[len(w.updates)-1]
-	if len(last.Status.KubeContent.Raw) != 0 {
-		t.Errorf("KubeContent should be empty when target is absent, got %s", last.Status.KubeContent.Raw)
+	if last.Status.KubeContent != nil {
+		t.Errorf("KubeContent should be nil when target is absent, got %s", last.Status.KubeContent.Raw)
 	}
 	cond := findCond(last.Status.Conditions, kubeapplier.ConditionTypeSuccessful)
 	if cond == nil || cond.Status != metav1.ConditionTrue {

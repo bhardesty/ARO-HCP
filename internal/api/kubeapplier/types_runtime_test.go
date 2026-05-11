@@ -41,7 +41,7 @@ func fixtureApplyDesire(t *testing.T) *ApplyDesire {
 		CosmosMetadata: api.CosmosMetadata{ResourceID: id},
 		Spec: ApplyDesireSpec{
 			ManagementCluster: "mgmt-1",
-			KubeContent: runtime.RawExtension{
+			KubeContent: &runtime.RawExtension{
 				Raw: []byte(`{"apiVersion":"v1","kind":"ConfigMap","metadata":{"name":"x","namespace":"default"},"data":{"key":"value"}}`),
 			},
 		},
@@ -97,7 +97,7 @@ func fixtureReadDesire(t *testing.T) *ReadDesire {
 			Conditions: []metav1.Condition{
 				{Type: ConditionTypeSuccessful, Status: metav1.ConditionTrue, Reason: ConditionReasonNoErrors},
 			},
-			KubeContent: runtime.RawExtension{Raw: []byte(`{"apiVersion":"v1","kind":"ConfigMap"}`)},
+			KubeContent: &runtime.RawExtension{Raw: []byte(`{"apiVersion":"v1","kind":"ConfigMap"}`)},
 		},
 	}
 }

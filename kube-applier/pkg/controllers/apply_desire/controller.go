@@ -299,7 +299,7 @@ func (c *ApplyDesireController) applyDesired(ctx context.Context, d *kubeapplier
 	if len(target.Resource) == 0 || len(target.Version) == 0 || len(target.Name) == 0 {
 		return conditions.NewPreCheckError(errors.New("spec.targetItem requires version, resource, and name"))
 	}
-	if len(d.Spec.KubeContent.Raw) == 0 {
+	if d.Spec.KubeContent == nil || len(d.Spec.KubeContent.Raw) == 0 {
 		return conditions.NewPreCheckError(errors.New("spec.kubeContent is empty"))
 	}
 	obj := &unstructured.Unstructured{}

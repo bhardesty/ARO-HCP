@@ -56,7 +56,7 @@ func newApplyDesire(t *testing.T, idStr, mgmt string) *kubeapplier.ApplyDesire {
 		CosmosMetadata: api.CosmosMetadata{ResourceID: mustParseID(t, idStr)},
 		Spec: kubeapplier.ApplyDesireSpec{
 			ManagementCluster: mgmt,
-			KubeContent:       runtime.RawExtension{Raw: []byte(`{"apiVersion":"v1","kind":"ConfigMap"}`)},
+			KubeContent:       &runtime.RawExtension{Raw: []byte(`{"apiVersion":"v1","kind":"ConfigMap"}`)},
 		},
 	}
 }

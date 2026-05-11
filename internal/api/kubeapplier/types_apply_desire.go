@@ -60,12 +60,15 @@ type ApplyDesireSpec struct {
 	// with server-side-apply and Force=true. The object must carry apiVersion,
 	// kind, metadata.name, and metadata.namespace if namespaced.
 	//
+	// A nil pointer (or one with an empty Raw) is treated as a pre-check
+	// failure: the kube-applier needs an object to apply.
+	//
 	// The kube-applier always issues SSA with FieldManager="aro-hcp-kube-applier".
 	// The manager name is intentionally not configurable via this API: every
 	// field the kube-applier owns on the cluster traces to that one string,
 	// so an operator inspecting fieldsV1 metadata can attribute ownership at
 	// a glance.
-	KubeContent runtime.RawExtension `json:"kubeContent"`
+	KubeContent *runtime.RawExtension `json:"kubeContent,omitempty"`
 }
 
 type ApplyDesireStatus struct {

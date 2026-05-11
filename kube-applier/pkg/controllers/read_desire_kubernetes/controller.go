@@ -271,10 +271,11 @@ func (c *ReadDesireKubernetesController) SyncOnce(ctx context.Context) error {
 		})
 	}
 
-	// newRaw left nil when exists==false. That nil slice is the signal
-	// for "kube object does not exist" — see the .status.kubeContent
-	// publishing branches below: a nil Raw flips KubeContent.Raw to nil,
-	// which the API contract treats as "absent."
+	// newRaw left nil when exists==false. A nil slice is the signal for
+	// "kube object does not exist": the .status.kubeContent publish branch
+	// below clears the pointer to nil, which the API contract treats as
+	// "absent or not yet observed" (disambiguated by the Successful
+	// condition).
 	var newRaw []byte
 	if exists {
 		obj, ok := rawObj.(*unstructured.Unstructured)
@@ -292,8 +293,14 @@ func (c *ReadDesireKubernetesController) SyncOnce(ctx context.Context) error {
 		}
 	}
 
-	// No-op if the new payload is byte-equal to the existing status.
-	if bytes.Equal(newRaw, desire.Status.KubeContent.Raw) {
+	// No-op if the new payload is byte-equal to the existing status. A nil
+	// pointer collapses to a nil Raw for the comparison so "absent stays
+	// absent" doesn't trip the publish branch.
+	var existingRaw []byte
+	if desire.Status.KubeContent != nil {
+		existingRaw = desire.Status.KubeContent.Raw
+	}
+	if bytes.Equal(newRaw, existingRaw) {
 		// Still ensure Successful=True so a freshly-launched controller flips
 		// the condition out of Unknown into True on the first cycle.
 		return c.writer.UpdateStatus(ctx, c.key, func(d *kubeapplier.ReadDesire) {
@@ -302,7 +309,11 @@ func (c *ReadDesireKubernetesController) SyncOnce(ctx context.Context) error {
 	}
 
 	return c.writer.UpdateStatus(ctx, c.key, func(d *kubeapplier.ReadDesire) {
-		d.Status.KubeContent = runtime.RawExtension{Raw: append([]byte(nil), newRaw...)}
+		if newRaw == nil {
+			d.Status.KubeContent = nil
+		} else {
+			d.Status.KubeContent = &runtime.RawExtension{Raw: append([]byte(nil), newRaw...)}
+		}
 		conditions.SetSuccessful(&d.Status.Conditions, nil)
 	})
 }

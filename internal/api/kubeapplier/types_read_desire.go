@@ -58,9 +58,9 @@ type ReadDesireStatus struct {
 	//                   out-of-band reason.
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
-	// KubeContent holds the most recently observed state of TargetItem. It
-	// is empty (zero RawExtension) when the target does not exist in the
-	// cluster — distinguish that from "not yet observed" via the
-	// "Successful" condition.
-	KubeContent runtime.RawExtension `json:"kubeContent"`
+	// KubeContent holds the most recently observed state of TargetItem.
+	// nil means the target either has not been observed yet or is absent
+	// from the cluster — distinguish those two via the "Successful"
+	// condition (Unknown vs. True).
+	KubeContent *runtime.RawExtension `json:"kubeContent,omitempty"`
 }

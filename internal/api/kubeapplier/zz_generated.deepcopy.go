@@ -88,7 +88,11 @@ func (in *ApplyDesireList) DeepCopyObject() runtime.Object {
 func (in *ApplyDesireSpec) DeepCopyInto(out *ApplyDesireSpec) {
 	*out = *in
 	out.TargetItem = in.TargetItem
-	in.KubeContent.DeepCopyInto(&out.KubeContent)
+	if in.KubeContent != nil {
+		in, out := &in.KubeContent, &out.KubeContent
+		*out = new(runtime.RawExtension)
+		(*in).DeepCopyInto(*out)
+	}
 	return
 }
 
@@ -312,7 +316,11 @@ func (in *ReadDesireStatus) DeepCopyInto(out *ReadDesireStatus) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
-	in.KubeContent.DeepCopyInto(&out.KubeContent)
+	if in.KubeContent != nil {
+		in, out := &in.KubeContent, &out.KubeContent
+		*out = new(runtime.RawExtension)
+		(*in).DeepCopyInto(*out)
+	}
 	return
 }
 

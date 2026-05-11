@@ -56,7 +56,7 @@ func newClusterApplyDesire(t *testing.T) *kubeapplier.ApplyDesire {
 		},
 		Spec: kubeapplier.ApplyDesireSpec{
 			ManagementCluster: testMgmt,
-			KubeContent: runtime.RawExtension{
+			KubeContent: &runtime.RawExtension{
 				Raw: []byte(`{"apiVersion":"v1","kind":"ConfigMap","metadata":{"name":"x"}}`),
 			},
 		},
@@ -102,8 +102,8 @@ func TestMockKubeApplierCreateAndGet_ClusterScoped(t *testing.T) {
 	if got.Spec.ManagementCluster != testMgmt {
 		t.Errorf("ManagementCluster = %q want %q", got.Spec.ManagementCluster, testMgmt)
 	}
-	if !strings.Contains(string(got.Spec.KubeContent.Raw), "ConfigMap") {
-		t.Errorf("KubeContent did not round-trip: %s", got.Spec.KubeContent.Raw)
+	if got.Spec.KubeContent == nil || !strings.Contains(string(got.Spec.KubeContent.Raw), "ConfigMap") {
+		t.Errorf("KubeContent did not round-trip: %v", got.Spec.KubeContent)
 	}
 }
 
@@ -180,7 +180,7 @@ func TestMockKubeApplierGlobalLister_UnionsClusterAndNodePoolScopes(t *testing.T
 			},
 			Spec: kubeapplier.ApplyDesireSpec{
 				ManagementCluster: testMgmt,
-				KubeContent:       runtime.RawExtension{Raw: []byte(`{"apiVersion":"v1","kind":"Secret","metadata":{"name":"y"}}`)},
+				KubeContent:       &runtime.RawExtension{Raw: []byte(`{"apiVersion":"v1","kind":"Secret","metadata":{"name":"y"}}`)},
 			},
 		},
 	})
