@@ -72,7 +72,7 @@ tests:
           Fluent Bit pod arobit-retrying on cluster test is retrying chunk delivery.
           Retries occur when the azure_kusto output encounters a recoverable error (e.g. transient network failure, HTTP 429/5xx from Kusto).
           Investigate the Fluent Bit logs for the specific error details and check the Kusto instance health.
-        summary: High Kusto output retry rate (> 3/s for 5 min).
+        summary: High Kusto output retries
 # FluentBitHighOutputRetries - low retries, no alert
 - interval: 1m
   input_series:

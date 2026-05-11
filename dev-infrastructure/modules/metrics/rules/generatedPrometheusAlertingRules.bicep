@@ -1031,8 +1031,8 @@ Retries occur when the azure_kusto output encounters a recoverable error (e.g. t
 Investigate the Fluent Bit logs for the specific error details and check the Kusto instance health.
 '''
           runbook_url: 'https://eng.ms/docs/cloud-ai-platform/azure-core/azure-cloud-native-and-management-platform/control-plane-bburns/azure-red-hat-openshift/azure-redhat-openshift-team-doc/hcp/troubleshooting/arobit.html'
-          summary: 'High Kusto output retry rate (> 3/s for 5 min).'
-          title: 'High Kusto output retry rate (> 3/s for 5 min).'
+          summary: 'High Kusto output retries'
+          title: 'High Kusto output retries'
         }
         expression: 'sum(increase(fluentbit_output_retries_total{name=~"azure_kusto.*"}[5m])) by (cluster, pod) > 3'
         for: 'PT5M'
