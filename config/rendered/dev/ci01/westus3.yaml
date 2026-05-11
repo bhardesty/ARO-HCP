@@ -52,7 +52,7 @@ adminApi:
 administration:
   readerGroupId: ""
   releaseManagementGroupId: ""
-  sreServiceTag: ""
+  sreServiceTag: CorpNetSaw
 aksCommandRuntime:
   image:
     digest: sha256:a249d179ee44de7951020ebf0f141e689dadd7207c228b355734b35b772c3333

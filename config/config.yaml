@@ -34,7 +34,7 @@ defaults:
   administration:
     readerGroupId: ""
     releaseManagementGroupId: ""
-    sreServiceTag: ""
+    sreServiceTag: "CorpNetSaw"
   # Global scope settings
   global:
     safeDnsIntAppObjectId: "" # intentionally left empty
