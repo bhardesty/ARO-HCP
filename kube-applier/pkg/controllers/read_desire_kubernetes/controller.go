@@ -229,6 +229,8 @@ func (c *ReadDesireKubernetesController) processNext(ctx context.Context) bool {
 // cases apart — once true, GetByKey's exists==false really means the object
 // is not there.
 func (c *ReadDesireKubernetesController) SyncOnce(ctx context.Context) error {
+	// we wait until we've synced at least once so that we can be sure a "not found" means the content doesn't exist
+	// instead of "we haven't observed the content yet".
 	if !c.informer.HasSynced() {
 		utils.LoggerFromContext(ctx).Info("per-instance informer not yet synced; skipping",
 			"gvr", c.gvr.String(),
