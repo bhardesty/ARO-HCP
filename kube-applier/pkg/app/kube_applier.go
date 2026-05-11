@@ -138,7 +138,7 @@ func (o *Options) runControllersUnderLeaderElection(
 
 	// PartitionListers gives us a single-partition view scoped to this pod's
 	// management cluster, so the informer relists never touch other partitions.
-	partitionListers := o.KubeApplierClient.PartitionListers(o.ManagementCluster)
+	partitionListers := o.KubeApplierDBClient.PartitionListers(o.ManagementCluster)
 
 	applyInformer := informers.NewApplyDesireInformer(partitionListers.ApplyDesires())
 	deleteInformer := informers.NewDeleteDesireInformer(partitionListers.DeleteDesires())
@@ -147,7 +147,7 @@ func (o *Options) runControllersUnderLeaderElection(
 	// Each controller takes its peer interface off the same per-management-cluster
 	// KubeApplierCRUD so status replaces use the correct (cluster, [nodepool])
 	// parent for every desire they touch.
-	kubeApplierCRUD := o.KubeApplierClient.KubeApplier(o.ManagementCluster)
+	kubeApplierCRUD := o.KubeApplierDBClient.KubeApplier(o.ManagementCluster)
 
 	applyCtl, err := apply_desire.NewApplyDesireController(applyInformer, o.DynamicClient, kubeApplierCRUD, apply_desire.Config{})
 	if err != nil {

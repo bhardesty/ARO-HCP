@@ -15,7 +15,7 @@
 // Package kube_applier_integration runs the kube-applier controllers in-process
 // against a real kube-apiserver provided by sigs.k8s.io/controller-runtime's
 // envtest (etcd + kube-apiserver binaries; no Docker required) and a mock
-// Cosmos KubeApplierClient. Each test is described by an artifact directory
+// Cosmos KubeApplierDBClient. Each test is described by an artifact directory
 // under ./artifacts/. See ./framework for step types and conventions.
 //
 // KUBEBUILDER_ASSETS must point at the envtest binaries before running these

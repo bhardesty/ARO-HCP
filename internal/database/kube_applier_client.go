@@ -30,12 +30,12 @@ import (
 	"github.com/Azure/ARO-HCP/internal/utils"
 )
 
-// KubeApplierClient is the database surface used by the kube-applier binary.
+// KubeApplierDBClient is the database surface used by the kube-applier binary.
 // It is intentionally narrower than DBClient because the kube-applier pod's
 // Cosmos credentials are scoped to a single container; reusing DBClient would
 // expose methods (HCPClusters, Operations, &hellip;) that the pod cannot
 // actually serve at runtime.
-type KubeApplierClient interface {
+type KubeApplierDBClient interface {
 	// KubeApplier returns CRUD accessors scoped to a single management-cluster
 	// partition. The kube-applier binary calls this with its own management
 	// cluster name; the backend (creator of *Desires) calls it with the
@@ -73,7 +73,7 @@ type KubeApplierReadDesireCRUD interface {
 }
 
 // KubeApplierCRUD scopes ResourceCRUD accessors to a single management-cluster
-// partition. It is constructed from KubeApplierClient.KubeApplier(managementCluster)
+// partition. It is constructed from KubeApplierDBClient.KubeApplier(managementCluster)
 // and is the union of the per-type peer interfaces above.
 type KubeApplierCRUD interface {
 	KubeApplierApplyDesireCRUD
@@ -125,51 +125,53 @@ func (p ResourceParent) resourceID() (*azcorearm.ResourceID, error) {
 	return azcorearm.ParseResourceID(strings.ToLower(path.Join(parts...)))
 }
 
-// cosmosKubeApplierClient implements KubeApplierClient against a Cosmos container.
-type cosmosKubeApplierClient struct {
-	container *azcosmos.ContainerClient
+// kubeApplierCosmosDBClient implements KubeApplierDBClient against a Cosmos
+// container. The struct mirrors billingCosmosDBClient / resourcesCosmosDBClient:
+// the single field carries the container's own name.
+type kubeApplierCosmosDBClient struct {
+	kubeApplier *azcosmos.ContainerClient
 }
 
-var _ KubeApplierClient = &cosmosKubeApplierClient{}
+var _ KubeApplierDBClient = &kubeApplierCosmosDBClient{}
 
-// NewKubeApplierClient instantiates a KubeApplierClient from a Cosmos
+// NewKubeApplierDBClient instantiates a KubeApplierDBClient from a Cosmos
 // DatabaseClient. It opens *only* the kube-applier container; the caller's
 // credentials therefore need only that single grant.
-func NewKubeApplierClient(database *azcosmos.DatabaseClient) (KubeApplierClient, error) {
-	container, err := database.NewContainer(kubeApplierContainer)
+func NewKubeApplierDBClient(database *azcosmos.DatabaseClient) (KubeApplierDBClient, error) {
+	kubeApplier, err := database.NewContainer(kubeApplierContainer)
 	if err != nil {
 		return nil, utils.TrackError(err)
 	}
-	return &cosmosKubeApplierClient{container: container}, nil
+	return &kubeApplierCosmosDBClient{kubeApplier: kubeApplier}, nil
 }
 
-// NewKubeApplierClientFromContainer wraps an already-opened container client.
-// Useful when the caller has constructed the container client itself.
-func NewKubeApplierClientFromContainer(container *azcosmos.ContainerClient) KubeApplierClient {
-	return &cosmosKubeApplierClient{container: container}
+// NewKubeApplierDBClientFromContainer wraps an already-opened container
+// client. Useful when the caller has constructed the container client itself.
+func NewKubeApplierDBClientFromContainer(kubeApplier *azcosmos.ContainerClient) KubeApplierDBClient {
+	return &kubeApplierCosmosDBClient{kubeApplier: kubeApplier}
 }
 
-func (c *cosmosKubeApplierClient) KubeApplier(managementCluster string) KubeApplierCRUD {
+func (c *kubeApplierCosmosDBClient) KubeApplier(managementCluster string) KubeApplierCRUD {
 	return &kubeApplierCRUD{
-		containerClient:   c.container,
+		kubeApplier:       c.kubeApplier,
 		managementCluster: managementCluster,
 	}
 }
 
-func (c *cosmosKubeApplierClient) GlobalListers() KubeApplierGlobalListers {
-	return &cosmosKubeApplierGlobalListers{container: c.container}
+func (c *kubeApplierCosmosDBClient) GlobalListers() KubeApplierGlobalListers {
+	return &cosmosKubeApplierGlobalListers{kubeApplier: c.kubeApplier}
 }
 
-func (c *cosmosKubeApplierClient) PartitionListers(managementCluster string) KubeApplierGlobalListers {
+func (c *kubeApplierCosmosDBClient) PartitionListers(managementCluster string) KubeApplierGlobalListers {
 	return &cosmosKubeApplierGlobalListers{
-		container:    c.container,
+		kubeApplier:  c.kubeApplier,
 		partitionKey: strings.ToLower(managementCluster),
 	}
 }
 
 // kubeApplierCRUD implements KubeApplierCRUD against a Cosmos container.
 type kubeApplierCRUD struct {
-	containerClient   *azcosmos.ContainerClient
+	kubeApplier       *azcosmos.ContainerClient
 	managementCluster string
 }
 
@@ -185,7 +187,7 @@ func (k *kubeApplierCRUD) ApplyDesires(parent ResourceParent) (ResourceCRUD[kube
 		resourceType = kubeapplier.NodePoolScopedApplyDesireResourceType
 	}
 	return newKubeApplierResourceCRUD[kubeapplier.ApplyDesire, GenericDocument[kubeapplier.ApplyDesire]](
-		k.containerClient, k.managementCluster, parentID, resourceType,
+		k.kubeApplier, k.managementCluster, parentID, resourceType,
 	), nil
 }
 
@@ -199,7 +201,7 @@ func (k *kubeApplierCRUD) DeleteDesires(parent ResourceParent) (ResourceCRUD[kub
 		resourceType = kubeapplier.NodePoolScopedDeleteDesireResourceType
 	}
 	return newKubeApplierResourceCRUD[kubeapplier.DeleteDesire, GenericDocument[kubeapplier.DeleteDesire]](
-		k.containerClient, k.managementCluster, parentID, resourceType,
+		k.kubeApplier, k.managementCluster, parentID, resourceType,
 	), nil
 }
 
@@ -213,7 +215,7 @@ func (k *kubeApplierCRUD) ReadDesires(parent ResourceParent) (ResourceCRUD[kubea
 		resourceType = kubeapplier.NodePoolScopedReadDesireResourceType
 	}
 	return newKubeApplierResourceCRUD[kubeapplier.ReadDesire, GenericDocument[kubeapplier.ReadDesire]](
-		k.containerClient, k.managementCluster, parentID, resourceType,
+		k.kubeApplier, k.managementCluster, parentID, resourceType,
 	), nil
 }
 
@@ -221,7 +223,7 @@ func (k *kubeApplierCRUD) ReadDesires(parent ResourceParent) (ResourceCRUD[kubea
 // An empty partitionKey means "list cross-partition"; a non-empty value scopes every query to
 // that single partition.
 type cosmosKubeApplierGlobalListers struct {
-	container    *azcosmos.ContainerClient
+	kubeApplier  *azcosmos.ContainerClient
 	partitionKey string
 }
 
@@ -229,8 +231,8 @@ var _ KubeApplierGlobalListers = &cosmosKubeApplierGlobalListers{}
 
 func (g *cosmosKubeApplierGlobalListers) ApplyDesires() GlobalLister[kubeapplier.ApplyDesire] {
 	return &cosmosKubeApplierDesireGlobalLister[kubeapplier.ApplyDesire, GenericDocument[kubeapplier.ApplyDesire]]{
-		containerClient: g.container,
-		partitionKey:    g.partitionKey,
+		kubeApplier:  g.kubeApplier,
+		partitionKey: g.partitionKey,
 		resourceTypes: []azcorearm.ResourceType{
 			kubeapplier.ClusterScopedApplyDesireResourceType,
 			kubeapplier.NodePoolScopedApplyDesireResourceType,
@@ -240,8 +242,8 @@ func (g *cosmosKubeApplierGlobalListers) ApplyDesires() GlobalLister[kubeapplier
 
 func (g *cosmosKubeApplierGlobalListers) DeleteDesires() GlobalLister[kubeapplier.DeleteDesire] {
 	return &cosmosKubeApplierDesireGlobalLister[kubeapplier.DeleteDesire, GenericDocument[kubeapplier.DeleteDesire]]{
-		containerClient: g.container,
-		partitionKey:    g.partitionKey,
+		kubeApplier:  g.kubeApplier,
+		partitionKey: g.partitionKey,
 		resourceTypes: []azcorearm.ResourceType{
 			kubeapplier.ClusterScopedDeleteDesireResourceType,
 			kubeapplier.NodePoolScopedDeleteDesireResourceType,
@@ -251,8 +253,8 @@ func (g *cosmosKubeApplierGlobalListers) DeleteDesires() GlobalLister[kubeapplie
 
 func (g *cosmosKubeApplierGlobalListers) ReadDesires() GlobalLister[kubeapplier.ReadDesire] {
 	return &cosmosKubeApplierDesireGlobalLister[kubeapplier.ReadDesire, GenericDocument[kubeapplier.ReadDesire]]{
-		containerClient: g.container,
-		partitionKey:    g.partitionKey,
+		kubeApplier:  g.kubeApplier,
+		partitionKey: g.partitionKey,
 		resourceTypes: []azcorearm.ResourceType{
 			kubeapplier.ClusterScopedReadDesireResourceType,
 			kubeapplier.NodePoolScopedReadDesireResourceType,
@@ -265,9 +267,9 @@ func (g *cosmosKubeApplierGlobalListers) ReadDesires() GlobalLister[kubeapplier.
 // node-pool-scoped resource types in a single query. An empty partitionKey
 // means "cross-partition"; a non-empty value restricts to that partition.
 type cosmosKubeApplierDesireGlobalLister[InternalAPIType, CosmosAPIType any] struct {
-	containerClient *azcosmos.ContainerClient
-	resourceTypes   []azcorearm.ResourceType
-	partitionKey    string
+	kubeApplier   *azcosmos.ContainerClient
+	resourceTypes []azcorearm.ResourceType
+	partitionKey  string
 }
 
 func (l *cosmosKubeApplierDesireGlobalLister[InternalAPIType, CosmosAPIType]) List(
@@ -294,7 +296,7 @@ func (l *cosmosKubeApplierDesireGlobalLister[InternalAPIType, CosmosAPIType]) Li
 	if len(l.partitionKey) > 0 {
 		pk = azcosmos.NewPartitionKeyString(l.partitionKey)
 	}
-	pager := l.containerClient.NewQueryItemsPager(query, pk, &queryOptions)
+	pager := l.kubeApplier.NewQueryItemsPager(query, pk, &queryOptions)
 
 	if options != nil && ptr.Deref(options.PageSizeHint, -1) > 0 {
 		return newQueryResourcesSinglePageIterator[InternalAPIType, CosmosAPIType](pager), nil

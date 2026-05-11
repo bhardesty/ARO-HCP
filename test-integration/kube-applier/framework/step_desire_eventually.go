@@ -74,7 +74,7 @@ func (s *desireEventuallyStep) Run(ctx context.Context, t *testing.T, h *Harness
 	deadline := time.Now().Add(EventuallyTimeout)
 	var lastObserved any
 	for time.Now().Before(deadline) {
-		actual, getErr := getter(ctx, h.KubeApplierClient, id)
+		actual, getErr := getter(ctx, h.KubeApplierDBClient, id)
 		if getErr != nil {
 			lastObserved = fmt.Sprintf("Get error: %v", getErr)
 			time.Sleep(EventuallyTick)
@@ -98,8 +98,8 @@ func newDesireEventuallyStep(id string, dir fs.FS) (Step, error) {
 // desireGetters maps the lower-cased leaf resource type from the ResourceID
 // to a function that fetches that *Desire kind. Adding a fourth desire type
 // in the future is one entry in this map.
-var desireGetters = map[string]func(ctx context.Context, kac database.KubeApplierClient, id *azcorearm.ResourceID) (any, error){
-	strings.ToLower(kubeapplier.ApplyDesireResourceTypeName): func(ctx context.Context, kac database.KubeApplierClient, id *azcorearm.ResourceID) (any, error) {
+var desireGetters = map[string]func(ctx context.Context, kac database.KubeApplierDBClient, id *azcorearm.ResourceID) (any, error){
+	strings.ToLower(kubeapplier.ApplyDesireResourceTypeName): func(ctx context.Context, kac database.KubeApplierDBClient, id *azcorearm.ResourceID) (any, error) {
 		k, err := keys.ApplyDesireKeyFromResourceID(id)
 		if err != nil {
 			return nil, err
@@ -110,7 +110,7 @@ var desireGetters = map[string]func(ctx context.Context, kac database.KubeApplie
 		}
 		return c.Get(ctx, id.Name)
 	},
-	strings.ToLower(kubeapplier.DeleteDesireResourceTypeName): func(ctx context.Context, kac database.KubeApplierClient, id *azcorearm.ResourceID) (any, error) {
+	strings.ToLower(kubeapplier.DeleteDesireResourceTypeName): func(ctx context.Context, kac database.KubeApplierDBClient, id *azcorearm.ResourceID) (any, error) {
 		k, err := keys.DeleteDesireKeyFromResourceID(id)
 		if err != nil {
 			return nil, err
@@ -121,7 +121,7 @@ var desireGetters = map[string]func(ctx context.Context, kac database.KubeApplie
 		}
 		return c.Get(ctx, id.Name)
 	},
-	strings.ToLower(kubeapplier.ReadDesireResourceTypeName): func(ctx context.Context, kac database.KubeApplierClient, id *azcorearm.ResourceID) (any, error) {
+	strings.ToLower(kubeapplier.ReadDesireResourceTypeName): func(ctx context.Context, kac database.KubeApplierDBClient, id *azcorearm.ResourceID) (any, error) {
 		k, err := keys.ReadDesireKeyFromResourceID(id)
 		if err != nil {
 			return nil, err

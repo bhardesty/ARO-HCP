@@ -82,7 +82,7 @@ func newNodePoolReadDesire(t *testing.T) *kubeapplier.ReadDesire {
 
 func TestMockKubeApplierCreateAndGet_ClusterScoped(t *testing.T) {
 	ctx := context.Background()
-	mock := NewMockKubeApplierClient()
+	mock := NewMockKubeApplierDBClient()
 	desire := newClusterApplyDesire(t)
 
 	parent := database.ResourceParent{
@@ -109,7 +109,7 @@ func TestMockKubeApplierCreateAndGet_ClusterScoped(t *testing.T) {
 
 func TestMockKubeApplierCreateAndGet_NodePoolScoped(t *testing.T) {
 	ctx := context.Background()
-	mock := NewMockKubeApplierClient()
+	mock := NewMockKubeApplierDBClient()
 	desire := newNodePoolReadDesire(t)
 
 	parent := database.ResourceParent{
@@ -135,7 +135,7 @@ func TestMockKubeApplier_PartitionKeyEnvelope(t *testing.T) {
 	// Ensure InternalToCosmosKubeApplier writes the management cluster name
 	// into the cosmos document's partitionKey field rather than the subscription ID.
 	ctx := context.Background()
-	mock := NewMockKubeApplierClient()
+	mock := NewMockKubeApplierDBClient()
 	desire := newClusterApplyDesire(t)
 
 	parent := database.ResourceParent{
@@ -169,7 +169,7 @@ func TestMockKubeApplier_PartitionKeyEnvelope(t *testing.T) {
 
 func TestMockKubeApplierGlobalLister_UnionsClusterAndNodePoolScopes(t *testing.T) {
 	ctx := context.Background()
-	mock, err := NewMockKubeApplierClientWithResources(ctx, []any{
+	mock, err := NewMockKubeApplierDBClientWithResources(ctx, []any{
 		newClusterApplyDesire(t),
 		// A second ApplyDesire under a node pool, using a different desire name.
 		&kubeapplier.ApplyDesire{
@@ -185,7 +185,7 @@ func TestMockKubeApplierGlobalLister_UnionsClusterAndNodePoolScopes(t *testing.T
 		},
 	})
 	if err != nil {
-		t.Fatalf("NewMockKubeApplierClientWithResources: %v", err)
+		t.Fatalf("NewMockKubeApplierDBClientWithResources: %v", err)
 	}
 
 	iter, err := mock.GlobalListers().ApplyDesires().List(ctx, nil)
@@ -210,7 +210,7 @@ func TestMockKubeApplier_IsolatedFromMockResourcesDBClient(t *testing.T) {
 	// separate document stores. Documents written to one are not visible to
 	// the other (mirroring the production container split).
 	ctx := context.Background()
-	kubeMock := NewMockKubeApplierClient()
+	kubeMock := NewMockKubeApplierDBClient()
 	dbMock := NewMockResourcesDBClient()
 	desire := newClusterApplyDesire(t)
 
@@ -229,6 +229,6 @@ func TestMockKubeApplier_IsolatedFromMockResourcesDBClient(t *testing.T) {
 		t.Errorf("MockResourcesDBClient saw %d documents from a kube-applier write; expected 0", got)
 	}
 	if got := len(kubeMock.GetAllDocuments()); got != 1 {
-		t.Errorf("MockKubeApplierClient missing the document it just stored: %d", got)
+		t.Errorf("MockKubeApplierDBClient missing the document it just stored: %d", got)
 	}
 }

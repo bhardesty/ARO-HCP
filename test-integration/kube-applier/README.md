@@ -8,8 +8,8 @@ The controllers run in-process against:
 
 - a real `kube-apiserver` + `etcd` provided by `sigs.k8s.io/controller-runtime`'s
   envtest (no Docker), and
-- a `databasetesting.MockKubeApplierClient` standing in for Cosmos. The
-  framework holds the client through the `database.KubeApplierClient`
+- a `databasetesting.MockKubeApplierDBClient` standing in for Cosmos. The
+  framework holds the client through the `database.KubeApplierDBClient`
   interface, so a future joint backend+kube-applier test can swap in an
   implementation that shares storage with the backend's MockDBClient.
 

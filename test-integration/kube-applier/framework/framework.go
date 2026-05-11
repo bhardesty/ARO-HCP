@@ -84,13 +84,13 @@ type Step interface {
 
 // Harness holds the per-test runtime that steps read from / mutate.
 //
-// KubeApplierClient is the interface (not the concrete mock) so a future
+// KubeApplierDBClient is the interface (not the concrete mock) so a future
 // joint backend+kube-applier test can swap in an implementation that shares
 // storage with the backend's MockDBClient.
 type Harness struct {
-	KubeApplierClient database.KubeApplierClient
-	Dyn               dynamic.Interface
-	Namespace         string
+	KubeApplierDBClient database.KubeApplierDBClient
+	Dyn                 dynamic.Interface
+	Namespace           string
 }
 
 // TestCase is a single artifact-driven test.
@@ -211,11 +211,11 @@ func (tc TestCase) RunCase(t *testing.T, cfg *rest.Config) {
 	createNamespace(ctx, t, dyn, namespace)
 	t.Cleanup(func() { deleteNamespace(context.Background(), t, dyn, namespace) })
 
-	mock := databasetesting.NewMockKubeApplierClient()
+	mock := databasetesting.NewMockKubeApplierDBClient()
 	stop := startControllers(ctx, t, mock, dyn)
 	defer stop()
 
-	h := &Harness{KubeApplierClient: mock, Dyn: dyn, Namespace: namespace}
+	h := &Harness{KubeApplierDBClient: mock, Dyn: dyn, Namespace: namespace}
 
 	for _, step := range tc.Steps {
 		t.Logf("running step %s", step.StepID())
@@ -228,7 +228,7 @@ func (tc TestCase) RunCase(t *testing.T, cfg *rest.Config) {
 
 // startControllers wires the three kube-applier controllers in-process and
 // runs them. Returns a stop function the caller defers.
-func startControllers(parent context.Context, t *testing.T, kac database.KubeApplierClient, dyn dynamic.Interface) func() {
+func startControllers(parent context.Context, t *testing.T, kac database.KubeApplierDBClient, dyn dynamic.Interface) func() {
 	t.Helper()
 	ctx, cancel := context.WithCancel(parent)
 

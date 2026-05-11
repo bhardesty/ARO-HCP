@@ -78,7 +78,7 @@ func TestKubeApplierInformers_ListByManagementCluster(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	mock, err := databasetesting.NewMockKubeApplierClientWithResources(ctx, []any{
+	mock, err := databasetesting.NewMockKubeApplierDBClientWithResources(ctx, []any{
 		// mgmt-a: cluster-scoped + nodepool-scoped under cluster c
 		newApplyDesire(t,
 			kubeapplier.ToClusterScopedApplyDesireResourceIDString(testSub, testRG, testCluster, "a1"),
@@ -92,7 +92,7 @@ func TestKubeApplierInformers_ListByManagementCluster(t *testing.T) {
 			testMgmtB),
 	})
 	if err != nil {
-		t.Fatalf("NewMockKubeApplierClientWithResources: %v", err)
+		t.Fatalf("NewMockKubeApplierDBClientWithResources: %v", err)
 	}
 
 	relistDuration := 250 * time.Millisecond
@@ -135,7 +135,7 @@ func TestKubeApplierInformers_ListForCluster_UnionsClusterAndNodePool(t *testing
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	mock, err := databasetesting.NewMockKubeApplierClientWithResources(ctx, []any{
+	mock, err := databasetesting.NewMockKubeApplierDBClientWithResources(ctx, []any{
 		newApplyDesire(t,
 			kubeapplier.ToClusterScopedApplyDesireResourceIDString(testSub, testRG, testCluster, "a1"),
 			testMgmtA),
@@ -148,7 +148,7 @@ func TestKubeApplierInformers_ListForCluster_UnionsClusterAndNodePool(t *testing
 			testMgmtB),
 	})
 	if err != nil {
-		t.Fatalf("NewMockKubeApplierClientWithResources: %v", err)
+		t.Fatalf("NewMockKubeApplierDBClientWithResources: %v", err)
 	}
 
 	relistDuration := 250 * time.Millisecond
@@ -178,13 +178,13 @@ func TestKubeApplierInformers_GetByID(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	mock, err := databasetesting.NewMockKubeApplierClientWithResources(ctx, []any{
+	mock, err := databasetesting.NewMockKubeApplierDBClientWithResources(ctx, []any{
 		newApplyDesire(t,
 			kubeapplier.ToClusterScopedApplyDesireResourceIDString(testSub, testRG, testCluster, "a1"),
 			testMgmtA),
 	})
 	if err != nil {
-		t.Fatalf("NewMockKubeApplierClientWithResources: %v", err)
+		t.Fatalf("NewMockKubeApplierDBClientWithResources: %v", err)
 	}
 
 	relistDuration := 250 * time.Millisecond

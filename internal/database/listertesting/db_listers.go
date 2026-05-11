@@ -37,11 +37,11 @@ func collectFromIterator[T any](ctx context.Context, iter database.DBClientItera
 }
 
 // DBApplyDesireLister implements listers.ApplyDesireLister backed by a real
-// database.KubeApplierClient. Each call hits the underlying client; this is a
+// database.KubeApplierDBClient. Each call hits the underlying client; this is a
 // useful test double for asserting interactions with both the cosmos
 // (production) and mock clients.
 type DBApplyDesireLister struct {
-	Client database.KubeApplierClient
+	Client database.KubeApplierDBClient
 }
 
 var _ listers.ApplyDesireLister = &DBApplyDesireLister{}
@@ -158,9 +158,9 @@ func (l *DBApplyDesireLister) findManagementCluster(ctx context.Context, resourc
 }
 
 // DBDeleteDesireLister implements listers.DeleteDesireLister backed by a real
-// database.KubeApplierClient.
+// database.KubeApplierDBClient.
 type DBDeleteDesireLister struct {
-	Client database.KubeApplierClient
+	Client database.KubeApplierDBClient
 }
 
 var _ listers.DeleteDesireLister = &DBDeleteDesireLister{}
@@ -272,9 +272,9 @@ func (l *DBDeleteDesireLister) findManagementCluster(ctx context.Context, resour
 }
 
 // DBReadDesireLister implements listers.ReadDesireLister backed by a real
-// database.KubeApplierClient.
+// database.KubeApplierDBClient.
 type DBReadDesireLister struct {
-	Client database.KubeApplierClient
+	Client database.KubeApplierDBClient
 }
 
 var _ listers.ReadDesireLister = &DBReadDesireLister{}

@@ -37,11 +37,11 @@ So we keep two completely separate client surfaces:
 | Client                | Containers it touches | Used by |
 | --- | --- | --- |
 | `DBClient` (existing) | `Resources`, `Billing`, `Locks` &mdash; **not** `kube-applier` | frontend, backend, admin, etc. |
-| `KubeApplierClient` (new) | `kube-applier` only | the kube-applier binary, *and* the backend (which holds wider creds and uses it to write `*Desire`s) |
+| `KubeApplierDBClient` (new) | `kube-applier` only | the kube-applier binary, *and* the backend (which holds wider creds and uses it to write `*Desire`s) |
 
 The same applies to the cross-partition listers: existing
 `database.GlobalListers` stays untouched; a new
-`KubeApplierGlobalListers` lives on `KubeApplierClient`.
+`KubeApplierGlobalListers` lives on `KubeApplierDBClient`.
 
 ## Work items
 
@@ -78,10 +78,10 @@ existing client and the new one but no other change is made to
 Define the standalone client surface:
 
 ```go
-// KubeApplierClient is the database surface used by the kube-applier binary.
+// KubeApplierDBClient is the database surface used by the kube-applier binary.
 // It is intentionally narrower than DBClient because the kube-applier pod's
 // Cosmos credentials are scoped to a single container.
-type KubeApplierClient interface {
+type KubeApplierDBClient interface {
     // KubeApplier returns CRUD accessors scoped to a single management-cluster
     // partition.
     KubeApplier(managementCluster string) KubeApplierCRUD
@@ -112,21 +112,21 @@ type ResourceParent struct {
     NodePoolName      string // optional
 }
 
-// NewKubeApplierClient instantiates a KubeApplierClient from a Cosmos
+// NewKubeApplierDBClient instantiates a KubeApplierDBClient from a Cosmos
 // DatabaseClient. It opens *only* the kube-applier container.
-func NewKubeApplierClient(database *azcosmos.DatabaseClient) (KubeApplierClient, error)
+func NewKubeApplierDBClient(database *azcosmos.DatabaseClient) (KubeApplierDBClient, error)
 
-// NewKubeApplierClientFromContainer wraps an already-opened container; useful
-// when the caller has constructed the container client itself.
-func NewKubeApplierClientFromContainer(container *azcosmos.ContainerClient) KubeApplierClient
+// NewKubeApplierDBClientFromContainer wraps an already-opened container;
+// useful when the caller has constructed the container client itself.
+func NewKubeApplierDBClientFromContainer(kubeApplier *azcosmos.ContainerClient) KubeApplierDBClient
 ```
 
 Implementation notes:
 
-- The kube-applier binary calls `NewKubeApplierClient` with credentials
+- The kube-applier binary calls `NewKubeApplierDBClient` with credentials
   scoped to the kube-applier container.
 - The backend, which already builds an `azcosmos.DatabaseClient` with
-  broader credentials, *also* calls `NewKubeApplierClient` to get the
+  broader credentials, *also* calls `NewKubeApplierDBClient` to get the
   kube-applier surface. It does not reach kube-applier through `DBClient`.
 - The CRUD impl reuses the existing low-level helpers (`get`, `list`,
   `deleteResource`, etc.) for read paths; for create/replace it uses the
@@ -164,13 +164,13 @@ Mirror the production split:
 
 - `MockDBClient` (existing) is unchanged. It does **not** know about
   kube-applier.
-- `MockKubeApplierClient` (new) is a standalone in-memory implementation of
-  `KubeApplierClient` with its own document store.
+- `MockKubeApplierDBClient` (new) is a standalone in-memory implementation of
+  `KubeApplierDBClient` with its own document store.
 - A small `mockDocumentStore` interface lets the existing
   `mockResourceCRUD[T]` machinery be reused by the new mock without copying
   CRUD code.
-- `NewMockKubeApplierClient()` and
-  `NewMockKubeApplierClientWithResources(ctx, []any{...})` are the public
+- `NewMockKubeApplierDBClient()` and
+  `NewMockKubeApplierDBClientWithResources(ctx, []any{...})` are the public
   test entry points, parallel to `NewMockDBClient*`.
 
 ## Risks / things to watch
@@ -187,6 +187,6 @@ Mirror the production split:
   (bicep). Adding the container to `dev-infrastructure/` is in scope for
   Doc 06 / 08, not for the database client PR itself.
 - **Two clients in the backend process.** The backend will hold both a
-  `DBClient` and a `KubeApplierClient`. They are intentionally independent;
+  `DBClient` and a `KubeApplierDBClient`. They are intentionally independent;
   they are not joined under a parent struct. Any future cross-cutting
   concern (metrics, tracing) must be wired in twice.

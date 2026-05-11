@@ -108,10 +108,10 @@ func (f *fakePerInstance) IsRunning() bool {
 }
 
 // newTestController builds a manager that pulls desires from the supplied
-// MockKubeApplierClient and uses a recording fake-factory, so lifecycle
+// MockKubeApplierDBClient and uses a recording fake-factory, so lifecycle
 // tests can run without spinning up real reflectors or workqueues.
 func newTestController(
-	mock *databasetesting.MockKubeApplierClient,
+	mock *databasetesting.MockKubeApplierDBClient,
 	fakes *[]*fakePerInstance,
 ) *ReadDesireInformerManagingController {
 	return &ReadDesireInformerManagingController{
@@ -125,7 +125,7 @@ func newTestController(
 // loadDesires inserts the provided ReadDesires into the mock under the
 // canonical (subscriptionID, resourceGroup, cluster) parent. The test desires
 // all share the same parent in this file's fixtures.
-func loadDesires(t *testing.T, mock *databasetesting.MockKubeApplierClient, ds ...*kubeapplier.ReadDesire) {
+func loadDesires(t *testing.T, mock *databasetesting.MockKubeApplierDBClient, ds ...*kubeapplier.ReadDesire) {
 	t.Helper()
 	parent := database.ResourceParent{SubscriptionID: testSub, ResourceGroupName: testRG, ClusterName: testCluster}
 	crud, err := mock.KubeApplier(testManagement).ReadDesires(parent)
@@ -140,7 +140,7 @@ func loadDesires(t *testing.T, mock *databasetesting.MockKubeApplierClient, ds .
 }
 
 // deleteDesire removes a ReadDesire from the mock store.
-func deleteDesire(t *testing.T, mock *databasetesting.MockKubeApplierClient, d *kubeapplier.ReadDesire) {
+func deleteDesire(t *testing.T, mock *databasetesting.MockKubeApplierDBClient, d *kubeapplier.ReadDesire) {
 	t.Helper()
 	parent := database.ResourceParent{SubscriptionID: testSub, ResourceGroupName: testRG, ClusterName: testCluster}
 	crud, err := mock.KubeApplier(testManagement).ReadDesires(parent)
@@ -153,7 +153,7 @@ func deleteDesire(t *testing.T, mock *databasetesting.MockKubeApplierClient, d *
 }
 
 // replaceDesire swaps a ReadDesire's TargetItem in the mock store.
-func replaceDesire(t *testing.T, mock *databasetesting.MockKubeApplierClient, d *kubeapplier.ReadDesire) {
+func replaceDesire(t *testing.T, mock *databasetesting.MockKubeApplierDBClient, d *kubeapplier.ReadDesire) {
 	t.Helper()
 	parent := database.ResourceParent{SubscriptionID: testSub, ResourceGroupName: testRG, ClusterName: testCluster}
 	crud, err := mock.KubeApplier(testManagement).ReadDesires(parent)
@@ -192,7 +192,7 @@ func TestManagerSyncOnce_LaunchesPerInstanceController(t *testing.T) {
 
 	target := kubeapplier.ResourceReference{Resource: "configmaps", Namespace: "default", Name: "x"}
 	desire := newReadDesire(t, target)
-	mock := databasetesting.NewMockKubeApplierClient()
+	mock := databasetesting.NewMockKubeApplierDBClient()
 	loadDesires(t, mock, desire)
 	var fakes []*fakePerInstance
 	c := newTestController(mock, &fakes)
@@ -220,7 +220,7 @@ func TestManagerSyncOnce_RestartsOnTargetChange(t *testing.T) {
 	t1 := kubeapplier.ResourceReference{Resource: "configmaps", Namespace: "default", Name: "x"}
 	t2 := kubeapplier.ResourceReference{Resource: "configmaps", Namespace: "default", Name: "y"}
 	desire := newReadDesire(t, t1)
-	mock := databasetesting.NewMockKubeApplierClient()
+	mock := databasetesting.NewMockKubeApplierDBClient()
 	loadDesires(t, mock, desire)
 	var fakes []*fakePerInstance
 	c := newTestController(mock, &fakes)
@@ -257,7 +257,7 @@ func TestManagerSyncOnce_NoOpWhenTargetUnchanged(t *testing.T) {
 
 	target := kubeapplier.ResourceReference{Resource: "configmaps", Namespace: "default", Name: "x"}
 	desire := newReadDesire(t, target)
-	mock := databasetesting.NewMockKubeApplierClient()
+	mock := databasetesting.NewMockKubeApplierDBClient()
 	loadDesires(t, mock, desire)
 	var fakes []*fakePerInstance
 	c := newTestController(mock, &fakes)
@@ -280,7 +280,7 @@ func TestManagerSyncOnce_StopsOnDelete(t *testing.T) {
 
 	target := kubeapplier.ResourceReference{Resource: "configmaps", Namespace: "default", Name: "x"}
 	desire := newReadDesire(t, target)
-	mock := databasetesting.NewMockKubeApplierClient()
+	mock := databasetesting.NewMockKubeApplierDBClient()
 	loadDesires(t, mock, desire)
 	var fakes []*fakePerInstance
 	c := newTestController(mock, &fakes)

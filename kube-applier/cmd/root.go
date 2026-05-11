@@ -119,7 +119,7 @@ func (f *KubeApplierRootCmdFlags) ToKubeApplierOptions(ctx context.Context, cmd 
 		return nil, utils.TrackError(fmt.Errorf("failed to create leader election lock: %w", err))
 	}
 
-	kubeApplierClient, err := app.NewKubeApplierClient(ctx, f.AzureCosmosDBURL, f.AzureCosmosDBName)
+	kubeApplierDBClient, err := app.NewKubeApplierDBClient(ctx, f.AzureCosmosDBURL, f.AzureCosmosDBName)
 	if err != nil {
 		return nil, utils.TrackError(fmt.Errorf("failed to create kube-applier Cosmos client: %w", err))
 	}
@@ -132,7 +132,7 @@ func (f *KubeApplierRootCmdFlags) ToKubeApplierOptions(ctx context.Context, cmd 
 	return &app.Options{
 		ManagementCluster:          f.ManagementCluster,
 		LeaderElectionLock:         leaderElectionLock,
-		KubeApplierClient:          kubeApplierClient,
+		KubeApplierDBClient:        kubeApplierDBClient,
 		DynamicClient:              dyn,
 		MetricsServerListenAddress: f.MetricsServerListenAddress,
 		HealthzServerListenAddress: f.HealthzServerListenAddress,

@@ -48,9 +48,9 @@ type Options struct {
 	// Cosmos partition key for every *Desire the binary reads or writes.
 	ManagementCluster string
 
-	LeaderElectionLock resourcelock.Interface
-	KubeApplierClient  database.KubeApplierClient
-	DynamicClient      dynamic.Interface
+	LeaderElectionLock  resourcelock.Interface
+	KubeApplierDBClient database.KubeApplierDBClient
+	DynamicClient       dynamic.Interface
 
 	MetricsServerListenAddress string
 	HealthzServerListenAddress string

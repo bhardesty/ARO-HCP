@@ -29,31 +29,31 @@ import (
 	"github.com/Azure/ARO-HCP/internal/utils/armhelpers"
 )
 
-// MockKubeApplierClient is the in-memory test double for database.KubeApplierClient.
+// MockKubeApplierDBClient is the in-memory test double for database.KubeApplierDBClient.
 // It owns its own document store, separate from MockDBClient — production has the
 // kube-applier container live in a different container (and behind different
 // credentials) than the resources container, and the mock mirrors that boundary.
-type MockKubeApplierClient struct {
+type MockKubeApplierDBClient struct {
 	mu        sync.RWMutex
 	documents map[string]json.RawMessage
 }
 
-var _ database.KubeApplierClient = &MockKubeApplierClient{}
+var _ database.KubeApplierDBClient = &MockKubeApplierDBClient{}
 
-// NewMockKubeApplierClient creates an empty MockKubeApplierClient.
-func NewMockKubeApplierClient() *MockKubeApplierClient {
-	return &MockKubeApplierClient{
+// NewMockKubeApplierDBClient creates an empty MockKubeApplierDBClient.
+func NewMockKubeApplierDBClient() *MockKubeApplierDBClient {
+	return &MockKubeApplierDBClient{
 		documents: make(map[string]json.RawMessage),
 	}
 }
 
-// NewMockKubeApplierClientWithResources creates a MockKubeApplierClient and
+// NewMockKubeApplierDBClientWithResources creates a MockKubeApplierDBClient and
 // populates it with the given *Desire resources. Supported types:
 //   - *kubeapplier.ApplyDesire
 //   - *kubeapplier.DeleteDesire
 //   - *kubeapplier.ReadDesire
-func NewMockKubeApplierClientWithResources(ctx context.Context, resources []any) (*MockKubeApplierClient, error) {
-	mock := NewMockKubeApplierClient()
+func NewMockKubeApplierDBClientWithResources(ctx context.Context, resources []any) (*MockKubeApplierDBClient, error) {
+	mock := NewMockKubeApplierDBClient()
 	for i, r := range resources {
 		if err := mock.addResource(ctx, r); err != nil {
 			return nil, fmt.Errorf("failed to add resource at index %d: %w", i, err)
@@ -64,26 +64,26 @@ func NewMockKubeApplierClientWithResources(ctx context.Context, resources []any)
 
 // --- mockDocumentStore implementation -----------------------------------
 
-func (m *MockKubeApplierClient) GetDocument(cosmosID string) (json.RawMessage, bool) {
+func (m *MockKubeApplierDBClient) GetDocument(cosmosID string) (json.RawMessage, bool) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	data, ok := m.documents[strings.ToLower(cosmosID)]
 	return data, ok
 }
 
-func (m *MockKubeApplierClient) StoreDocument(cosmosID string, data json.RawMessage) {
+func (m *MockKubeApplierDBClient) StoreDocument(cosmosID string, data json.RawMessage) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.documents[strings.ToLower(cosmosID)] = data
 }
 
-func (m *MockKubeApplierClient) DeleteDocument(cosmosID string) {
+func (m *MockKubeApplierDBClient) DeleteDocument(cosmosID string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	delete(m.documents, strings.ToLower(cosmosID))
 }
 
-func (m *MockKubeApplierClient) ListDocuments(resourceType *azcorearm.ResourceType, prefix string) []json.RawMessage {
+func (m *MockKubeApplierDBClient) ListDocuments(resourceType *azcorearm.ResourceType, prefix string) []json.RawMessage {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	var results []json.RawMessage
@@ -104,7 +104,7 @@ func (m *MockKubeApplierClient) ListDocuments(resourceType *azcorearm.ResourceTy
 	return results
 }
 
-func (m *MockKubeApplierClient) GetAllDocuments() map[string]json.RawMessage {
+func (m *MockKubeApplierDBClient) GetAllDocuments() map[string]json.RawMessage {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	out := make(map[string]json.RawMessage, len(m.documents))
@@ -114,21 +114,21 @@ func (m *MockKubeApplierClient) GetAllDocuments() map[string]json.RawMessage {
 	return out
 }
 
-// Compile-time assertion: MockKubeApplierClient is a mockDocumentStore so that
+// Compile-time assertion: MockKubeApplierDBClient is a mockDocumentStore so that
 // the existing mockResourceCRUD[T] machinery can drive its storage.
-var _ mockDocumentStore = &MockKubeApplierClient{}
+var _ mockDocumentStore = &MockKubeApplierDBClient{}
 
-// --- KubeApplierClient implementation -----------------------------------
+// --- KubeApplierDBClient implementation -----------------------------------
 
-func (m *MockKubeApplierClient) KubeApplier(managementCluster string) database.KubeApplierCRUD {
+func (m *MockKubeApplierDBClient) KubeApplier(managementCluster string) database.KubeApplierCRUD {
 	return &mockKubeApplierCRUD{store: m, managementCluster: managementCluster}
 }
 
-func (m *MockKubeApplierClient) GlobalListers() database.KubeApplierGlobalListers {
+func (m *MockKubeApplierDBClient) GlobalListers() database.KubeApplierGlobalListers {
 	return &mockKubeApplierGlobalListers{store: m}
 }
 
-func (m *MockKubeApplierClient) PartitionListers(managementCluster string) database.KubeApplierGlobalListers {
+func (m *MockKubeApplierDBClient) PartitionListers(managementCluster string) database.KubeApplierGlobalListers {
 	return &mockKubeApplierGlobalListers{
 		store:        m,
 		partitionKey: strings.ToLower(managementCluster),
@@ -136,7 +136,7 @@ func (m *MockKubeApplierClient) PartitionListers(managementCluster string) datab
 }
 
 type mockKubeApplierCRUD struct {
-	store             *MockKubeApplierClient
+	store             *MockKubeApplierDBClient
 	managementCluster string
 }
 
@@ -204,7 +204,7 @@ func desireParentID(parent database.ResourceParent) (*azcorearm.ResourceID, erro
 // --- KubeApplierGlobalListers ------------------------------------------------
 
 type mockKubeApplierGlobalListers struct {
-	store        *MockKubeApplierClient
+	store        *MockKubeApplierDBClient
 	partitionKey string // empty = cross-partition; non-empty = restrict to this partition
 }
 
@@ -244,7 +244,7 @@ func (g *mockKubeApplierGlobalListers) ReadDesires() database.GlobalLister[kubea
 }
 
 type mockKubeApplierDesireGlobalLister[InternalAPIType, CosmosAPIType any] struct {
-	store         *MockKubeApplierClient
+	store         *MockKubeApplierDBClient
 	resourceTypes []azcorearm.ResourceType
 	partitionKey  string
 }
@@ -292,7 +292,7 @@ func (l *mockKubeApplierDesireGlobalLister[InternalAPIType, CosmosAPIType]) List
 
 // --- resource-loading helpers (parallel to mock_init.go) ---------------------
 
-func (m *MockKubeApplierClient) addResource(ctx context.Context, resource any) error {
+func (m *MockKubeApplierDBClient) addResource(ctx context.Context, resource any) error {
 	switch r := resource.(type) {
 	case *kubeapplier.ApplyDesire:
 		return m.addApplyDesire(ctx, r)
@@ -301,11 +301,11 @@ func (m *MockKubeApplierClient) addResource(ctx context.Context, resource any) e
 	case *kubeapplier.ReadDesire:
 		return m.addReadDesire(ctx, r)
 	default:
-		return fmt.Errorf("unsupported resource type for MockKubeApplierClient: %T", resource)
+		return fmt.Errorf("unsupported resource type for MockKubeApplierDBClient: %T", resource)
 	}
 }
 
-func (m *MockKubeApplierClient) addApplyDesire(ctx context.Context, d *kubeapplier.ApplyDesire) error {
+func (m *MockKubeApplierDBClient) addApplyDesire(ctx context.Context, d *kubeapplier.ApplyDesire) error {
 	parent, err := parentForKubeApplierDesire(d.GetResourceID())
 	if err != nil {
 		return err
@@ -318,7 +318,7 @@ func (m *MockKubeApplierClient) addApplyDesire(ctx context.Context, d *kubeappli
 	return err
 }
 
-func (m *MockKubeApplierClient) addDeleteDesire(ctx context.Context, d *kubeapplier.DeleteDesire) error {
+func (m *MockKubeApplierDBClient) addDeleteDesire(ctx context.Context, d *kubeapplier.DeleteDesire) error {
 	parent, err := parentForKubeApplierDesire(d.GetResourceID())
 	if err != nil {
 		return err
@@ -331,7 +331,7 @@ func (m *MockKubeApplierClient) addDeleteDesire(ctx context.Context, d *kubeappl
 	return err
 }
 
-func (m *MockKubeApplierClient) addReadDesire(ctx context.Context, d *kubeapplier.ReadDesire) error {
+func (m *MockKubeApplierDBClient) addReadDesire(ctx context.Context, d *kubeapplier.ReadDesire) error {
 	parent, err := parentForKubeApplierDesire(d.GetResourceID())
 	if err != nil {
 		return err

@@ -70,9 +70,9 @@ func TestDBApplyDesireLister_RoundTripViaMock(t *testing.T) {
 		},
 	}
 
-	mock, err := databasetesting.NewMockKubeApplierClientWithResources(ctx, []any{clusterScoped, nodePoolScoped})
+	mock, err := databasetesting.NewMockKubeApplierDBClientWithResources(ctx, []any{clusterScoped, nodePoolScoped})
 	if err != nil {
-		t.Fatalf("NewMockKubeApplierClientWithResources: %v", err)
+		t.Fatalf("NewMockKubeApplierDBClientWithResources: %v", err)
 	}
 	l := &listertesting.DBApplyDesireLister{Client: mock}
 

@@ -68,7 +68,7 @@ And the individual item IDs will nest nicely into our existing structures if we 
 
 ### Golang type details for Database
 The golang types will be in `internal/database`.
-A new `KubeApplierClient` will be created with `ResourceCRUD` style accessors for each `*Desire` API.
+A new `KubeApplierDBClient` will be created with `ResourceCRUD` style accessors for each `*Desire` API.
 The input will require the management cluster name, subscriptionName, resourceGroupName, clusterName, and nodePoolName if applicable.
 There will be a separate interface for listing across all partitions: this is needed for the ARO-HCP backend located in `backend` which will
 have access to all partitions and will create the various `*Desire` instances.
@@ -88,7 +88,7 @@ Each instance will hold
 2. the `ReadDesireLister`
 3. a single-item kubernetes informer
 4. single-item kubernetes lister
-4. a `KubeApplierClient`
+4. a `KubeApplierDBClient`
 5. the resourceID of the `ReadDesire` instance
 
 In addition to running when the informer triggers, the controller will unconditionally run every one minute.

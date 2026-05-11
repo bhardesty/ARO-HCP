@@ -25,21 +25,21 @@ import (
 	"github.com/Azure/ARO-HCP/internal/utils"
 )
 
-// NewKubeApplierClient builds a KubeApplierClient bound to the named Cosmos
+// NewKubeApplierDBClient builds a KubeApplierDBClient bound to the named Cosmos
 // account/database. It uses the Azure default credential chain, which in
 // production resolves to the pod's workload-identity federated token.
-func NewKubeApplierClient(
+func NewKubeApplierDBClient(
 	ctx context.Context, cosmosDBURL, cosmosDBName string,
-) (database.KubeApplierClient, error) {
+) (database.KubeApplierDBClient, error) {
 	clientOptions := azcore.ClientOptions{Cloud: cloud.AzurePublic}
 
 	cosmosDatabaseClient, err := database.NewCosmosDatabaseClient(cosmosDBURL, cosmosDBName, clientOptions)
 	if err != nil {
 		return nil, utils.TrackError(fmt.Errorf("failed to create Azure Cosmos database client: %w", err))
 	}
-	client, err := database.NewKubeApplierClient(cosmosDatabaseClient)
+	client, err := database.NewKubeApplierDBClient(cosmosDatabaseClient)
 	if err != nil {
-		return nil, utils.TrackError(fmt.Errorf("failed to create KubeApplierClient: %w", err))
+		return nil, utils.TrackError(fmt.Errorf("failed to create KubeApplierDBClient: %w", err))
 	}
 	_ = ctx
 	return client, nil

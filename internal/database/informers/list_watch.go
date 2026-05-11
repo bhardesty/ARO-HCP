@@ -15,8 +15,8 @@
 // Package informers provides Cosmos-backed SharedIndexInformers for the
 // kube-applier *Desire resource types. The factory accepts a
 // database.KubeApplierGlobalListers, which the caller obtains either from
-// KubeApplierClient.GlobalListers() (cross-partition, used by the backend) or
-// from KubeApplierClient.PartitionListers(mgmtCluster) (single-partition,
+// KubeApplierDBClient.GlobalListers() (cross-partition, used by the backend) or
+// from KubeApplierDBClient.PartitionListers(mgmtCluster) (single-partition,
 // used by the kube-applier binary).
 package informers
 

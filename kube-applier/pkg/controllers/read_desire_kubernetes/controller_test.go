@@ -126,9 +126,9 @@ func startSyncedController(
 		t.Fatalf("derive key: %v", err)
 	}
 
-	// Pre-populate a MockKubeApplierClient with the desire so the
+	// Pre-populate a MockKubeApplierDBClient with the desire so the
 	// controller's fetcher can read it back via the live-client contract.
-	mock := databasetesting.NewMockKubeApplierClient()
+	mock := databasetesting.NewMockKubeApplierDBClient()
 	parent := database.ResourceParent{
 		SubscriptionID: testSub, ResourceGroupName: testRG, ClusterName: testCluster,
 	}
