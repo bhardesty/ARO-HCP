@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// this is a temporary solution for partition key flexibility in CRUDs until
+// https://github.com/Azure/ARO-HCP/pull/5094 lands
+
 package fleet
 
 func (s *Stamp) GetStampIdentifier() string {

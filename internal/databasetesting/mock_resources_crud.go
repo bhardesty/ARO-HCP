@@ -82,13 +82,7 @@ func newMockResourceCRUD[InternalAPIType, CosmosAPIType any](
 
 func (m *mockResourceCRUD[InternalAPIType, CosmosAPIType]) defaultMakeResourceIDPath(resourceID string) (*azcorearm.ResourceID, error) {
 	if len(m.parentResourceID.SubscriptionID) == 0 {
-		// Provider-level parent (e.g. /providers/.../fleet/{stamp}) — build child path directly
-		parts := []string{m.parentResourceID.String()}
-		parts = append(parts, m.resourceType.Types[len(m.resourceType.Types)-1])
-		if len(resourceID) > 0 {
-			parts = append(parts, resourceID)
-		}
-		return azcorearm.ParseResourceID(path.Join(parts...))
+		return nil, fmt.Errorf("subscriptionID is required")
 	}
 	parts := []string{m.parentResourceID.String()}
 

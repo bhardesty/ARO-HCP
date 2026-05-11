@@ -23,6 +23,8 @@ import (
 
 // InternalToCosmosFleet wraps a fleet resource in a GenericDocument envelope whose
 // partitionKey is the top-level ancestor resource name rather than the subscription ID.
+// Once https://github.com/Azure/ARO-HCP/pull/5094 lands, this func becomes obsolete
+// and we can use InternalToCosmosGeneric instead.
 func InternalToCosmosFleet[InternalAPIType any](
 	internalObj *InternalAPIType,
 ) (*GenericDocument[InternalAPIType], error) {

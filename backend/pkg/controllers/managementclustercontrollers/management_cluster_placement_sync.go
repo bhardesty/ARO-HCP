@@ -29,11 +29,8 @@ import (
 	"github.com/Azure/ARO-HCP/internal/utils"
 )
 
-// managementClusterPlacementSyncer is a Cluster syncer that resolves which management cluster
-// an HCP is placed on and writes the ManagementClusterResourceID into the ServiceProviderCluster document.
-// It fetches the provision shard from Cluster Service and resolves it to a ManagementCluster
-// in CosmosDB via the management cluster lister.
-// Once ManagementClusterResourceID is set, it is immutable and the controller becomes a no-op for that cluster.
+// managementClusterPlacementSyncer resolves the management cluster an HCP runs on
+// and updates the ServiceProviderCluster document with the ManagementClusterResourceID.
 type managementClusterPlacementSyncer struct {
 	cooldownChecker controllerutils.CooldownChecker
 
@@ -48,8 +45,6 @@ var _ controllerutils.ClusterSyncer = (*managementClusterPlacementSyncer)(nil)
 
 // NewManagementClusterPlacementSyncController creates a new controller that syncs the
 // management cluster placement from Cluster Service into the ServiceProviderCluster document.
-// It resolves the CS provision shard to a ManagementCluster document in CosmosDB and
-// sets ManagementClusterResourceID on the ServiceProviderCluster.
 func NewManagementClusterPlacementSyncController(
 	cosmosClient database.ResourcesDBClient,
 	clusterServiceClient ocm.ClusterServiceClientSpec,

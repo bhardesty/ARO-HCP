@@ -427,6 +427,18 @@ func HostPort(_ context.Context, _ operation.Operation, fldPath *field.Path, val
 		return field.ErrorList{field.Invalid(fldPath, *value, "host must not be empty")}
 	}
 
+	if isIpAddress(host) {
+		return nil
+	}
+
+	if errMsgs := k8svalidation.IsDNS1123Subdomain(host); len(errMsgs) > 0 {
+		errs := field.ErrorList{}
+		for _, msg := range errMsgs {
+			errs = append(errs, field.Invalid(fldPath, *value, fmt.Sprintf("invalid host %q: %s", host, msg)))
+		}
+		return errs
+	}
+
 	return nil
 }
 

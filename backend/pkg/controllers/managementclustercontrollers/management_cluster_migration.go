@@ -134,6 +134,15 @@ func (c *managementClusterMigrationController) syncProvisionShard(ctx context.Co
 	}
 
 	if database.IsNotFoundError(err) {
+		// The lister cache may be stale (e.g. on startup). Check CosmosDB directly
+		// before attempting to create.
+		existing, err = managementClusterCRUD.Get(ctx, fleet.ManagementClusterResourceName)
+		if err != nil && !database.IsNotFoundError(err) {
+			return fmt.Errorf("management cluster %s: %w", stampIdentifier, err)
+		}
+	}
+
+	if database.IsNotFoundError(err) {
 		created, err := managementClusterCRUD.Create(ctx, convertedManagementCluster, nil)
 		if err != nil {
 			return fmt.Errorf("management cluster %s: %w", convertedManagementCluster.ResourceID, err)
@@ -183,6 +192,15 @@ func (c *managementClusterMigrationController) ensureStamp(ctx context.Context, 
 	}
 
 	stampsCRUD := c.fleetDBClient.Stamps()
+
+	if database.IsNotFoundError(err) {
+		// The lister cache may be stale (e.g. on startup). Check CosmosDB directly
+		// before attempting to create.
+		existing, err = stampsCRUD.Get(ctx, stampIdentifier)
+		if err != nil && !database.IsNotFoundError(err) {
+			return fmt.Errorf("stamp %s: %w", stampIdentifier, err)
+		}
+	}
 
 	if database.IsNotFoundError(err) {
 		stampResourceID, err := fleet.ToStampResourceID(stampIdentifier)

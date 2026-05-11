@@ -145,12 +145,41 @@ func (m *MockFleetDBClient) GetAllDocuments() map[string]json.RawMessage {
 	return out
 }
 
+// newMockFleetResourceCRUD creates a mockResourceCRUD with path construction
+// that mirrors fleetResourceCRUD. Fleet resources live outside the subscription
+// hierarchy (e.g. /providers/Microsoft.RedHatOpenShift/stamps/{id}), so the
+// standard subscription-scoped mockResourceCRUD path logic does not apply.
+func newMockFleetResourceCRUD[InternalAPIType, CosmosAPIType any](
+	client mockDocumentStore, parentResourceID *azcorearm.ResourceID, resourceType azcorearm.ResourceType,
+) *mockResourceCRUD[InternalAPIType, CosmosAPIType] {
+	m := newMockResourceCRUD[InternalAPIType, CosmosAPIType](client, parentResourceID, resourceType)
+	m.makeResourceIDPath = func(resourceName string) (*azcorearm.ResourceID, error) {
+		var base string
+		if parentResourceID != nil {
+			base = parentResourceID.String() + "/" + resourceType.Types[len(resourceType.Types)-1]
+		} else {
+			base = "/providers/" + resourceType.String()
+		}
+		if len(resourceName) > 0 {
+			base += "/" + resourceName
+		}
+		return azcorearm.ParseResourceID(strings.ToLower(base))
+	}
+	m.getListPrefix = func() (string, error) {
+		rid, err := m.makeResourceIDPath("")
+		if err != nil {
+			return "", err
+		}
+		return rid.String() + "/", nil
+	}
+	return m
+}
+
 // --- FleetDBClient implementation ---
 
 func (m *MockFleetDBClient) Stamps() database.StampsCRUD {
-	stampParent, _ := azcorearm.ParseResourceID("/providers/" + fleet.StampResourceType.String() + "/dummy")
-	inner := newMockResourceCRUD[fleet.Stamp, database.GenericDocument[fleet.Stamp]](
-		m, stampParent.Parent, fleet.StampResourceType,
+	inner := newMockFleetResourceCRUD[fleet.Stamp, database.GenericDocument[fleet.Stamp]](
+		m, nil, fleet.StampResourceType,
 	)
 	return &mockStampsCRUD{
 		ValidatingResourceCRUD: database.NewValidatingCRUD(inner,
@@ -177,7 +206,7 @@ func (s *mockStampsCRUD) ManagementClusters(stampIdentifier string) database.Man
 	if err != nil {
 		panic(fmt.Sprintf("invalid stamp identifier %q: %v", stampIdentifier, err))
 	}
-	inner := newMockResourceCRUD[fleet.ManagementCluster, database.GenericDocument[fleet.ManagementCluster]](
+	inner := newMockFleetResourceCRUD[fleet.ManagementCluster, database.GenericDocument[fleet.ManagementCluster]](
 		s.store, parentResourceID, fleet.ManagementClusterResourceType,
 	)
 	return &mockManagementClustersCRUD{
@@ -203,7 +232,7 @@ func (m *mockManagementClustersCRUD) Controllers() database.ResourceCRUD[api.Con
 	if err != nil {
 		panic(fmt.Sprintf("invalid stamp identifier %q: %v", m.stampIdentifier, err))
 	}
-	return newMockResourceCRUD[api.Controller, database.GenericDocument[api.Controller]](
+	return newMockFleetResourceCRUD[api.Controller, database.GenericDocument[api.Controller]](
 		m.store, mcResourceID, fleet.ManagementClusterControllerResourceType,
 	)
 }

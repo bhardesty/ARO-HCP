@@ -200,6 +200,15 @@ func TestValidateManagementClusterCreate(t *testing.T) {
 				{fieldPath: "status.maestroGRPCTarget", message: "must be host:port"},
 			},
 		},
+		{
+			name: "invalid maestroGRPCTarget host rejected",
+			modify: func(t *testing.T, mc *fleet.ManagementCluster) {
+				mc.Status.MaestroGRPCTarget = "not_a_valid_host:8090"
+			},
+			expectErrors: []expectedError{
+				{fieldPath: "status.maestroGRPCTarget", message: "invalid host"},
+			},
+		},
 	}
 
 	for _, tt := range tests {
