@@ -22,7 +22,6 @@ import (
 
 	"github.com/Azure/ARO-HCP/internal/api"
 	"github.com/Azure/ARO-HCP/internal/api/arm"
-	"github.com/Azure/ARO-HCP/internal/ocm"
 )
 
 func InternalToCosmosExternalAuth(internalObj *api.HCPOpenShiftClusterExternalAuth) (*ExternalAuth, error) {
@@ -40,6 +39,7 @@ func InternalToCosmosExternalAuth(internalObj *api.HCPOpenShiftClusterExternalAu
 			ResourceType: internalObj.ID.ResourceType.String(),
 		},
 		ExternalAuthProperties: ExternalAuthProperties{
+			HCPOpenShiftClusterExternalAuth: *internalObj,
 			CosmosMetadata: api.CosmosMetadata{
 				ResourceID: internalObj.ID,
 			},
@@ -58,16 +58,6 @@ func InternalToCosmosExternalAuth(internalObj *api.HCPOpenShiftClusterExternalAu
 			},
 		},
 	}
-
-	// some pieces of data in the internalExternalAuth conflict with ResourceDocument fields.  We may evolve over time, but for
-	// now avoid persisting those.
-	cosmosObj.InternalState.InternalAPI.ProxyResource = arm.ProxyResource{}
-	cosmosObj.InternalState.InternalAPI.Properties.ProvisioningState = ""
-	cosmosObj.InternalState.InternalAPI.SystemData = nil
-	// we do this to keep serialization the same so that we can go to n-1 where this field isn't a pointer.
-	// on the reading side, we handle the pointer as expected.
-	cosmosObj.InternalState.InternalAPI.ServiceProviderProperties.ClusterServiceID = &ocm.InternalID{}
-	cosmosObj.InternalState.InternalAPI.ServiceProviderProperties.ActiveOperationID = ""
 
 	return cosmosObj, nil
 }
@@ -96,7 +86,7 @@ func CosmosToInternalExternalAuth(cosmosObj *ExternalAuth) (*api.HCPOpenShiftClu
 	// we carry over the CosmosETag from the cosmos object to the internal object into a
 	// temporary field until we have inlined and serialized CosmosMetadata in
 	// HCPOpenShiftClusterExternalAuth.
-	internalObj.CosmosETag = cosmosObj.CosmosETag
+	internalObj.CosmosETag = cosmosObj.BaseDocument.CosmosETag
 	internalObj.Properties.ProvisioningState = resourceDoc.ProvisioningState
 	internalObj.SystemData = resourceDoc.SystemData
 	internalObj.ServiceProviderProperties.ExistingCosmosUID = cosmosObj.ID
