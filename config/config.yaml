@@ -163,6 +163,18 @@ defaults:
       registry: arohcpsvcdev.azurecr.io
       repository: arohcpmetrics
       digest: sha256:2a09e619593b66ec89a722b92eafbb2f247b06b22b5257d6255e1e8281d83df7 # 8085265 (2026-05-07 05:12)
+  # Mgmt Agent Controller
+  mgmtAgent:
+    image:
+      registry: arohcpsvcdev.azurecr.io
+      repository: mgmt-agent
+      digest: ""
+  # Kube Applier Controller
+  kubeApplier:
+    image:
+      registry: arohcpsvcdev.azurecr.io
+      repository: kube-applier
+      digest: ""
   # Secret Sync Controller
   secretSyncController:
     image:

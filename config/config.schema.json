@@ -1347,6 +1347,30 @@
         "k8s"
       ]
     },
+    "mgmtAgent": {
+      "type": "object",
+      "properties": {
+        "image": {
+          "$ref": "#/definitions/containerImage"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "image"
+      ]
+    },
+    "kubeApplier": {
+      "type": "object",
+      "properties": {
+        "image": {
+          "$ref": "#/definitions/containerImage"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "image"
+      ]
+    },
     "adminApi": {
       "type": "object",
       "properties": {
@@ -3192,6 +3216,8 @@
     "secretSyncController",
     "maestro",
     "mgmt",
+    "mgmtAgent",
+    "kubeApplier",
     "mgmtKeyVault",
     "monitoring",
     "msiKeyVault",

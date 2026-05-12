@@ -429,6 +429,11 @@ imageSync:
     pullSecretName: component-sync-pull-secret
   outboundServiceTags: ""
 keyVaultDNSSuffix: vault.azure.net
+kubeApplier:
+  image:
+    digest: ""
+    registry: arohcpsvcdev.azurecr.io
+    repository: kube-applier
 kubeEvents:
   enabled: true
   image:
@@ -666,6 +671,11 @@ mgmt:
       Microsoft.Storage:
         poll: true
     usePlannedQuota: true
+mgmtAgent:
+  image:
+    digest: ""
+    registry: arohcpsvcdev.azurecr.io
+    repository: mgmt-agent
 mgmtKeyVault:
   name: ah-pers-mg-usw3test-1
   private: false
