@@ -105,14 +105,16 @@ func (c *triggerControlPlaneUpgradeSyncer) SyncOnce(ctx context.Context, key con
 		return nil // No desired version set
 	}
 
-	// Get latest actual version from active versions
-	var actualLatestVersion *semver.Version
-	if len(existingServiceProviderCluster.Status.ControlPlaneVersion.ActiveVersions) > 0 {
-		actualLatestVersion = existingServiceProviderCluster.Status.ControlPlaneVersion.ActiveVersions[0].Version
+	// No active version yet (installation ongoing); skip upgrade trigger.
+	if len(existingServiceProviderCluster.Status.ControlPlaneVersion.ActiveVersions) == 0 {
+		return nil
 	}
 
+	// Get latest actual version from active versions
+	actualLatestVersion := existingServiceProviderCluster.Status.ControlPlaneVersion.ActiveVersions[0].Version
+
 	// If desired version matches latest actual version, nothing to do
-	if actualLatestVersion != nil && desiredVersion.EQ(*actualLatestVersion) {
+	if desiredVersion.EQ(*actualLatestVersion) {
 		return nil
 	}
 
