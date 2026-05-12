@@ -8,6 +8,7 @@ require (
 	github.com/Azure/ARO-HCP/backend v0.0.0-20260311085015-c7296038bf8f
 	github.com/Azure/ARO-HCP/frontend v0.0.0-00010101000000-000000000000
 	github.com/Azure/ARO-HCP/internal v0.0.0-00010101000000-000000000000
+	github.com/Azure/ARO-HCP/kube-applier v0.0.0-00010101000000-000000000000
 	github.com/Azure/ARO-HCP/sessiongate v0.0.0-00010101000000-000000000000
 	github.com/Azure/ARO-HCP/test/sdk/v20240610preview/resourcemanager/redhatopenshifthcp/armredhatopenshifthcp v0.0.0-00010101000000-000000000000
 	github.com/google/go-cmp v0.7.0
@@ -21,6 +22,7 @@ require (
 	k8s.io/apimachinery v0.35.3
 	k8s.io/client-go v0.35.3
 	k8s.io/utils v0.0.0-20260319190234-28399d86e0b5
+	sigs.k8s.io/controller-runtime v0.23.1
 	sigs.k8s.io/yaml v1.6.0
 )
 
@@ -68,7 +70,7 @@ require (
 	github.com/mattn/go-runewidth v0.0.16 // indirect
 	github.com/openshift-online/maestro v0.0.0-20260213014104-081c1f6df17b // indirect
 	github.com/openshift-online/ocm-api-model/model v0.0.453 // indirect
-	github.com/openshift/api v0.0.0-20260304122341-cf5d8996109f // indirect
+	github.com/openshift/api v0.0.0-20260429122012-1180c0f5c3e9 // indirect
 	github.com/openshift/cluster-version-operator v1.0.1-0.20260202115537-557510ea0603 // indirect
 	github.com/openshift/hypershift/api v0.0.0-20260424195428-c1a8bb61ff14 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
@@ -121,6 +123,7 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	k8s.io/api v0.35.3 // indirect
+	k8s.io/apiextensions-apiserver v0.35.2 // indirect
 	k8s.io/component-base v0.35.3 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20250910181357-589584f1c912 // indirect
@@ -176,5 +179,7 @@ replace github.com/Azure/ARO-HCP/backend => ../backend
 replace github.com/Azure/ARO-HCP/frontend => ../frontend
 
 replace github.com/Azure/ARO-HCP/internal => ../internal
+
+replace github.com/Azure/ARO-HCP/kube-applier => ../kube-applier
 
 replace github.com/Azure/ARO-HCP/test/sdk/v20240610preview/resourcemanager/redhatopenshifthcp/armredhatopenshifthcp => ../test/sdk/v20240610preview/resourcemanager/redhatopenshifthcp/armredhatopenshifthcp

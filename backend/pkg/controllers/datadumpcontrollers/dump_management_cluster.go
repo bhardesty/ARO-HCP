@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/Azure/ARO-HCP/backend/pkg/controllers/controllerutils"
+	controllerutil "github.com/Azure/ARO-HCP/internal/controllerutils"
 	"github.com/Azure/ARO-HCP/internal/database"
 	dbinformers "github.com/Azure/ARO-HCP/internal/database/informers"
 	dblisters "github.com/Azure/ARO-HCP/internal/database/listers"
@@ -27,10 +28,10 @@ import (
 )
 
 type managementClusterDataDump struct {
-	cooldownChecker         controllerutils.CooldownChecker
+	cooldownChecker         controllerutil.CooldownChecker
 	managementClusterLister dblisters.ManagementClusterLister
 
-	nextDataDumpChecker controllerutils.CooldownChecker
+	nextDataDumpChecker controllerutil.CooldownChecker
 }
 
 // NewManagementClusterDataDumpController periodically dumps management cluster data.
@@ -40,9 +41,9 @@ func NewManagementClusterDataDumpController(
 	fleetInformers dbinformers.FleetInformers,
 ) controllerutils.Controller {
 	syncer := &managementClusterDataDump{
-		cooldownChecker:         controllerutils.NewTimeBasedCooldownChecker(4 * time.Minute),
+		cooldownChecker:         controllerutil.NewTimeBasedCooldownChecker(4 * time.Minute),
 		managementClusterLister: managementClusterLister,
-		nextDataDumpChecker:     controllerutils.NewTimeBasedCooldownChecker(4 * time.Minute),
+		nextDataDumpChecker:     controllerutil.NewTimeBasedCooldownChecker(4 * time.Minute),
 	}
 
 	return controllerutils.NewManagementClusterWatchingController(
@@ -75,6 +76,6 @@ func (c *managementClusterDataDump) SyncOnce(ctx context.Context, key controller
 	return nil
 }
 
-func (c *managementClusterDataDump) CooldownChecker() controllerutils.CooldownChecker {
+func (c *managementClusterDataDump) CooldownChecker() controllerutil.CooldownChecker {
 	return c.cooldownChecker
 }

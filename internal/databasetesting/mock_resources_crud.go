@@ -36,7 +36,7 @@ import (
 
 // mockDocumentStore is the slice of MockDBClient that mockResourceCRUD actually
 // uses. Extracting this interface lets mockResourceCRUD power both MockDBClient
-// (the existing in-memory store for the regular containers), MockKubeApplierClient
+// (the existing in-memory store for the regular containers), MockKubeApplierDBClient
 // (the in-memory store for the kube-applier container) and MockFleetClient
 // (the in-memory store for the fleet container) without code duplication.
 type mockDocumentStore interface {

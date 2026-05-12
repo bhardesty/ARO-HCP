@@ -12,6 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package informers provides Cosmos-backed SharedIndexInformers for the
+// kube-applier *Desire resource types. The factory accepts a
+// database.KubeApplierGlobalListers, which the caller obtains either from
+// KubeApplierDBClient.GlobalListers() (cross-partition, used by the backend) or
+// from KubeApplierDBClient.PartitionListers(mgmtCluster) (single-partition,
+// used by the kube-applier binary).
 package informers
 
 import (
@@ -37,7 +43,9 @@ func (listWatchWithoutWatchListSemantics) IsWatchListSemanticsUnSupported() bool
 // expiringWatcher implements watch.Interface and sends an expired error after
 // the configured duration to cause the reflector to relist. This drives
 // SharedInformers backed by non-Kubernetes data sources like Cosmos that have
-// no native watch protocol.
+// no native watch protocol. It is structurally identical to the backend's
+// expiring watcher; we copy it here so this package has no dependency on
+// backend/.
 type expiringWatcher struct {
 	result chan watch.Event
 	done   chan struct{}

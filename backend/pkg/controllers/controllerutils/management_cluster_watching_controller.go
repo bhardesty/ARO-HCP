@@ -28,6 +28,7 @@ import (
 
 	"github.com/Azure/ARO-HCP/internal/api"
 	"github.com/Azure/ARO-HCP/internal/api/fleet"
+	controllerutil "github.com/Azure/ARO-HCP/internal/controllerutils"
 	"github.com/Azure/ARO-HCP/internal/database"
 	dbinformers "github.com/Azure/ARO-HCP/internal/database/informers"
 	"github.com/Azure/ARO-HCP/internal/utils"
@@ -62,7 +63,7 @@ func (k ManagementClusterKey) InitialController(controllerName string) *api.Cont
 
 type ManagementClusterSyncer interface {
 	SyncOnce(ctx context.Context, key ManagementClusterKey) error
-	CooldownChecker() CooldownChecker
+	CooldownChecker() controllerutil.CooldownChecker
 }
 
 type managementClusterWatchingController struct {
@@ -120,7 +121,7 @@ func (c *managementClusterWatchingController) SyncOnce(ctx context.Context, key 
 	return errors.Join(syncErr, controllerWriteErr)
 }
 
-func (c *managementClusterWatchingController) CooldownChecker() CooldownChecker {
+func (c *managementClusterWatchingController) CooldownChecker() controllerutil.CooldownChecker {
 	return c.syncer.CooldownChecker()
 }
 
