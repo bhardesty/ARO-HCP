@@ -1631,15 +1631,15 @@ clouds:
               systemAgentPool:
                 maxCount: 4
                 osDiskSizeGB: 32
-                vmSize: Standard_D4ds_v6
+                vmSize: Standard_D4ads_v6
               userAgentPool:
                 maxCount: 14
                 minCount: 3
                 osDiskSizeGB: 100
-                vmSize: Standard_D16ds_v6
+                vmSize: Standard_D16ads_v6
                 secondaryNicCount: 7
               infraAgentPool:
-                vmSize: Standard_D4ds_v6
+                vmSize: Standard_D4ads_v6
                 osDiskSizeGB: 64
               enableSwiftV2Nodepools: true
               enableSwiftV2Vnet: true
@@ -1654,13 +1654,13 @@ clouds:
             aks:
               name: "{{ .ctx.environment }}-{{ .ctx.regionShort }}-svc"
               systemAgentPool:
-                vmSize: Standard_D4ds_v6
+                vmSize: Standard_D4ads_v6
               userAgentPool:
-                name: 'u64d8dsv6'
-                vmSize: Standard_D8ds_v6
+                name: 'u8adsv6'
+                vmSize: Standard_D8ads_v6
                 osDiskSizeGB: 64
               infraAgentPool:
-                vmSize: Standard_D4ds_v6
+                vmSize: Standard_D4ads_v6
             jaeger:
               deploy: true
         regions:
