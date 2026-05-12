@@ -113,7 +113,7 @@ func TestReadAndPersistNodePoolScopedMaestroReadonlyBundlesContentSyncer_SyncOnc
 			},
 		},
 		ServiceProviderProperties: api.HCPOpenShiftClusterNodePoolServiceProviderProperties{
-			ClusterServiceID: api.InternalID{},
+			ClusterServiceID: nil,
 		},
 	}
 	nodepoolsCRUD := mockResourcesDBClient.HCPClusters(key.SubscriptionID, key.ResourceGroupName).NodePools(key.HCPClusterName)
@@ -160,7 +160,7 @@ func TestReadAndPersistNodePoolScopedMaestroReadonlyBundlesContentSyncer_SyncOnc
 			},
 		},
 		ServiceProviderProperties: api.HCPOpenShiftClusterNodePoolServiceProviderProperties{
-			ClusterServiceID: api.Must(api.NewInternalID("/api/aro_hcp/v1alpha1/clusters/11111111111111111111111111111111")),
+			ClusterServiceID: api.Ptr(api.Must(api.NewInternalID("/api/aro_hcp/v1alpha1/clusters/11111111111111111111111111111111"))),
 		},
 	}
 	nodepoolsCRUD := baseMockResourcesDBClient.HCPClusters(key.SubscriptionID, key.ResourceGroupName).NodePools(key.HCPClusterName)
@@ -209,7 +209,7 @@ func TestReadAndPersistNodePoolScopedMaestroReadonlyBundlesContentSyncer_SyncOnc
 			},
 		},
 		ServiceProviderProperties: api.HCPOpenShiftClusterNodePoolServiceProviderProperties{
-			ClusterServiceID: api.Must(api.NewInternalID("/api/aro_hcp/v1alpha1/clusters/11111111111111111111111111111111")),
+			ClusterServiceID: api.Ptr(api.Must(api.NewInternalID("/api/aro_hcp/v1alpha1/clusters/11111111111111111111111111111111"))),
 		},
 	}
 	nodepoolsCRUD := mockResourcesDBClient.HCPClusters(key.SubscriptionID, key.ResourceGroupName).NodePools(key.HCPClusterName)
@@ -258,7 +258,7 @@ func TestReadAndPersistNodePoolScopedMaestroReadonlyBundlesContentSyncer_SyncOnc
 			},
 		},
 		ServiceProviderProperties: api.HCPOpenShiftClusterNodePoolServiceProviderProperties{
-			ClusterServiceID: api.Must(api.NewInternalID("/api/aro_hcp/v1alpha1/clusters/11111111111111111111111111111111")),
+			ClusterServiceID: api.Ptr(api.Must(api.NewInternalID("/api/aro_hcp/v1alpha1/clusters/11111111111111111111111111111111"))),
 		},
 	}
 	nodepoolsCRUD := mockResourcesDBClient.HCPClusters(key.SubscriptionID, key.ResourceGroupName).NodePools(key.HCPClusterName)
@@ -280,7 +280,7 @@ func TestReadAndPersistNodePoolScopedMaestroReadonlyBundlesContentSyncer_SyncOnc
 	require.NoError(t, err)
 
 	mockClusterService.EXPECT().
-		GetClusterProvisionShard(gomock.Any(), nodepool.ServiceProviderProperties.ClusterServiceID).
+		GetClusterProvisionShard(gomock.Any(), *nodepool.ServiceProviderProperties.ClusterServiceID).
 		Return(nil, fmt.Errorf("provision shard error"))
 
 	err = syncer.SyncOnce(ctx, key)
@@ -321,7 +321,7 @@ func TestReadAndPersistNodePoolScopedMaestroReadonlyBundlesContentSyncer_SyncOnc
 			},
 		},
 		ServiceProviderProperties: api.HCPOpenShiftClusterNodePoolServiceProviderProperties{
-			ClusterServiceID: api.Must(api.NewInternalID("/api/aro_hcp/v1alpha1/clusters/11111111111111111111111111111111")),
+			ClusterServiceID: api.Ptr(api.Must(api.NewInternalID("/api/aro_hcp/v1alpha1/clusters/11111111111111111111111111111111"))),
 		},
 	}
 	nodepoolsCRUD := mockResourcesDBClient.HCPClusters(key.SubscriptionID, key.ResourceGroupName).NodePools(key.HCPClusterName)
@@ -343,7 +343,7 @@ func TestReadAndPersistNodePoolScopedMaestroReadonlyBundlesContentSyncer_SyncOnc
 
 	provisionShard := buildTestProvisionShard("test-consumer")
 	mockClusterService.EXPECT().
-		GetClusterProvisionShard(gomock.Any(), nodepool.ServiceProviderProperties.ClusterServiceID).
+		GetClusterProvisionShard(gomock.Any(), *nodepool.ServiceProviderProperties.ClusterServiceID).
 		Return(provisionShard, nil)
 
 	restEndpoint := provisionShard.MaestroConfig().RestApiConfig().Url()
