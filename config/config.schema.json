@@ -262,6 +262,10 @@
           "description": "Geneva logs account namespace configuration version",
           "pattern": "^[0-9]+$",
           "type": "string"
+        },
+        "mdsdConfigFile": {
+          "description": "Optional path to the checked-in MDSD agent config XML file, relative to the pipeline directory root",
+          "type": "string"
         }
       },
       "required": [
