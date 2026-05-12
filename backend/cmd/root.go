@@ -377,14 +377,25 @@ func (f *BackendRootCmdFlags) ToBackendOptions(ctx context.Context, cmd *cobra.C
 
 	smiClientBuilder := app.NewServiceManagedIdentityClientBuilder(fpaMIDataplaneClientBuilder, azureConfig)
 
-	resourcesCosmosDBClient, billingDBClient, err := app.NewCosmosDBClients(
-		ctx,
+	azCoreClientOptions := *azureConfig.CloudEnvironment.AZCoreClientOptions()
+
+	cosmosDatabaseClient, err := app.NewCosmosDatabaseClient(
 		f.AzureCosmosDBURL,
 		f.AzureCosmosDBName,
-		*azureConfig.CloudEnvironment.AZCoreClientOptions(),
+		azCoreClientOptions,
 	)
 	if err != nil {
 		return nil, utils.TrackError(err)
+	}
+
+	resourcesCosmosDBClient, billingDBClient, err := app.NewCosmosDBClients(cosmosDatabaseClient)
+	if err != nil {
+		return nil, utils.TrackError(err)
+	}
+
+	fleetDBClient, err := app.NewFleetDBClient(cosmosDatabaseClient)
+	if err != nil {
+		return nil, utils.TrackError(fmt.Errorf("failed to create fleet db client: %w", err))
 	}
 
 	clustersServiceClient, err := app.NewClustersServiceClient(ctx, f.ClustersServiceURL, f.ClustersServiceTLSInsecure)
@@ -401,6 +412,7 @@ func (f *BackendRootCmdFlags) ToBackendOptions(ctx context.Context, cmd *cobra.C
 		LeaderElectionLock:                 leaderElectionLock,
 		ResourcesDBClient:                  resourcesCosmosDBClient,
 		BillingDBClient:                    billingDBClient,
+		FleetDBClient:                      fleetDBClient,
 		ClustersServiceClient:              clustersServiceClient,
 		MetricsServerListenAddress:         f.MetricsServerListenAddress,
 		HealthzServerListenAddress:         f.HealthzServerListenAddress,
