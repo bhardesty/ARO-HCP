@@ -117,11 +117,6 @@ resourceGroups:
         resourceGroup: service
         step: output
         name: backend
-    - name: sessiongateMIResourceId
-      input:
-        resourceGroup: service
-        step: output
-        name: sessiongate
     dependsOn:
     - resourceGroup: management
       step: infra
@@ -239,6 +234,21 @@ resourceGroups:
       - "DeploymentScriptExceededMaxAllowedTime"
       maximumRetryCount: 3
       durationBetweenRetries: 2m
+  - name: svc-mgmt-aks-permissions
+    action: ARM
+    omitFromServiceGroupCompletion: true
+    template: templates/svc-mgmt-aks-permissions.bicep
+    parameters: configurations/svc-mgmt-aks-permissions.tmpl.bicepparam
+    deploymentLevel: ResourceGroup
+    variables:
+    - name: sessiongateMIResourceId
+      input:
+        resourceGroup: service
+        step: output
+        name: sessiongate
+    dependsOn:
+    - resourceGroup: management
+      step: cluster
   - name: delete-non-swift-user-nodepools
     aksCluster: '{{ .mgmt.aks.name }}'
     action: Shell
